@@ -76,7 +76,8 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
     });
   };
 
-  const currentLang = i18n.getCurrentLanguage();
+  const { t, getCurrentLanguage } = useTranslation();
+  const currentLang = getCurrentLanguage();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
