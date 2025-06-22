@@ -268,7 +268,8 @@ const translations = {
     'common.previous': 'Anterior',
     'common.close': 'Cerrar',
     'common.yes': 'Sí',
-    'common.no': 'No'
+    'common.no': 'No',
+    'common.try_again': 'Intentar de Nuevo'
   }
 };
 
