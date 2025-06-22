@@ -231,14 +231,17 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Testado com dados reais. A homepage exibe corretamente 6 tours com informações e imagens. Os filtros por tipo (gastronomic, cultural, mixed) funcionam corretamente, mostrando 3 tours gastronômicos, 2 culturais e 1 misto."
+        - working: false
+          agent: "testing"
+          comment: "Após correção do getCurrentLanguage(), ainda há problemas com as traduções. Os textos na homepage aparecem como chaves de tradução (home.title, home.subtitle, etc.) em vez do texto traduzido."
 
   - task: "Tour Details Page"
     implemented: true
-    working: true
+    working: false
     file: "src/pages/TourDetails.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
@@ -249,6 +252,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Testado com dados reais. A página de detalhes do tour mostra informações completas, incluindo preço, descrição, duração, localização e disponibilidade. A galeria de imagens funciona corretamente. Encontrado um problema com o botão 'Reservar Agora' que aparece como 'tour.book_now' em vez do texto traduzido."
+        - working: false
+          agent: "testing"
+          comment: "Não foi possível testar completamente a página de detalhes do tour. Ao tentar acessar diretamente a página de um tour específico (ex: /tour/1), recebemos erro 404 do backend. Parece haver um problema com a API de tours."
 
   - task: "Admin Panel"
     implemented: true
@@ -264,14 +270,17 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Testado com credenciais fornecidas (admin/9rocks2025). O painel de administração permite login e exibe os 6 tours criados. A aba de reservas mostra 4 reservas. As estatísticas mostram dados reais e o botão de exportação CSV está disponível."
+        - working: true
+          agent: "testing"
+          comment: "Testado novamente após correção do getCurrentLanguage(). O painel admin continua funcionando corretamente. Login funciona, exibe 6 tours, 4 reservas, estatísticas corretas e o botão de exportação CSV está disponível."
 
   - task: "Multi-language Support"
     implemented: true
-    working: true
+    working: false
     file: "src/utils/i18n.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
@@ -282,6 +291,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Testado com dados reais. O sistema multi-idioma permite alternar entre PT/EN/ES. Encontrado um problema com algumas chaves de tradução que não estão sendo resolvidas corretamente, como 'tour.book_now'."
+        - working: false
+          agent: "testing"
+          comment: "Após correção do getCurrentLanguage(), o seletor de idiomas funciona corretamente (muda entre PT/EN/ES), mas as traduções não são aplicadas. Os textos aparecem como chaves de tradução (home.title, home.subtitle, etc.) em vez do texto traduzido."
 
   - task: "Booking Interface"
     implemented: true
@@ -300,6 +312,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Não foi possível testar completamente o formulário de reserva devido a um problema com o botão 'Reservar Agora' que aparece como 'tour.book_now' em vez do texto traduzido, impedindo o acesso ao formulário de reserva."
+        - working: false
+          agent: "testing"
+          comment: "Não foi possível testar o formulário de reserva devido a problemas com a API de tours. Não conseguimos acessar a página de detalhes do tour para iniciar o processo de reserva."
 
   - task: "Payment System"
     implemented: true
@@ -315,6 +330,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Não foi possível testar o sistema de pagamento devido ao problema com o botão de reserva que impede o acesso ao formulário de reserva e consequentemente ao sistema de pagamento."
+        - working: false
+          agent: "testing"
+          comment: "Não foi possível testar o sistema de pagamento devido a problemas com a API de tours e o formulário de reserva."
 
   - task: "Success/Error Pages"
     implemented: true
