@@ -170,7 +170,7 @@ const HomePage = () => {
                   {tour.images && tour.images.length > 0 ? (
                     <img
                       src={tour.images[0]}
-                      alt={tour.name[i18n.getCurrentLanguage()] || tour.name.pt}
+                      alt={tour.name[getCurrentLanguage()] || tour.name.pt}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -187,7 +187,7 @@ const HomePage = () => {
                   {/* Tour Type Badge */}
                   <div className="absolute top-4 left-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTourTypeColor(tour.tour_type)}`}>
-                      {i18n.t(`tour.type.${tour.tour_type}`)}
+                      {t(`tour.type.${tour.tour_type}`)}
                     </span>
                   </div>
                 </div>
@@ -195,10 +195,10 @@ const HomePage = () => {
                 {/* Tour Content */}
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {tour.name[i18n.getCurrentLanguage()] || tour.name.pt}
+                    {tour.name[getCurrentLanguage()] || tour.name.pt}
                   </h3>
                   <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3">
-                    {tour.short_description[i18n.getCurrentLanguage()] || tour.short_description.pt}
+                    {tour.short_description[getCurrentLanguage()] || tour.short_description.pt}
                   </p>
                   
                   {/* Tour Details */}
