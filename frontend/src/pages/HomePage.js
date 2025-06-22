@@ -67,7 +67,7 @@ const HomePage = () => {
             onClick={fetchTours}
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
           >
-            {t('common.try_again')}
+            {t('common_try_again')}
           </button>
         </div>
       </div>
