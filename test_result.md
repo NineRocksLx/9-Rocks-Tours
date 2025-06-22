@@ -408,13 +408,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Multi-language Support"
-    - "Tour Details Page"
     - "Booking Interface"
     - "Payment System"
   stuck_tasks:
-    - "Multi-language Support"
-    - "Tour Details Page"
     - "Booking Interface"
     - "Payment System"
   test_all: false
