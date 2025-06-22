@@ -188,7 +188,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="selected_date" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking.selected_date')} *
+                      {t('booking_selected_date')} *
                     </label>
                     <select
                       id="selected_date"
