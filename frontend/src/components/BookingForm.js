@@ -170,7 +170,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
 
                 <div>
                   <label htmlFor="customer_phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('booking.customer_phone')} *
+                    {t('booking_customer_phone')} *
                   </label>
                   <input
                     type="tel"
