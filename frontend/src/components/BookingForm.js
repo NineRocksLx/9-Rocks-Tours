@@ -229,7 +229,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
 
                 <div>
                   <label htmlFor="special_requests" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('booking.special_requests')}
+                    {t('booking_special_requests')}
                   </label>
                   <textarea
                     id="special_requests"
