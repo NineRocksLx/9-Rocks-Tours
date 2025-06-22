@@ -294,6 +294,11 @@ class I18n {
   }
 
   getCurrentLanguage() {
+    // Get the current language from localStorage to ensure it's always up-to-date
+    const storedLang = localStorage.getItem('9rocks_language');
+    if (storedLang && this.supportedLanguages.includes(storedLang)) {
+      this.currentLanguage = storedLang;
+    }
     return this.currentLanguage;
   }
 
