@@ -279,11 +279,11 @@ frontend:
 
   - task: "Booking Interface"
     implemented: true
-    working: true
+    working: false
     file: "src/components/BookingForm.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
           agent: "main"
@@ -291,6 +291,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Formulário de reserva funciona corretamente. Validação de campos obrigatórios implementada. Cálculo automático de preço baseado no número de participantes funciona. Transição para a etapa de pagamento funciona corretamente."
+        - working: false
+          agent: "testing"
+          comment: "Não foi possível testar completamente o formulário de reserva devido a um problema com o botão 'Reservar Agora' que aparece como 'tour.book_now' em vez do texto traduzido, impedindo o acesso ao formulário de reserva."
 
   - task: "Payment System"
     implemented: true
