@@ -27,3 +27,4 @@ firebase-admin>=6.3.0
 google-api-python-client>=2.108.0
 google-auth-httplib2>=0.2.0
 google-auth-oauthlib>=1.2.0
+paypalrestsdk>=1.13.3
