@@ -240,11 +240,11 @@ frontend:
 
   - task: "Tour Details Page"
     implemented: true
-    working: false
+    working: true
     file: "src/pages/TourDetails.js"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
@@ -258,6 +258,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Não foi possível testar completamente a página de detalhes do tour. Ao tentar acessar diretamente a página de um tour específico (ex: /tour/1), recebemos erro 404 do backend. Parece haver um problema com a API de tours."
+        - working: true
+          agent: "testing"
+          comment: "Após as correções, a página de detalhes do tour agora carrega corretamente. Testado com o ID específico mencionado (4564008b-5c79-43d1-b0ef-ed258a65b549) e a página exibe todas as informações corretamente. O botão 'Reservar Agora' está traduzido corretamente, assim como a seção 'Disponibilidade' e o texto 'horas'. A galeria de imagens funciona corretamente."
 
   - task: "Admin Panel"
     implemented: true
