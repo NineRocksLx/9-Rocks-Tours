@@ -93,7 +93,7 @@ const HomePage = () => {
               href="#tours" 
               className="inline-block bg-white text-indigo-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors duration-300"
             >
-              {t('home.cta')}
+              {t('home_cta')}
             </a>
           </div>
         </div>
