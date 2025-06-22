@@ -235,7 +235,7 @@ const HomePage = () => {
                       to={`/tour/${tour.id}`}
                       className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors duration-200"
                     >
-                      {i18n.t('tour.view_details')}
+                      {t('tour.view_details')}
                     </Link>
                   </div>
                 </div>
