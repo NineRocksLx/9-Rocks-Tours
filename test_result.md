@@ -416,9 +416,7 @@ test_plan:
   current_focus:
     - "Booking Interface"
     - "Payment System"
-  stuck_tasks:
-    - "Booking Interface"
-    - "Payment System"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
