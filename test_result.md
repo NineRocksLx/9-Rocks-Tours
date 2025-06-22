@@ -234,6 +234,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Após correção do getCurrentLanguage(), ainda há problemas com as traduções. Os textos na homepage aparecem como chaves de tradução (home.title, home.subtitle, etc.) em vez do texto traduzido."
+        - working: true
+          agent: "testing"
+          comment: "Após as correções, a homepage agora exibe corretamente os textos traduzidos. O título '9 Rocks Tours', o subtítulo 'Descubra Portugal de forma autêntica', a seção 'Tours em Destaque' e os botões de filtro 'Gastronômico', 'Cultural', 'Misto' estão todos exibidos corretamente. Os botões 'Ver Detalhes' nos cards também estão traduzidos corretamente."
 
   - task: "Tour Details Page"
     implemented: true
