@@ -22,7 +22,7 @@ const HomePage = () => {
       setTours(response.data);
     } catch (err) {
       console.error('Error fetching tours:', err);
-      setError(i18n.t('message.error'));
+      setError(t('message.error'));
     } finally {
       setLoading(false);
     }
