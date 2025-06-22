@@ -820,6 +820,133 @@ async def export_bookings_csv():
 
 
 # ================================
+# PAYMENT ENDPOINTS
+# ================================
+
+@api_router.post("/payments/create", response_model=PaymentResponse)
+async def create_payment(payment_request: PaymentRequest):
+    """Create PayPal payment"""
+    try:
+        # Verify booking exists
+        booking = await db.bookings.find_one({"id": payment_request.booking_id})
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        # Create payment with PayPal
+        payment_result = create_paypal_payment(payment_request)
+        
+        # Store transaction in database
+        transaction = PaymentTransaction(
+            payment_id=payment_result["payment_id"],
+            booking_id=payment_request.booking_id,
+            tour_id=payment_request.tour_id,
+            customer_email=payment_request.customer_email,
+            customer_name=payment_request.customer_name,
+            amount=payment_request.amount,
+            currency=payment_request.currency,
+            payment_method=payment_request.payment_method.value,
+            status="created",
+            approval_url=payment_result.get("approval_url")
+        )
+        
+        transaction_dict = transaction.dict()
+        await db.payment_transactions.insert_one(transaction_dict)
+        
+        return PaymentResponse(
+            payment_id=payment_result["payment_id"],
+            approval_url=payment_result.get("approval_url"),
+            status=payment_result["status"]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/payments/execute/{payment_id}")
+async def execute_payment(payment_id: str, execution: PaymentExecution):
+    """Execute approved PayPal payment"""
+    try:
+        # Check if already processed
+        existing = await db.payment_transactions.find_one({"payment_id": payment_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Payment transaction not found")
+            
+        if existing.get("status") == "completed":
+            return {"message": "Payment already processed", "status": "completed"}
+        
+        # Execute payment
+        result = execute_paypal_payment(payment_id, execution.payer_id)
+        
+        # Update database
+        await db.payment_transactions.update_one(
+            {"payment_id": payment_id},
+            {
+                "$set": {
+                    "status": "completed",
+                    "transaction_id": result.get("transaction_id"),
+                    "completed_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Update booking payment status
+        booking_id = existing.get("booking_id")
+        if booking_id:
+            await db.bookings.update_one(
+                {"id": booking_id},
+                {
+                    "$set": {
+                        "payment_status": "paid",
+                        "status": "confirmed",
+                        "payment_transaction_id": result.get("transaction_id"),
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/payments/status/{payment_id}")
+async def get_payment_status(payment_id: str):
+    """Get payment status"""
+    try:
+        # Check database first
+        db_record = await db.payment_transactions.find_one({"payment_id": payment_id})
+        
+        # Get latest status from PayPal
+        paypal_status = get_paypal_payment_status(payment_id)
+        
+        # Update database if status changed
+        if db_record and db_record.get("status") != paypal_status["status"]:
+            await db.payment_transactions.update_one(
+                {"payment_id": payment_id},
+                {"$set": {"status": paypal_status["status"]}}
+            )
+        
+        return paypal_status
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/admin/payments", dependencies=[Depends(verify_firebase_token)])
+async def get_all_payments():
+    """Get all payment transactions (Admin only)"""
+    try:
+        transactions = await db.payment_transactions.find().sort("created_at", -1).to_list(1000)
+        return [PaymentTransaction(**transaction) for transaction in transactions]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ================================
 # FIREBASE ENDPOINTS
 # ================================
 
