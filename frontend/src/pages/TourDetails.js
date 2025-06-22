@@ -188,7 +188,7 @@ const TourDetails = () => {
               {/* Route Description */}
               <div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  {i18n.t('tour.route')}
+                  {t('tour.route')}
                 </h3>
                 <div className="text-gray-700 leading-relaxed">
                   {tour.route_description[currentLang] || tour.route_description.pt}
