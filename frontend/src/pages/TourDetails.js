@@ -188,7 +188,7 @@ const TourDetails = () => {
               {/* Route Description */}
               <div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  {t('tour.route')}
+                  {t('tour_route')}
                 </h3>
                 <div className="text-gray-700 leading-relaxed">
                   {tour.route_description[currentLang] || tour.route_description.pt}
@@ -199,7 +199,7 @@ const TourDetails = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-lg font-semibold text-green-700 mb-3">
-                    ✓ {t('tour.includes')}
+                    ✓ {t('tour_includes')}
                   </h4>
                   <div className="text-gray-700">
                     {tour.includes[currentLang] || tour.includes.pt}
@@ -207,7 +207,7 @@ const TourDetails = () => {
                 </div>
                 <div>
                   <h4 className="text-lg font-semibold text-red-700 mb-3">
-                    ✗ {t('tour.excludes')}
+                    ✗ {t('tour_excludes')}
                   </h4>
                   <div className="text-gray-700">
                     {tour.excludes[currentLang] || tour.excludes.pt}
