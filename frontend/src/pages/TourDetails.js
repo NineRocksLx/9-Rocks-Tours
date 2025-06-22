@@ -9,6 +9,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const TourDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t, getCurrentLanguage } = useTranslation();
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
