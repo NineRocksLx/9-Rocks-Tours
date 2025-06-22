@@ -4,21 +4,22 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import TourDetails from "./pages/TourDetails";
+import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Header />
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/tour/:id" element={<TourDetails />} />
-          <Route path="/tours" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/booking-success" element={<BookingSuccess />} />
-          <Route path="/payment/success" element={<PaymentSuccess />} />
-          <Route path="/payment/cancel" element={<PaymentCancel />} />
+          <Route path="/" element={<><Header /><HomePage /></>} />
+          <Route path="/tour/:id" element={<><Header /><TourDetails /></>} />
+          <Route path="/tours" element={<><Header /><HomePage /></>} />
+          <Route path="/about" element={<><Header /><AboutPage /></>} />
+          <Route path="/contact" element={<><Header /><ContactPage /></>} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/booking-success" element={<><Header /><BookingSuccess /></>} />
+          <Route path="/payment/success" element={<><Header /><PaymentSuccess /></>} />
+          <Route path="/payment/cancel" element={<><Header /><PaymentCancel /></>} />
         </Routes>
       </BrowserRouter>
     </div>
