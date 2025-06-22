@@ -56,7 +56,7 @@ const TourDetails = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(i18n.getCurrentLanguage() === 'pt' ? 'pt-PT' : 'en-GB', {
+    return date.toLocaleDateString(getCurrentLanguage() === 'pt' ? 'pt-PT' : 'en-GB', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
