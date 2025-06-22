@@ -339,6 +339,142 @@ class PaymentTransaction(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
+
+# ================================
+# PAYPAL UTILITIES
+# ================================
+
+def create_paypal_payment(payment_request: PaymentRequest) -> Dict[str, Any]:
+    """Create PayPal payment with Portuguese payment methods support"""
+    
+    # Check if PayPal is properly configured
+    if PAYPAL_CLIENT_ID.startswith("MOCK"):
+        # Return mock response for testing
+        mock_payment_id = f"PAY-{str(uuid.uuid4())[:8]}"
+        return {
+            "payment_id": mock_payment_id,
+            "approval_url": f"https://www.sandbox.paypal.com/cgi-bin/webscr?cmd=_express-checkout&token={mock_payment_id}",
+            "status": "created"
+        }
+    
+    # Base payment configuration
+    payment_data = {
+        "intent": "sale",
+        "payer": {
+            "payment_method": "paypal"
+        },
+        "redirect_urls": {
+            "return_url": payment_request.return_url,
+            "cancel_url": payment_request.cancel_url
+        },
+        "transactions": [{
+            "item_list": {
+                "items": [{
+                    "name": f"9 Rocks Tours - Booking {payment_request.booking_id}",
+                    "sku": payment_request.tour_id,
+                    "price": str(payment_request.amount),
+                    "currency": payment_request.currency,
+                    "quantity": 1
+                }]
+            },
+            "amount": {
+                "total": str(payment_request.amount),
+                "currency": payment_request.currency
+            },
+            "description": f"Tour booking payment for {payment_request.customer_name}"
+        }]
+    }
+    
+    # Configure for Portuguese market
+    if payment_request.payment_method == PaymentMethod.MULTIBANCO:
+        payment_data["payer"]["payment_method"] = "multibanco"
+        payment_data["payer"]["funding_instruments"] = [{
+            "multibanco": {
+                "country_code": "PT"
+            }
+        }]
+    elif payment_request.payment_method == PaymentMethod.MBWAY:
+        payment_data["payer"]["payment_method"] = "mbway"
+        payment_data["payer"]["funding_instruments"] = [{
+            "mbway": {
+                "phone_number": payment_request.phone_number,
+                "country_code": "PT"
+            }
+        }]
+    
+    try:
+        payment = paypalrestsdk.Payment(payment_data)
+        
+        if payment.create():
+            # Find approval URL
+            approval_url = None
+            for link in payment.links:
+                if link.rel == "approval_url":
+                    approval_url = link.href
+                    break
+            
+            return {
+                "payment_id": payment.id,
+                "approval_url": approval_url,
+                "status": payment.state
+            }
+        else:
+            raise HTTPException(status_code=400, detail=f"Payment creation failed: {payment.error}")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PayPal API error: {str(e)}")
+
+def execute_paypal_payment(payment_id: str, payer_id: str) -> Dict[str, Any]:
+    """Execute approved PayPal payment"""
+    
+    # Check if PayPal is properly configured
+    if PAYPAL_CLIENT_ID.startswith("MOCK"):
+        # Return mock response for testing
+        return {
+            "payment_id": payment_id,
+            "status": "approved",
+            "transaction_id": f"TXN-{str(uuid.uuid4())[:8]}"
+        }
+    
+    try:
+        payment = paypalrestsdk.Payment.find(payment_id)
+        
+        if payment.execute({"payer_id": payer_id}):
+            return {
+                "payment_id": payment.id,
+                "status": payment.state,
+                "transaction_id": payment.transactions[0].related_resources[0].sale.id
+            }
+        else:
+            raise HTTPException(status_code=400, detail=f"Payment execution failed: {payment.error}")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Payment execution error: {str(e)}")
+
+def get_paypal_payment_status(payment_id: str) -> Dict[str, Any]:
+    """Get payment status"""
+    
+    # Check if PayPal is properly configured
+    if PAYPAL_CLIENT_ID.startswith("MOCK"):
+        # Return mock response for testing
+        return {
+            "payment_id": payment_id,
+            "status": "approved",
+            "amount": "65.00",
+            "currency": "EUR"
+        }
+    
+    try:
+        payment = paypalrestsdk.Payment.find(payment_id)
+        return {
+            "payment_id": payment.id,
+            "status": payment.state,
+            "amount": payment.transactions[0].amount.total,
+            "currency": payment.transactions[0].amount.currency
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Status check error: {str(e)}")
+
 # ================================
 # ADMIN AUTH MODEL
 # ================================
