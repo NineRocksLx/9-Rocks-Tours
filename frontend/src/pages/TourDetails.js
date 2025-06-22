@@ -292,7 +292,7 @@ const TourDetails = () => {
                 className="w-full bg-indigo-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-indigo-700 transition-colors duration-200"
                 disabled={!tour.availability_dates || tour.availability_dates.length === 0}
               >
-                {i18n.t('tour.book_now')}
+                {t('tour.book_now')}
               </button>
 
               {/* Contact Info */}
