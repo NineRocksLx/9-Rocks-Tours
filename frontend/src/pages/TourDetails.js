@@ -264,7 +264,7 @@ const TourDetails = () => {
               {/* Availability */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  {i18n.t('tour.availability')}
+                  {t('tour.availability')}
                 </h3>
                 {tour.availability_dates && tour.availability_dates.length > 0 ? (
                   <div className="max-h-32 overflow-y-auto space-y-1">
