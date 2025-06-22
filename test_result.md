@@ -297,15 +297,18 @@ frontend:
 
   - task: "Payment System"
     implemented: true
-    working: true
+    working: false
     file: "src/components/PaymentComponent.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: true
           agent: "testing"
           comment: "Sistema de pagamento implementado com opções para PayPal, Multibanco e MBWay. Validação específica para MBWay (telefone) funciona corretamente. Interface de pagamento é exibida corretamente."
+        - working: false
+          agent: "testing"
+          comment: "Não foi possível testar o sistema de pagamento devido ao problema com o botão de reserva que impede o acesso ao formulário de reserva e consequentemente ao sistema de pagamento."
 
   - task: "Success/Error Pages"
     implemented: true
