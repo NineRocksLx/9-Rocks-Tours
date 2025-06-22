@@ -224,7 +224,7 @@ const TourDetails = () => {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTourTypeColor(tour.tour_type)}`}>
-                    {i18n.t(`tour.type.${tour.tour_type}`)}
+                    {t(`tour.type.${tour.tour_type}`)}
                   </span>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-indigo-600">
