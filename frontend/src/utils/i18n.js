@@ -88,7 +88,8 @@ const translations = {
     'common.previous': 'Anterior',
     'common.close': 'Fechar',
     'common.yes': 'Sim',
-    'common.no': 'Não'
+    'common.no': 'Não',
+    'common.try_again': 'Tentar Novamente'
   },
   
   en: {
