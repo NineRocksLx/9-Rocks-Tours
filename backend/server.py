@@ -31,11 +31,47 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Firebase configuration
+firebase_config = {
+    "apiKey": os.environ['FIREBASE_API_KEY'],
+    "authDomain": os.environ['FIREBASE_AUTH_DOMAIN'],
+    "projectId": os.environ['FIREBASE_PROJECT_ID'],
+    "storageBucket": os.environ['FIREBASE_STORAGE_BUCKET'],
+    "messagingSenderId": os.environ['FIREBASE_MESSAGING_SENDER_ID'],
+    "appId": os.environ['FIREBASE_APP_ID']
+}
+
+# Initialize Firebase Admin SDK (for server-side operations)
+try:
+    # Create a certificate dict for Firebase Admin
+    firebase_cred = {
+        "type": "service_account",
+        "project_id": os.environ['FIREBASE_PROJECT_ID'],
+        "client_email": f"firebase-adminsdk@{os.environ['FIREBASE_PROJECT_ID']}.iam.gserviceaccount.com",
+        "private_key": "-----BEGIN PRIVATE KEY-----\nFAKE_PRIVATE_KEY_FOR_DEMO\n-----END PRIVATE KEY-----\n",
+        "client_id": "fake_client_id"
+    }
+    
+    # For now, we'll use Firebase REST API instead of Admin SDK
+    # This avoids needing the service account key file
+    FIREBASE_WEB_API_KEY = os.environ['FIREBASE_API_KEY']
+    
+except Exception as e:
+    print(f"Firebase Admin SDK initialization skipped: {e}")
+    FIREBASE_WEB_API_KEY = os.environ['FIREBASE_API_KEY']
+
+# Google Calendar configuration
+GOOGLE_CALENDAR_API_KEY = os.environ['GOOGLE_CALENDAR_API_KEY']
+GOOGLE_CALENDAR_ID = os.environ['GOOGLE_CALENDAR_ID']
+
 # Create the main app without a prefix
 app = FastAPI(title="9 Rocks Tours API", version="1.0.0")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
+# Security scheme for Firebase JWT
+security = HTTPBearer(auto_error=False)
 
 
 # ================================
