@@ -213,13 +213,13 @@ const HomePage = () => {
                       <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                       </svg>
-                      {tour.duration_hours} {i18n.t('tour.hours')}
+                      {tour.duration_hours} {t('tour.hours')}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
                       </svg>
-                      {tour.max_participants} {i18n.t('tour.max_people')}
+                      {tour.max_participants} {t('tour.max_people')}
                     </div>
                   </div>
 
