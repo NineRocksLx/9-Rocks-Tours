@@ -113,27 +113,21 @@ backend:
     priority: "high"
     needs_retesting: false
     status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Criar models Pydantic para Tour, Booking, Admin, com suporte multi-idioma"
         - working: true
           agent: "testing"
-          comment: "Models implementados corretamente com suporte multi-idioma (pt/en/es) para name, description, short_description, route_description, includes e excludes."
+          comment: "Models criados e testados com sucesso. Suporte multi-idioma implementado corretamente."
 
   - task: "Tours CRUD API"
     implemented: true
-    working: true 
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "APIs para criar, listar, atualizar, deletar tours com filtros por ativo/idioma"
         - working: true
           agent: "testing"
-          comment: "Todas as operações CRUD para tours funcionam corretamente. Testado criar, listar, obter por ID, atualizar e deletar tours. Filtros por active, tour_type e location funcionam."
+          comment: "APIs CRUD completas e testadas. Todas as operações funcionando corretamente."
 
   - task: "Booking System API"
     implemented: true
@@ -143,12 +137,9 @@ backend:
     priority: "high"
     needs_retesting: false
     status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "Sistema de reservas com validação e preparação para pagamento"
         - working: true
           agent: "testing"
-          comment: "API de reservas funciona corretamente. Testado criar, listar, obter por ID e atualizar reservas. Validações funcionam (tour existente, data disponível). Cálculo de total_amount correto."
+          comment: "Sistema de reservas funcionando. Validações implementadas corretamente."
 
   - task: "Firebase Integration"
     implemented: false
@@ -160,7 +151,7 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Integração Firebase Admin SDK para Auth e Storage"
+          comment: "Integração Firebase Admin SDK para Auth e Storage - próximo passo"
 
   - task: "Google Calendar Integration"
     implemented: false
@@ -172,7 +163,7 @@ backend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "API para sincronizar disponibilidade com Google Calendar"
+          comment: "API para sincronizar disponibilidade com Google Calendar - próximo passo"
 
   - task: "Payment Integration"
     implemented: false
@@ -194,12 +185,9 @@ backend:
     priority: "low"
     needs_retesting: false
     status_history:
-        - working: "NA"
-          agent: "main"
-          comment: "APIs para estatísticas de reservas e export CSV"
         - working: true
           agent: "testing"
-          comment: "APIs de estatísticas e exportação CSV funcionam corretamente. Testado obter estatísticas (total_bookings, total_revenue, bookings_by_tour, bookings_by_date, bookings_by_status) e exportar CSV."
+          comment: "APIs de estatísticas e export CSV implementadas e testadas"
 
   - task: "Admin Authentication"
     implemented: true
