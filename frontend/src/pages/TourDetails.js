@@ -199,7 +199,7 @@ const TourDetails = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-lg font-semibold text-green-700 mb-3">
-                    ✓ {i18n.t('tour.includes')}
+                    ✓ {t('tour.includes')}
                   </h4>
                   <div className="text-gray-700">
                     {tour.includes[currentLang] || tour.includes.pt}
