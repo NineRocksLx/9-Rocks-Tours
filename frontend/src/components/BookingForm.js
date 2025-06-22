@@ -154,7 +154,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                   </div>
                   <div>
                     <label htmlFor="customer_email" className="block text-sm font-medium text-gray-700 mb-1">
-                      {i18n.t('booking.customer_email')} *
+                      {t('booking.customer_email')} *
                     </label>
                     <input
                       type="email"
