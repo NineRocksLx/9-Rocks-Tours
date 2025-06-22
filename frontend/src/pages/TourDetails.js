@@ -207,7 +207,7 @@ const TourDetails = () => {
                 </div>
                 <div>
                   <h4 className="text-lg font-semibold text-red-700 mb-3">
-                    ✗ {i18n.t('tour.excludes')}
+                    ✗ {t('tour.excludes')}
                   </h4>
                   <div className="text-gray-700">
                     {tour.excludes[currentLang] || tour.excludes.pt}
