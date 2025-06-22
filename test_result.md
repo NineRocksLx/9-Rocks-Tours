@@ -385,15 +385,18 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
   current_focus:
+    - "Multi-language Support"
+    - "Tour Details Page"
     - "Booking Interface"
     - "Payment System"
-    - "Multi-language Support"
   stuck_tasks:
+    - "Multi-language Support"
+    - "Tour Details Page"
     - "Booking Interface"
     - "Payment System"
   test_all: false
@@ -410,3 +413,7 @@ agent_communication:
       message: "Testei o frontend da 9 Rocks Tours e todas as funcionalidades principais estão implementadas e funcionando corretamente. A homepage carrega com a listagem de tours e filtros por tipo. A navegação responsiva funciona em desktop e mobile. O sistema de idiomas com seletor de bandeiras (PT/EN/ES) está funcionando. A página de detalhes do tour exibe as informações corretamente. O formulário de reserva valida os campos e calcula o preço automaticamente. O sistema de pagamento oferece opções de PayPal, Multibanco e MBWay com validações específicas. As páginas de sucesso e erro são exibidas corretamente. O layout é responsivo em diferentes tamanhos de tela. Não foram encontrados erros críticos durante os testes."
     - agent: "testing"
       message: "Realizei testes completos do sistema 9 Rocks Tours com dados reais. A homepage exibe corretamente 6 tours com informações e imagens. Os filtros por tipo (gastronomic, cultural, mixed) funcionam corretamente. A página de detalhes do tour mostra informações completas, incluindo preço, descrição, duração, localização e disponibilidade. A galeria de imagens funciona corretamente. O painel de administração permite login com as credenciais fornecidas (admin/9rocks2025) e exibe os tours e reservas. As estatísticas mostram dados reais e o botão de exportação CSV está disponível. O sistema multi-idioma permite alternar entre PT/EN/ES. Todas as páginas de navegação e sucesso/erro funcionam corretamente. Encontrei um problema no sistema de reservas: o botão 'Reservar Agora' não está funcionando corretamente, aparecendo como 'tour.book_now' em vez do texto traduzido, o que impede o teste completo do fluxo de reserva."
+    - agent: "main"
+      message: "Obrigado pelo feedback! Vou corrigir o problema com o botão 'Reservar Agora' que está mostrando a chave de tradução 'tour.book_now' em vez do texto traduzido. Isso deve estar relacionado ao sistema de idiomas."
+    - agent: "testing"
+      message: "Testei o sistema após a correção do método getCurrentLanguage() no arquivo i18n.js. Encontrei vários problemas: 1) As traduções ainda não estão funcionando corretamente - os textos aparecem como chaves de tradução (home.title, home.subtitle, etc.) em vez do texto traduzido; 2) Não foi possível acessar a página de detalhes do tour - ao tentar acessar diretamente a página de um tour específico (ex: /tour/1), recebemos erro 404 do backend; 3) Devido aos problemas anteriores, não foi possível testar o formulário de reserva e o sistema de pagamento. O painel admin continua funcionando corretamente."
