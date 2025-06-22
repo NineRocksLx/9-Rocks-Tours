@@ -66,6 +66,21 @@ except Exception as e:
 GOOGLE_CALENDAR_API_KEY = os.environ['GOOGLE_CALENDAR_API_KEY']
 GOOGLE_CALENDAR_ID = os.environ['GOOGLE_CALENDAR_ID']
 
+# PayPal configuration
+PAYPAL_CLIENT_ID = os.environ['PAYPAL_CLIENT_ID']
+PAYPAL_CLIENT_SECRET = os.environ['PAYPAL_CLIENT_SECRET']
+PAYPAL_MODE = os.environ['PAYPAL_MODE']
+
+# Configure PayPal SDK
+try:
+    paypalrestsdk.configure({
+        "mode": PAYPAL_MODE,  # sandbox or live
+        "client_id": PAYPAL_CLIENT_ID,
+        "client_secret": PAYPAL_CLIENT_SECRET
+    })
+except Exception as e:
+    print(f"PayPal configuration warning: {e}")
+
 # Create the main app without a prefix
 app = FastAPI(title="9 Rocks Tours API", version="1.0.0")
 
