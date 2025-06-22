@@ -254,6 +254,28 @@ class Booking(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 # ================================
+# FIREBASE MODELS
+# ================================
+
+class ImageUpload(BaseModel):
+    image_data: str  # base64 encoded image
+    filename: str
+    tour_id: Optional[str] = None
+
+class ImageUploadResponse(BaseModel):
+    image_url: str
+    filename: str
+    message: str
+
+class CalendarAvailability(BaseModel):
+    start_date: str
+    end_date: str
+
+class CalendarAvailabilityResponse(BaseModel):
+    available_dates: List[str]
+    calendar_id: str
+
+# ================================
 # ADMIN AUTH MODEL
 # ================================
 
