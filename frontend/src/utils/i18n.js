@@ -178,7 +178,8 @@ const translations = {
     'common.previous': 'Previous',
     'common.close': 'Close',
     'common.yes': 'Yes',
-    'common.no': 'No'
+    'common.no': 'No',
+    'common.try_again': 'Try Again'
   },
   
   es: {
