@@ -130,7 +130,7 @@ const HomePage = () => {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            {t('tour.type.gastronomic')}
+            {t('tour_type_gastronomic')}
           </button>
           <button
             onClick={() => setSelectedType('cultural')}
@@ -140,7 +140,7 @@ const HomePage = () => {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            {t('tour.type.cultural')}
+            {t('tour_type_cultural')}
           </button>
           <button
             onClick={() => setSelectedType('mixed')}
@@ -150,7 +150,7 @@ const HomePage = () => {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            {t('tour.type.mixed')}
+            {t('tour_type_mixed')}
           </button>
         </div>
 
