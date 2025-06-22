@@ -20,7 +20,11 @@ export const useTranslation = () => {
     return i18n.t(key, replacements);
   };
 
-  return { t, language };
+  const getCurrentLanguage = () => {
+    return language;
+  };
+
+  return { t, language, getCurrentLanguage };
 };
 
 export default useTranslation;
