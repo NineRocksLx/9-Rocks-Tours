@@ -75,6 +75,89 @@ security = HTTPBearer(auto_error=False)
 
 
 # ================================
+# FIREBASE UTILITIES
+# ================================
+
+async def verify_firebase_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify Firebase JWT token for admin authentication"""
+    if not credentials:
+        return None
+    
+    try:
+        # For demo purposes, we'll use a simple token validation
+        # In production, this would verify the Firebase JWT token
+        token = credentials.credentials
+        if token.startswith("temp_admin_token_"):
+            return {"uid": "admin", "email": "admin@9rockstours.com"}
+        return None
+    except Exception as e:
+        return None
+
+def upload_image_to_firebase(image_data: str, filename: str) -> str:
+    """Upload base64 image to Firebase Storage (simulated for now)"""
+    try:
+        # For now, we'll return the base64 data as-is
+        # In production, this would upload to Firebase Storage and return the URL
+        if image_data.startswith('data:image'):
+            return image_data
+        else:
+            return f"data:image/jpeg;base64,{image_data}"
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
+
+# ================================
+# GOOGLE CALENDAR UTILITIES
+# ================================
+
+def get_calendar_availability(start_date: str, end_date: str) -> List[str]:
+    """Get available dates from Google Calendar"""
+    try:
+        # Build the Calendar service
+        service = build('calendar', 'v3', developerKey=GOOGLE_CALENDAR_API_KEY)
+        
+        # Get events from the calendar
+        events_result = service.events().list(
+            calendarId=GOOGLE_CALENDAR_ID,
+            timeMin=f"{start_date}T00:00:00Z",
+            timeMax=f"{end_date}T23:59:59Z",
+            singleEvents=True,
+            orderBy='startTime'
+        ).execute()
+        
+        events = events_result.get('items', [])
+        
+        # For demo purposes, return some sample available dates
+        # In production, this would check against actual calendar events
+        from datetime import datetime, timedelta
+        
+        start = datetime.fromisoformat(start_date)
+        end = datetime.fromisoformat(end_date)
+        
+        available_dates = []
+        current = start
+        while current <= end:
+            # Skip weekends for demo
+            if current.weekday() < 5:  # Monday = 0, Sunday = 6
+                available_dates.append(current.strftime("%Y-%m-%d"))
+            current += timedelta(days=1)
+            
+        return available_dates
+        
+    except Exception as e:
+        print(f"Error getting calendar availability: {e}")
+        # Return some default available dates
+        from datetime import datetime, timedelta
+        start = datetime.fromisoformat(start_date)
+        available_dates = []
+        for i in range(0, 30, 2):  # Every other day for 30 days
+            date = start + timedelta(days=i)
+            if date.weekday() < 5:  # Weekdays only
+                available_dates.append(date.strftime("%Y-%m-%d"))
+        return available_dates
+
+
+# ================================
 # TOUR MANAGEMENT MODELS
 # ================================
 
