@@ -6,6 +6,7 @@ import { useTranslation } from '../utils/useTranslation';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const HomePage = () => {
+  const { t, getCurrentLanguage } = useTranslation();
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
