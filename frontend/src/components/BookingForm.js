@@ -262,7 +262,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                     onClick={onClose}
                     className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
                   >
-                    {t('common.cancel')}
+                    {t('common_cancel')}
                   </button>
                   <button
                     type="submit"
