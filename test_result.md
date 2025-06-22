@@ -309,11 +309,11 @@ frontend:
 
   - task: "Booking Interface"
     implemented: true
-    working: false
+    working: true
     file: "src/components/BookingForm.js"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
@@ -330,14 +330,17 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Embora o botão 'Reservar Agora' agora esteja traduzido corretamente na página de detalhes do tour, ao clicar nele ocorre um erro JavaScript: 't is not defined' no componente BookingForm. Este erro impede que o formulário de reserva seja exibido e testado completamente."
+        - working: true
+          agent: "testing"
+          comment: "Após a correção das chaves de tradução no BookingForm.js (mudando de notação com ponto para notação com underscore), o formulário de reserva agora funciona corretamente. Testado o fluxo completo: o modal abre ao clicar em 'Reservar Agora', os campos do formulário são exibidos corretamente com suas respectivas traduções, é possível preencher todos os campos, selecionar data e número de participantes, e o cálculo do preço total é atualizado automaticamente."
 
   - task: "Payment System"
     implemented: true
-    working: false
+    working: true
     file: "src/components/PaymentComponent.js"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: true
           agent: "testing"
@@ -351,6 +354,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Não foi possível testar o sistema de pagamento devido ao erro no formulário de reserva. Como o formulário de reserva não abre devido ao erro 't is not defined', não é possível acessar o componente de pagamento para testá-lo."
+        - working: true
+          agent: "testing"
+          comment: "Após a correção do formulário de reserva, o sistema de pagamento agora funciona corretamente. Ao clicar em 'Continuar para Pagamento', o sistema exibe a segunda etapa com as opções de pagamento (PayPal, Multibanco e MBWay). É possível selecionar cada método de pagamento e, no caso do MBWay, o campo de telefone é exibido e validado corretamente."
 
   - task: "Success/Error Pages"
     implemented: true
