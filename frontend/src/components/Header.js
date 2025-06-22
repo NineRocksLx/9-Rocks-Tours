@@ -9,10 +9,10 @@ const Header = () => {
 
   const { t } = useTranslation();
   const navigation = [
-    { name: t('nav.home'), href: '/' },
-    { name: t('nav.tours'), href: '/tours' },
-    { name: t('nav.about'), href: '/about' },
-    { name: t('nav.contact'), href: '/contact' },
+    { name: t('nav_home'), href: '/' },
+    { name: t('nav_tours'), href: '/tours' },
+    { name: t('nav_about'), href: '/about' },
+    { name: t('nav_contact'), href: '/contact' },
   ];
 
   const isActive = (path) => {
