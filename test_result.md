@@ -246,6 +246,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Página de detalhes do tour carrega corretamente. Exibe informações do tour, galeria de imagens, descrição, preço e disponibilidade. Botão de reserva abre o modal de formulário corretamente."
+        - working: true
+          agent: "testing"
+          comment: "Testado com dados reais. A página de detalhes do tour mostra informações completas, incluindo preço, descrição, duração, localização e disponibilidade. A galeria de imagens funciona corretamente. Encontrado um problema com o botão 'Reservar Agora' que aparece como 'tour.book_now' em vez do texto traduzido."
 
   - task: "Admin Panel"
     implemented: false
