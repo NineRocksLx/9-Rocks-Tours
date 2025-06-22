@@ -251,8 +251,8 @@ frontend:
           comment: "Testado com dados reais. A página de detalhes do tour mostra informações completas, incluindo preço, descrição, duração, localização e disponibilidade. A galeria de imagens funciona corretamente. Encontrado um problema com o botão 'Reservar Agora' que aparece como 'tour.book_now' em vez do texto traduzido."
 
   - task: "Admin Panel"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "src/components/Admin.js"
     stuck_count: 0
     priority: "high"
@@ -261,6 +261,9 @@ frontend:
         - working: "NA"
           agent: "main"
           comment: "Painel admin para gestão completa de tours, com upload de imagens"
+        - working: true
+          agent: "testing"
+          comment: "Testado com credenciais fornecidas (admin/9rocks2025). O painel de administração permite login e exibe os 6 tours criados. A aba de reservas mostra 4 reservas. As estatísticas mostram dados reais e o botão de exportação CSV está disponível."
 
   - task: "Multi-language Support"
     implemented: true
