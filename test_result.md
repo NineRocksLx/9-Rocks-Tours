@@ -279,6 +279,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Sistema de idiomas implementado e funcionando. Seletor de idiomas com bandeiras (PT/EN/ES) funciona corretamente. Tradução de textos é aplicada em toda a interface."
+        - working: true
+          agent: "testing"
+          comment: "Testado com dados reais. O sistema multi-idioma permite alternar entre PT/EN/ES. Encontrado um problema com algumas chaves de tradução que não estão sendo resolvidas corretamente, como 'tour.book_now'."
 
   - task: "Booking Interface"
     implemented: true
