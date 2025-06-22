@@ -279,6 +279,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Testado novamente após correção do getCurrentLanguage(). O painel admin continua funcionando corretamente. Login funciona, exibe 6 tours, 4 reservas, estatísticas corretas e o botão de exportação CSV está disponível."
+        - working: true
+          agent: "testing"
+          comment: "Testado novamente após as correções finais. O painel admin continua funcionando corretamente. Login com as credenciais (admin/9rocks2025) funciona, exibe 6 tours na aba Tours e 4 reservas na aba Reservas. A aba Estatísticas mostra dados corretos (4 reservas, 6 tours ativos, receita total e média). O botão 'Exportar CSV' está disponível na aba Reservas."
 
   - task: "Multi-language Support"
     implemented: true
