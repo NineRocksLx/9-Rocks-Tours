@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import i18n from '../utils/i18n';
+import { useTranslation } from '../utils/useTranslation';
 import PaymentComponent from './PaymentComponent';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
