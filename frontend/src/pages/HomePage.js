@@ -84,7 +84,7 @@ const HomePage = () => {
               {t('home_title')}
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-              {t('home.subtitle')}
+              {t('home_subtitle')}
             </p>
             <p className="text-lg mb-12 max-w-2xl mx-auto opacity-90">
               {t('home.description')}
