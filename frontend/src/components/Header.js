@@ -7,11 +7,12 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  const { t } = useTranslation();
   const navigation = [
-    { name: i18n.t('nav.home'), href: '/' },
-    { name: i18n.t('nav.tours'), href: '/tours' },
-    { name: i18n.t('nav.about'), href: '/about' },
-    { name: i18n.t('nav.contact'), href: '/contact' },
+    { name: t('nav.home'), href: '/' },
+    { name: t('nav.tours'), href: '/tours' },
+    { name: t('nav.about'), href: '/about' },
+    { name: t('nav.contact'), href: '/contact' },
   ];
 
   const isActive = (path) => {
