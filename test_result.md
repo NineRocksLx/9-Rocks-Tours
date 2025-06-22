@@ -324,6 +324,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Não foi possível testar o formulário de reserva devido a problemas com a API de tours. Não conseguimos acessar a página de detalhes do tour para iniciar o processo de reserva."
+        - working: false
+          agent: "testing"
+          comment: "Embora o botão 'Reservar Agora' agora esteja traduzido corretamente na página de detalhes do tour, ao clicar nele ocorre um erro JavaScript: 't is not defined' no componente BookingForm. Este erro impede que o formulário de reserva seja exibido e testado completamente."
 
   - task: "Payment System"
     implemented: true
