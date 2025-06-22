@@ -158,7 +158,7 @@ const HomePage = () => {
         {filteredTours.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-500 text-lg">
-              {i18n.t('message.no_tours')}
+              {t('message.no_tours')}
             </div>
           </div>
         ) : (
