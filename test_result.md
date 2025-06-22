@@ -282,11 +282,11 @@ frontend:
 
   - task: "Multi-language Support"
     implemented: true
-    working: false
+    working: true
     file: "src/utils/i18n.js"
-    stuck_count: 1
+    stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
@@ -300,6 +300,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Após correção do getCurrentLanguage(), o seletor de idiomas funciona corretamente (muda entre PT/EN/ES), mas as traduções não são aplicadas. Os textos aparecem como chaves de tradução (home.title, home.subtitle, etc.) em vez do texto traduzido."
+        - working: true
+          agent: "testing"
+          comment: "Após as correções, o sistema de idiomas agora funciona perfeitamente. Testado a troca entre PT → EN → ES e verificado que os textos mudam corretamente. Por exemplo, 'Gastronômico' (PT) → 'Gastronomic' (EN) → 'Gastronómico' (ES). O seletor de idiomas com bandeiras funciona corretamente e todas as traduções são aplicadas em toda a interface."
 
   - task: "Booking Interface"
     implemented: true
