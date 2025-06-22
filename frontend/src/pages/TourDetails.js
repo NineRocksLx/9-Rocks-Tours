@@ -92,7 +92,7 @@ const TourDetails = () => {
     return null;
   }
 
-  const currentLang = i18n.getCurrentLanguage();
+  const currentLang = getCurrentLanguage();
 
   return (
     <div className="min-h-screen bg-gray-50">
