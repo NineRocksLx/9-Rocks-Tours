@@ -67,7 +67,7 @@ const HomePage = () => {
             onClick={fetchTours}
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
           >
-            {i18n.t('common.try_again')}
+            {t('common.try_again')}
           </button>
         </div>
       </div>
@@ -81,19 +81,19 @@ const HomePage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              {i18n.t('home.title')}
+              {t('home.title')}
             </h1>
             <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-              {i18n.t('home.subtitle')}
+              {t('home.subtitle')}
             </p>
             <p className="text-lg mb-12 max-w-2xl mx-auto opacity-90">
-              {i18n.t('home.description')}
+              {t('home.description')}
             </p>
             <a 
               href="#tours" 
               className="inline-block bg-white text-indigo-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors duration-300"
             >
-              {i18n.t('home.cta')}
+              {t('home.cta')}
             </a>
           </div>
         </div>
