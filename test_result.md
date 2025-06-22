@@ -345,6 +345,9 @@ frontend:
         - working: false
           agent: "testing"
           comment: "Não foi possível testar o sistema de pagamento devido a problemas com a API de tours e o formulário de reserva."
+        - working: false
+          agent: "testing"
+          comment: "Não foi possível testar o sistema de pagamento devido ao erro no formulário de reserva. Como o formulário de reserva não abre devido ao erro 't is not defined', não é possível acessar o componente de pagamento para testá-lo."
 
   - task: "Success/Error Pages"
     implemented: true
