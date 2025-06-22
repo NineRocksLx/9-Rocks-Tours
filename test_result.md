@@ -101,3 +101,182 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Construir website da 9 Rocks Tours - empresa de tours gastronômicos e culturais em Portugal. Sistema completo com área admin para gestão de tours, página pública para listagem/detalhes, sistema de reservas com pagamento integrado (PayPal, Multibanco, MBWay, cartões), multi-idioma (PT/EN/ES), integração Firebase (Storage/Auth), Google Calendar para disponibilidade, upload de imagens drag&drop, estatísticas e export CSV."
+
+backend:
+  - task: "Tour Management Models"
+    implemented: false
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Criar models Pydantic para Tour, Booking, Admin, com suporte multi-idioma"
+
+  - task: "Tours CRUD API"
+    implemented: false
+    working: "NA" 
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "APIs para criar, listar, atualizar, deletar tours com filtros por ativo/idioma"
+
+  - task: "Booking System API"
+    implemented: false
+    working: "NA"
+    file: "server.py" 
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Sistema de reservas com validação e preparação para pagamento"
+
+  - task: "Firebase Integration"
+    implemented: false
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Integração Firebase Admin SDK para Auth e Storage"
+
+  - task: "Google Calendar Integration"
+    implemented: false
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "API para sincronizar disponibilidade com Google Calendar"
+
+  - task: "Payment Integration"
+    implemented: false
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Integração PayPal, Multibanco, MBWay e cartões (requer integration_playbook_expert_v2)"
+
+  - task: "Statistics and Export API"
+    implemented: false
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "APIs para estatísticas de reservas e export CSV"
+
+frontend:
+  - task: "Tour Listing Page"
+    implemented: false
+    working: "NA"
+    file: "src/components/TourList.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Página inicial com cards de tours, multi-idioma, design responsivo"
+
+  - task: "Tour Details Page"
+    implemented: false
+    working: "NA"
+    file: "src/components/TourDetails.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Página detalhada do tour com galeria, descrição, preço, disponibilidade"
+
+  - task: "Admin Panel"
+    implemented: false
+    working: "NA"
+    file: "src/components/Admin.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Painel admin para gestão completa de tours, com upload de imagens"
+
+  - task: "Multi-language Support"
+    implemented: false
+    working: "NA"
+    file: "src/utils/i18n.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Sistema de tradução PT/EN/ES com seletor de bandeiras"
+
+  - task: "Booking Interface"
+    implemented: false
+    working: "NA"
+    file: "src/components/BookingForm.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Formulário de reserva integrado com sistema de pagamento"
+
+  - task: "Image Upload Component"
+    implemented: false
+    working: "NA"
+    file: "src/components/ImageUpload.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Componente drag & drop para upload de imagens usando Firebase Storage"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 0
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Tour Management Models"
+    - "Tours CRUD API"
+    - "Booking System API"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+      message: "Iniciando projeto 9 Rocks Tours. Credenciais Firebase e Google Calendar recebidas. Começando com backend - models e APIs principais."
