@@ -619,6 +619,107 @@ async def export_bookings_csv():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ================================
+# FIREBASE ENDPOINTS
+# ================================
+
+@api_router.post("/admin/upload-image", response_model=ImageUploadResponse)
+async def upload_tour_image(image_upload: ImageUpload, user=Depends(verify_firebase_token)):
+    """Upload image to Firebase Storage (Admin only)"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    try:
+        # Upload image to Firebase Storage
+        image_url = upload_image_to_firebase(image_upload.image_data, image_upload.filename)
+        
+        # If tour_id provided, add image to tour
+        if image_upload.tour_id:
+            tour = await db.tours.find_one({"id": image_upload.tour_id})
+            if tour:
+                images = tour.get("images", [])
+                images.append(image_url)
+                await db.tours.update_one(
+                    {"id": image_upload.tour_id},
+                    {"$set": {"images": images, "updated_at": datetime.utcnow()}}
+                )
+        
+        return ImageUploadResponse(
+            image_url=image_url,
+            filename=image_upload.filename,
+            message="Image uploaded successfully"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/firebase-config")
+async def get_firebase_config():
+    """Get Firebase configuration for frontend"""
+    return {
+        "apiKey": os.environ['FIREBASE_API_KEY'],
+        "authDomain": os.environ['FIREBASE_AUTH_DOMAIN'],
+        "projectId": os.environ['FIREBASE_PROJECT_ID'],
+        "storageBucket": os.environ['FIREBASE_STORAGE_BUCKET'],
+        "messagingSenderId": os.environ['FIREBASE_MESSAGING_SENDER_ID'],
+        "appId": os.environ['FIREBASE_APP_ID']
+    }
+
+
+# ================================
+# GOOGLE CALENDAR ENDPOINTS
+# ================================
+
+@api_router.post("/admin/calendar/availability", response_model=CalendarAvailabilityResponse)
+async def get_calendar_availability_range(availability_request: CalendarAvailability, user=Depends(verify_firebase_token)):
+    """Get available dates from Google Calendar (Admin only)"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    try:
+        available_dates = get_calendar_availability(
+            availability_request.start_date,
+            availability_request.end_date
+        )
+        
+        return CalendarAvailabilityResponse(
+            available_dates=available_dates,
+            calendar_id=GOOGLE_CALENDAR_ID
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/tours/{tour_id}/availability")
+async def update_tour_availability(tour_id: str, availability_request: CalendarAvailability, user=Depends(verify_firebase_token)):
+    """Update tour availability based on Google Calendar (Admin only)"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    try:
+        # Get availability from Google Calendar
+        available_dates = get_calendar_availability(
+            availability_request.start_date,
+            availability_request.end_date
+        )
+        
+        # Update tour with new availability
+        result = await db.tours.update_one(
+            {"id": tour_id},
+            {"$set": {"availability_dates": available_dates, "updated_at": datetime.utcnow()}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Tour not found")
+        
+        # Return updated tour
+        updated_tour = await db.tours.find_one({"id": tour_id})
+        return Tour(**updated_tour)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Keep original test endpoints
 @api_router.get("/")
 async def root():
