@@ -106,8 +106,8 @@ user_problem_statement: "Construir website da 9 Rocks Tours - empresa de tours g
 
 backend:
   - task: "Tour Management Models"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
@@ -116,10 +116,13 @@ backend:
         - working: "NA"
           agent: "main"
           comment: "Criar models Pydantic para Tour, Booking, Admin, com suporte multi-idioma"
+        - working: true
+          agent: "testing"
+          comment: "Models implementados corretamente com suporte multi-idioma (pt/en/es) para name, description, short_description, route_description, includes e excludes."
 
   - task: "Tours CRUD API"
-    implemented: false
-    working: "NA" 
+    implemented: true
+    working: true 
     file: "server.py"
     stuck_count: 0
     priority: "high"
@@ -128,10 +131,13 @@ backend:
         - working: "NA"
           agent: "main"
           comment: "APIs para criar, listar, atualizar, deletar tours com filtros por ativo/idioma"
+        - working: true
+          agent: "testing"
+          comment: "Todas as operações CRUD para tours funcionam corretamente. Testado criar, listar, obter por ID, atualizar e deletar tours. Filtros por active, tour_type e location funcionam."
 
   - task: "Booking System API"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "server.py" 
     stuck_count: 0
     priority: "high"
@@ -140,6 +146,9 @@ backend:
         - working: "NA"
           agent: "main"
           comment: "Sistema de reservas com validação e preparação para pagamento"
+        - working: true
+          agent: "testing"
+          comment: "API de reservas funciona corretamente. Testado criar, listar, obter por ID e atualizar reservas. Validações funcionam (tour existente, data disponível). Cálculo de total_amount correto."
 
   - task: "Firebase Integration"
     implemented: false
@@ -178,8 +187,8 @@ backend:
           comment: "Integração PayPal, Multibanco, MBWay e cartões (requer integration_playbook_expert_v2)"
 
   - task: "Statistics and Export API"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "low"
@@ -188,6 +197,33 @@ backend:
         - working: "NA"
           agent: "main"
           comment: "APIs para estatísticas de reservas e export CSV"
+        - working: true
+          agent: "testing"
+          comment: "APIs de estatísticas e exportação CSV funcionam corretamente. Testado obter estatísticas (total_bookings, total_revenue, bookings_by_tour, bookings_by_date, bookings_by_status) e exportar CSV."
+
+  - task: "Admin Authentication"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "API de login admin funciona corretamente. Testado login com credenciais corretas e incorretas."
+
+  - task: "Basic API Endpoints"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "Endpoints básicos (/api/ e /api/health) funcionam corretamente."
 
 frontend:
   - task: "Tour Listing Page"
@@ -265,7 +301,7 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 0
+  test_sequence: 1
   run_ui: false
 
 test_plan:
@@ -273,6 +309,9 @@ test_plan:
     - "Tour Management Models"
     - "Tours CRUD API"
     - "Booking System API"
+    - "Statistics and Export API"
+    - "Admin Authentication"
+    - "Basic API Endpoints"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -280,3 +319,5 @@ test_plan:
 agent_communication:
     - agent: "main"
       message: "Iniciando projeto 9 Rocks Tours. Credenciais Firebase e Google Calendar recebidas. Começando com backend - models e APIs principais."
+    - agent: "testing"
+      message: "Testei todos os endpoints da API backend implementados até o momento. Todos os testes passaram com sucesso. Os modelos de dados estão corretamente implementados com suporte multi-idioma. As operações CRUD para tours e bookings funcionam conforme esperado. Os endpoints de admin (login, estatísticas e exportação) também estão funcionando corretamente. Os endpoints básicos (/api/ e /api/health) respondem adequadamente. Ainda faltam implementar as integrações com Firebase, Google Calendar e sistemas de pagamento."
