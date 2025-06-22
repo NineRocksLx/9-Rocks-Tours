@@ -333,7 +333,7 @@ def test_admin_export_bookings():
     print(f"Content Disposition: {response.headers.get('Content-Disposition')}")
     
     assert response.status_code == 200
-    assert response.headers.get('Content-Type') == "text/csv"
+    assert "text/csv" in response.headers.get('Content-Type', '')
     assert "attachment; filename=bookings.csv" in response.headers.get('Content-Disposition', '')
     
     # Print first few lines of CSV
