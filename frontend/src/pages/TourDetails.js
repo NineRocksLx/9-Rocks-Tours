@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import i18n from '../utils/i18n';
+import { useTranslation } from '../utils/useTranslation';
 import BookingForm from '../components/BookingForm';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
