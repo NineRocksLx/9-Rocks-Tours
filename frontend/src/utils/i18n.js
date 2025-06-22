@@ -4,272 +4,272 @@
 const translations = {
   pt: {
     // Navigation & Header
-    'nav.home': 'Início',
-    'nav.tours': 'Tours',
-    'nav.about': 'Sobre Nós',
-    'nav.contact': 'Contacto',
-    'nav.admin': 'Admin',
+    'nav_home': 'Início',
+    'nav_tours': 'Tours',
+    'nav_about': 'Sobre Nós',
+    'nav_contact': 'Contacto',
+    'nav_admin': 'Admin',
     
     // Homepage
-    'home.title': '9 Rocks Tours',
-    'home.subtitle': 'Descubra Portugal de forma autêntica',
-    'home.description': 'Tours gastronômicos e culturais únicos pelos tesouros escondidos de Portugal',
-    'home.cta': 'Explorar Tours',
-    'home.featured_tours': 'Tours em Destaque',
+    'home_title': '9 Rocks Tours',
+    'home_subtitle': 'Descubra Portugal de forma autêntica',
+    'home_description': 'Tours gastronômicos e culturais únicos pelos tesouros escondidos de Portugal',
+    'home_cta': 'Explorar Tours',
+    'home_featured_tours': 'Tours em Destaque',
     
     // Tour Types
-    'tour.type.gastronomic': 'Gastronômico',
-    'tour.type.cultural': 'Cultural', 
-    'tour.type.mixed': 'Misto',
-    'tour.type.custom': 'Personalizado',
+    'tour_type_gastronomic': 'Gastronômico',
+    'tour_type_cultural': 'Cultural', 
+    'tour_type_mixed': 'Misto',
+    'tour_type_custom': 'Personalizado',
     
     // Tour Details
-    'tour.duration': 'Duração',
-    'tour.price': 'Preço',
-    'tour.participants': 'Participantes',
-    'tour.location': 'Localização',
-    'tour.includes': 'Incluído',
-    'tour.excludes': 'Não incluído',
-    'tour.route': 'Percurso',
-    'tour.availability': 'Disponibilidade',
-    'tour.book_now': 'Reservar Agora',
-    'tour.view_details': 'Ver Detalhes',
-    'tour.hours': 'horas',
-    'tour.max_people': 'máx. pessoas',
+    'tour_duration': 'Duração',
+    'tour_price': 'Preço',
+    'tour_participants': 'Participantes',
+    'tour_location': 'Localização',
+    'tour_includes': 'Incluído',
+    'tour_excludes': 'Não incluído',
+    'tour_route': 'Percurso',
+    'tour_availability': 'Disponibilidade',
+    'tour_book_now': 'Reservar Agora',
+    'tour_view_details': 'Ver Detalhes',
+    'tour_hours': 'horas',
+    'tour_max_people': 'máx. pessoas',
     
     // Booking Form
-    'booking.title': 'Reservar Tour',
-    'booking.customer_name': 'Nome Completo',
-    'booking.customer_email': 'Email',
-    'booking.customer_phone': 'Telefone',
-    'booking.selected_date': 'Data Selecionada',
-    'booking.participants': 'Número de Participantes',
-    'booking.special_requests': 'Pedidos Especiais',
-    'booking.payment_method': 'Método de Pagamento',
-    'booking.submit': 'Confirmar Reserva',
-    'booking.total': 'Total',
+    'booking_title': 'Reservar Tour',
+    'booking_customer_name': 'Nome Completo',
+    'booking_customer_email': 'Email',
+    'booking_customer_phone': 'Telefone',
+    'booking_selected_date': 'Data Selecionada',
+    'booking_participants': 'Número de Participantes',
+    'booking_special_requests': 'Pedidos Especiais',
+    'booking_payment_method': 'Método de Pagamento',
+    'booking_submit': 'Confirmar Reserva',
+    'booking_total': 'Total',
     
     // Payment
-    'payment.paypal': 'PayPal',
-    'payment.multibanco': 'Multibanco',
-    'payment.mbway': 'MBWay',
-    'payment.credit_card': 'Cartão de Crédito',
-    'payment.processing': 'A processar pagamento...',
-    'payment.success': 'Pagamento realizado com sucesso!',
-    'payment.error': 'Erro no pagamento. Tente novamente.',
+    'payment_paypal': 'PayPal',
+    'payment_multibanco': 'Multibanco',
+    'payment_mbway': 'MBWay',
+    'payment_credit_card': 'Cartão de Crédito',
+    'payment_processing': 'A processar pagamento...',
+    'payment_success': 'Pagamento realizado com sucesso!',
+    'payment_error': 'Erro no pagamento. Tente novamente.',
     
     // Admin Panel
-    'admin.title': 'Painel de Administração',
-    'admin.login': 'Entrar',
-    'admin.logout': 'Sair',
-    'admin.tours': 'Gestão de Tours',
-    'admin.bookings': 'Reservas',
-    'admin.stats': 'Estatísticas',
-    'admin.add_tour': 'Adicionar Tour',
-    'admin.edit_tour': 'Editar Tour',
-    'admin.delete_tour': 'Eliminar Tour',
-    'admin.active': 'Ativo',
-    'admin.inactive': 'Inativo',
+    'admin_title': 'Painel de Administração',
+    'admin_login': 'Entrar',
+    'admin_logout': 'Sair',
+    'admin_tours': 'Gestão de Tours',
+    'admin_bookings': 'Reservas',
+    'admin_stats': 'Estatísticas',
+    'admin_add_tour': 'Adicionar Tour',
+    'admin_edit_tour': 'Editar Tour',
+    'admin_delete_tour': 'Eliminar Tour',
+    'admin_active': 'Ativo',
+    'admin_inactive': 'Inativo',
     
     // Messages
-    'message.success': 'Sucesso!',
-    'message.error': 'Erro!',
-    'message.loading': 'A carregar...',
-    'message.no_tours': 'Não há tours disponíveis.',
-    'message.book_success': 'Reserva realizada com sucesso!',
+    'message_success': 'Sucesso!',
+    'message_error': 'Erro!',
+    'message_loading': 'A carregar...',
+    'message_no_tours': 'Não há tours disponíveis.',
+    'message_book_success': 'Reserva realizada com sucesso!',
     
     // Common
-    'common.save': 'Guardar',
-    'common.cancel': 'Cancelar',
-    'common.delete': 'Eliminar',
-    'common.edit': 'Editar',
-    'common.back': 'Voltar',
-    'common.next': 'Seguinte',
-    'common.previous': 'Anterior',
-    'common.close': 'Fechar',
-    'common.yes': 'Sim',
-    'common.no': 'Não',
-    'common.try_again': 'Tentar Novamente'
+    'common_save': 'Guardar',
+    'common_cancel': 'Cancelar',
+    'common_delete': 'Eliminar',
+    'common_edit': 'Editar',
+    'common_back': 'Voltar',
+    'common_next': 'Seguinte',
+    'common_previous': 'Anterior',
+    'common_close': 'Fechar',
+    'common_yes': 'Sim',
+    'common_no': 'Não',
+    'common_try_again': 'Tentar Novamente'
   },
   
   en: {
     // Navigation & Header
-    'nav.home': 'Home',
-    'nav.tours': 'Tours',
-    'nav.about': 'About Us',
-    'nav.contact': 'Contact',
-    'nav.admin': 'Admin',
+    'nav_home': 'Home',
+    'nav_tours': 'Tours',
+    'nav_about': 'About Us',
+    'nav_contact': 'Contact',
+    'nav_admin': 'Admin',
     
     // Homepage
-    'home.title': '9 Rocks Tours',
-    'home.subtitle': 'Discover Portugal authentically',
-    'home.description': 'Unique gastronomic and cultural tours through Portugal\'s hidden treasures',
-    'home.cta': 'Explore Tours',
-    'home.featured_tours': 'Featured Tours',
+    'home_title': '9 Rocks Tours',
+    'home_subtitle': 'Discover Portugal authentically',
+    'home_description': 'Unique gastronomic and cultural tours through Portugal\'s hidden treasures',
+    'home_cta': 'Explore Tours',
+    'home_featured_tours': 'Featured Tours',
     
     // Tour Types
-    'tour.type.gastronomic': 'Gastronomic',
-    'tour.type.cultural': 'Cultural',
-    'tour.type.mixed': 'Mixed',
-    'tour.type.custom': 'Custom',
+    'tour_type_gastronomic': 'Gastronomic',
+    'tour_type_cultural': 'Cultural',
+    'tour_type_mixed': 'Mixed',
+    'tour_type_custom': 'Custom',
     
     // Tour Details
-    'tour.duration': 'Duration',
-    'tour.price': 'Price',
-    'tour.participants': 'Participants',
-    'tour.location': 'Location',
-    'tour.includes': 'Included',
-    'tour.excludes': 'Not included',
-    'tour.route': 'Route',
-    'tour.availability': 'Availability',
-    'tour.book_now': 'Book Now',
-    'tour.view_details': 'View Details',
-    'tour.hours': 'hours',
-    'tour.max_people': 'max people',
+    'tour_duration': 'Duration',
+    'tour_price': 'Price',
+    'tour_participants': 'Participants',
+    'tour_location': 'Location',
+    'tour_includes': 'Included',
+    'tour_excludes': 'Not included',
+    'tour_route': 'Route',
+    'tour_availability': 'Availability',
+    'tour_book_now': 'Book Now',
+    'tour_view_details': 'View Details',
+    'tour_hours': 'hours',
+    'tour_max_people': 'max people',
     
     // Booking Form
-    'booking.title': 'Book Tour',
-    'booking.customer_name': 'Full Name',
-    'booking.customer_email': 'Email',
-    'booking.customer_phone': 'Phone',
-    'booking.selected_date': 'Selected Date',
-    'booking.participants': 'Number of Participants',
-    'booking.special_requests': 'Special Requests',
-    'booking.payment_method': 'Payment Method',
-    'booking.submit': 'Confirm Booking',
-    'booking.total': 'Total',
+    'booking_title': 'Book Tour',
+    'booking_customer_name': 'Full Name',
+    'booking_customer_email': 'Email',
+    'booking_customer_phone': 'Phone',
+    'booking_selected_date': 'Selected Date',
+    'booking_participants': 'Number of Participants',
+    'booking_special_requests': 'Special Requests',
+    'booking_payment_method': 'Payment Method',
+    'booking_submit': 'Confirm Booking',
+    'booking_total': 'Total',
     
     // Payment
-    'payment.paypal': 'PayPal',
-    'payment.multibanco': 'Multibanco',
-    'payment.mbway': 'MBWay',
-    'payment.credit_card': 'Credit Card',
-    'payment.processing': 'Processing payment...',
-    'payment.success': 'Payment successful!',
-    'payment.error': 'Payment error. Please try again.',
+    'payment_paypal': 'PayPal',
+    'payment_multibanco': 'Multibanco',
+    'payment_mbway': 'MBWay',
+    'payment_credit_card': 'Credit Card',
+    'payment_processing': 'Processing payment...',
+    'payment_success': 'Payment successful!',
+    'payment_error': 'Payment error. Please try again.',
     
     // Admin Panel
-    'admin.title': 'Administration Panel',
-    'admin.login': 'Login',
-    'admin.logout': 'Logout',
-    'admin.tours': 'Tour Management',
-    'admin.bookings': 'Bookings',
-    'admin.stats': 'Statistics',
-    'admin.add_tour': 'Add Tour',
-    'admin.edit_tour': 'Edit Tour',
-    'admin.delete_tour': 'Delete Tour',
-    'admin.active': 'Active',
-    'admin.inactive': 'Inactive',
+    'admin_title': 'Administration Panel',
+    'admin_login': 'Login',
+    'admin_logout': 'Logout',
+    'admin_tours': 'Tour Management',
+    'admin_bookings': 'Bookings',
+    'admin_stats': 'Statistics',
+    'admin_add_tour': 'Add Tour',
+    'admin_edit_tour': 'Edit Tour',
+    'admin_delete_tour': 'Delete Tour',
+    'admin_active': 'Active',
+    'admin_inactive': 'Inactive',
     
     // Messages
-    'message.success': 'Success!',
-    'message.error': 'Error!',
-    'message.loading': 'Loading...',
-    'message.no_tours': 'No tours available.',
-    'message.book_success': 'Booking successful!',
+    'message_success': 'Success!',
+    'message_error': 'Error!',
+    'message_loading': 'Loading...',
+    'message_no_tours': 'No tours available.',
+    'message_book_success': 'Booking successful!',
     
     // Common
-    'common.save': 'Save',
-    'common.cancel': 'Cancel',
-    'common.delete': 'Delete',
-    'common.edit': 'Edit',
-    'common.back': 'Back',
-    'common.next': 'Next',
-    'common.previous': 'Previous',
-    'common.close': 'Close',
-    'common.yes': 'Yes',
-    'common.no': 'No',
-    'common.try_again': 'Try Again'
+    'common_save': 'Save',
+    'common_cancel': 'Cancel',
+    'common_delete': 'Delete',
+    'common_edit': 'Edit',
+    'common_back': 'Back',
+    'common_next': 'Next',
+    'common_previous': 'Previous',
+    'common_close': 'Close',
+    'common_yes': 'Yes',
+    'common_no': 'No',
+    'common_try_again': 'Try Again'
   },
   
   es: {
     // Navigation & Header
-    'nav.home': 'Inicio',
-    'nav.tours': 'Tours',
-    'nav.about': 'Sobre Nosotros',
-    'nav.contact': 'Contacto',
-    'nav.admin': 'Admin',
+    'nav_home': 'Inicio',
+    'nav_tours': 'Tours',
+    'nav_about': 'Sobre Nosotros',
+    'nav_contact': 'Contacto',
+    'nav_admin': 'Admin',
     
     // Homepage
-    'home.title': '9 Rocks Tours',
-    'home.subtitle': 'Descubre Portugal auténticamente',
-    'home.description': 'Tours gastronómicos y culturales únicos por los tesoros escondidos de Portugal',
-    'home.cta': 'Explorar Tours',
-    'home.featured_tours': 'Tours Destacados',
+    'home_title': '9 Rocks Tours',
+    'home_subtitle': 'Descubre Portugal auténticamente',
+    'home_description': 'Tours gastronómicos y culturales únicos por los tesoros escondidos de Portugal',
+    'home_cta': 'Explorar Tours',
+    'home_featured_tours': 'Tours Destacados',
     
     // Tour Types
-    'tour.type.gastronomic': 'Gastronómico',
-    'tour.type.cultural': 'Cultural',
-    'tour.type.mixed': 'Mixto',
-    'tour.type.custom': 'Personalizado',
+    'tour_type_gastronomic': 'Gastronómico',
+    'tour_type_cultural': 'Cultural',
+    'tour_type_mixed': 'Mixto',
+    'tour_type_custom': 'Personalizado',
     
     // Tour Details
-    'tour.duration': 'Duración',
-    'tour.price': 'Precio',
-    'tour.participants': 'Participantes',
-    'tour.location': 'Ubicación',
-    'tour.includes': 'Incluido',
-    'tour.excludes': 'No incluido',
-    'tour.route': 'Ruta',
-    'tour.availability': 'Disponibilidad',
-    'tour.book_now': 'Reservar Ahora',
-    'tour.view_details': 'Ver Detalles',
-    'tour.hours': 'horas',
-    'tour.max_people': 'máx. personas',
+    'tour_duration': 'Duración',
+    'tour_price': 'Precio',
+    'tour_participants': 'Participantes',
+    'tour_location': 'Ubicación',
+    'tour_includes': 'Incluido',
+    'tour_excludes': 'No incluido',
+    'tour_route': 'Ruta',
+    'tour_availability': 'Disponibilidad',
+    'tour_book_now': 'Reservar Ahora',
+    'tour_view_details': 'Ver Detalles',
+    'tour_hours': 'horas',
+    'tour_max_people': 'máx. personas',
     
     // Booking Form
-    'booking.title': 'Reservar Tour',
-    'booking.customer_name': 'Nombre Completo',
-    'booking.customer_email': 'Email',
-    'booking.customer_phone': 'Teléfono',
-    'booking.selected_date': 'Fecha Seleccionada',
-    'booking.participants': 'Número de Participantes',
-    'booking.special_requests': 'Solicitudes Especiales',
-    'booking.payment_method': 'Método de Pago',
-    'booking.submit': 'Confirmar Reserva',
-    'booking.total': 'Total',
+    'booking_title': 'Reservar Tour',
+    'booking_customer_name': 'Nombre Completo',
+    'booking_customer_email': 'Email',
+    'booking_customer_phone': 'Teléfono',
+    'booking_selected_date': 'Fecha Seleccionada',
+    'booking_participants': 'Número de Participantes',
+    'booking_special_requests': 'Solicitudes Especiales',
+    'booking_payment_method': 'Método de Pago',
+    'booking_submit': 'Confirmar Reserva',
+    'booking_total': 'Total',
     
     // Payment
-    'payment.paypal': 'PayPal',
-    'payment.multibanco': 'Multibanco',
-    'payment.mbway': 'MBWay',
-    'payment.credit_card': 'Tarjeta de Crédito',
-    'payment.processing': 'Procesando pago...',
-    'payment.success': '¡Pago exitoso!',
-    'payment.error': 'Error en el pago. Inténtalo de nuevo.',
+    'payment_paypal': 'PayPal',
+    'payment_multibanco': 'Multibanco',
+    'payment_mbway': 'MBWay',
+    'payment_credit_card': 'Tarjeta de Crédito',
+    'payment_processing': 'Procesando pago...',
+    'payment_success': '¡Pago exitoso!',
+    'payment_error': 'Error en el pago. Inténtalo de nuevo.',
     
     // Admin Panel
-    'admin.title': 'Panel de Administración',
-    'admin.login': 'Entrar',
-    'admin.logout': 'Salir',
-    'admin.tours': 'Gestión de Tours',
-    'admin.bookings': 'Reservas',
-    'admin.stats': 'Estadísticas',
-    'admin.add_tour': 'Añadir Tour',
-    'admin.edit_tour': 'Editar Tour',
-    'admin.delete_tour': 'Eliminar Tour',
-    'admin.active': 'Activo',
-    'admin.inactive': 'Inactivo',
+    'admin_title': 'Panel de Administración',
+    'admin_login': 'Entrar',
+    'admin_logout': 'Salir',
+    'admin_tours': 'Gestión de Tours',
+    'admin_bookings': 'Reservas',
+    'admin_stats': 'Estadísticas',
+    'admin_add_tour': 'Añadir Tour',
+    'admin_edit_tour': 'Editar Tour',
+    'admin_delete_tour': 'Eliminar Tour',
+    'admin_active': 'Activo',
+    'admin_inactive': 'Inactivo',
     
     // Messages
-    'message.success': '¡Éxito!',
-    'message.error': '¡Error!',
-    'message.loading': 'Cargando...',
-    'message.no_tours': 'No hay tours disponibles.',
-    'message.book_success': '¡Reserva exitosa!',
+    'message_success': '¡Éxito!',
+    'message_error': '¡Error!',
+    'message_loading': 'Cargando...',
+    'message_no_tours': 'No hay tours disponibles.',
+    'message_book_success': '¡Reserva exitosa!',
     
     // Common
-    'common.save': 'Guardar',
-    'common.cancel': 'Cancelar',
-    'common.delete': 'Eliminar',
-    'common.edit': 'Editar',
-    'common.back': 'Volver',
-    'common.next': 'Siguiente',
-    'common.previous': 'Anterior',
-    'common.close': 'Cerrar',
-    'common.yes': 'Sí',
-    'common.no': 'No',
-    'common.try_again': 'Intentar de Nuevo'
+    'common_save': 'Guardar',
+    'common_cancel': 'Cancelar',
+    'common_delete': 'Eliminar',
+    'common_edit': 'Editar',
+    'common_back': 'Volver',
+    'common_next': 'Siguiente',
+    'common_previous': 'Anterior',
+    'common_close': 'Cerrar',
+    'common_yes': 'Sí',
+    'common_no': 'No',
+    'common_try_again': 'Intentar de Nuevo'
   }
 };
 
@@ -278,8 +278,6 @@ class I18n {
   constructor() {
     this.currentLanguage = this.getStoredLanguage() || 'pt';
     this.supportedLanguages = ['pt', 'en', 'es'];
-    
-    // Initialize with current language
     this.translations = translations;
   }
 
@@ -312,49 +310,20 @@ class I18n {
   t(key, replacements = {}) {
     if (!key) return '';
     
-    const keys = key.split('.');
-    let value = this.translations[this.getCurrentLanguage()];
+    const currentLang = this.getCurrentLanguage();
+    const langTranslations = this.translations[currentLang];
     
-    // Navigate through the nested object structure
-    for (const k of keys) {
-      if (value && typeof value === 'object' && value.hasOwnProperty(k)) {
-        value = value[k];
-      } else {
-        value = null;
-        break;
-      }
-    }
+    // Direct key lookup (for underscore-separated keys)
+    let value = langTranslations[key];
     
-    // If no value found, try fallback languages
+    // If not found, try fallback languages
     if (!value) {
-      // Try English fallback
-      value = this.translations['en'];
-      for (const k of keys) {
-        if (value && typeof value === 'object' && value.hasOwnProperty(k)) {
-          value = value[k];
-        } else {
-          value = null;
-          break;
-        }
-      }
-      
-      // Try Portuguese fallback
-      if (!value) {
-        value = this.translations['pt'];
-        for (const k of keys) {
-          if (value && typeof value === 'object' && value.hasOwnProperty(k)) {
-            value = value[k];
-          } else {
-            value = null;
-            break;
-          }
-        }
-      }
+      value = this.translations['en'][key] || this.translations['pt'][key];
     }
     
-    // If still no value, return the key itself
-    if (!value || typeof value !== 'string') {
-      console.warn(`Translation key not found: ${key} for language: ${this.getCurrentLanguage()}`);
+    // If still not found, return the key itself
+    if (!value) {
+      console.warn(`Translation key not found: ${key} for language: ${currentLang}`);
       return key;
     }
     
