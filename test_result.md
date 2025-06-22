@@ -372,15 +372,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Tour Listing Page"
-    - "Tour Details Page"
-    - "Multi-language Support"
     - "Booking Interface"
     - "Payment System"
-    - "Success/Error Pages"
-    - "Navigation"
-    - "Responsive Layout"
-  stuck_tasks: []
+    - "Multi-language Support"
+  stuck_tasks:
+    - "Booking Interface"
+    - "Payment System"
   test_all: false
   test_priority: "high_first"
 
