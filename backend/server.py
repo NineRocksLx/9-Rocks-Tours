@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query, UploadFile, File
+from fastapi import FastAPI, APIRouter, HTTPException, Query, UploadFile, File, Depends
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv  
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -13,6 +14,13 @@ from datetime import datetime, date
 import json
 import io
 import csv
+import base64
+import firebase_admin
+from firebase_admin import credentials, auth, storage
+from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
+import requests
 
 
 ROOT_DIR = Path(__file__).parent
