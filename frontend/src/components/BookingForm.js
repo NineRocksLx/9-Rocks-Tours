@@ -140,7 +140,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking.customer_name')} *
+                      {t('booking_customer_name')} *
                     </label>
                     <input
                       type="text"
