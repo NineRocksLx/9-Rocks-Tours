@@ -293,6 +293,53 @@ class CalendarAvailabilityResponse(BaseModel):
     calendar_id: str
 
 # ================================
+# PAYMENT MODELS
+# ================================
+
+class PaymentMethod(str, Enum):
+    PAYPAL = "paypal"
+    MULTIBANCO = "multibanco"
+    MBWAY = "mbway"
+    CREDIT_CARD = "credit_card"
+
+class PaymentRequest(BaseModel):
+    amount: float
+    currency: str = "EUR"
+    tour_id: str
+    booking_id: str
+    customer_email: str
+    customer_name: str
+    payment_method: PaymentMethod
+    return_url: str
+    cancel_url: str
+    phone_number: Optional[str] = None  # Required for MBWay
+
+class PaymentResponse(BaseModel):
+    payment_id: str
+    approval_url: Optional[str] = None
+    status: str
+    reference: Optional[str] = None  # For Multibanco
+
+class PaymentExecution(BaseModel):
+    payer_id: str
+
+class PaymentTransaction(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    payment_id: str
+    booking_id: str
+    tour_id: str
+    customer_email: str
+    customer_name: str
+    amount: float
+    currency: str
+    payment_method: str
+    status: str  # "created", "approved", "completed", "failed", "cancelled"
+    transaction_id: Optional[str] = None
+    approval_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+
+# ================================
 # ADMIN AUTH MODEL
 # ================================
 
