@@ -278,6 +278,9 @@ class I18n {
   constructor() {
     this.currentLanguage = this.getStoredLanguage() || 'pt';
     this.supportedLanguages = ['pt', 'en', 'es'];
+    
+    // Initialize with current language
+    this.translations = translations;
   }
 
   getStoredLanguage() {
@@ -294,7 +297,7 @@ class I18n {
   }
 
   getCurrentLanguage() {
-    // Get the current language from localStorage to ensure it's always up-to-date
+    // Always get fresh language from localStorage
     const storedLang = localStorage.getItem('9rocks_language');
     if (storedLang && this.supportedLanguages.includes(storedLang)) {
       this.currentLanguage = storedLang;
@@ -307,36 +310,63 @@ class I18n {
   }
 
   t(key, replacements = {}) {
-    const keys = key.split('.');
-    let value = translations[this.currentLanguage];
+    if (!key) return '';
     
+    const keys = key.split('.');
+    let value = this.translations[this.getCurrentLanguage()];
+    
+    // Navigate through the nested object structure
     for (const k of keys) {
-      value = value && value[k];
+      if (value && typeof value === 'object' && value.hasOwnProperty(k)) {
+        value = value[k];
+      } else {
+        value = null;
+        break;
+      }
     }
     
+    // If no value found, try fallback languages
     if (!value) {
-      // Fallback to English, then Portuguese
-      value = translations['en'];
+      // Try English fallback
+      value = this.translations['en'];
       for (const k of keys) {
-        value = value && value[k];
+        if (value && typeof value === 'object' && value.hasOwnProperty(k)) {
+          value = value[k];
+        } else {
+          value = null;
+          break;
+        }
       }
       
+      // Try Portuguese fallback
       if (!value) {
-        value = translations['pt'];
+        value = this.translations['pt'];
         for (const k of keys) {
-          value = value && value[k];
+          if (value && typeof value === 'object' && value.hasOwnProperty(k)) {
+            value = value[k];
+          } else {
+            value = null;
+            break;
+          }
         }
       }
     }
     
+    // If still no value, return the key itself
+    if (!value || typeof value !== 'string') {
+      console.warn(`Translation key not found: ${key} for language: ${this.getCurrentLanguage()}`);
+      return key;
+    }
+    
     // Apply replacements
-    if (value && typeof value === 'string') {
+    if (replacements && typeof replacements === 'object') {
       Object.keys(replacements).forEach(placeholder => {
-        value = value.replace(`{${placeholder}}`, replacements[placeholder]);
+        const regex = new RegExp(`{${placeholder}}`, 'g');
+        value = value.replace(regex, replacements[placeholder]);
       });
     }
     
-    return value || key;
+    return value;
   }
 
   getLanguageFlag(lang) {
