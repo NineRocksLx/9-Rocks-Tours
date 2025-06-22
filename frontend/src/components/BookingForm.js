@@ -84,7 +84,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-900">
-            {step === 1 ? i18n.t('booking.title') : 'Pagamento'}
+            {step === 1 ? t('booking_title') : 'Pagamento'}
           </h2>
           <button
             onClick={onClose}
