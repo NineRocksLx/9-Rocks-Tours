@@ -228,6 +228,9 @@ frontend:
         - working: true
           agent: "testing"
           comment: "Homepage carrega corretamente. Layout responsivo funciona em desktop, tablet e mobile. Filtros de tipo de tour (cultural, gastronomic, mixed) funcionam corretamente. Exibe mensagem quando não há tours disponíveis. Cards de tour são exibidos quando existem tours."
+        - working: true
+          agent: "testing"
+          comment: "Testado com dados reais. A homepage exibe corretamente 6 tours com informações e imagens. Os filtros por tipo (gastronomic, cultural, mixed) funcionam corretamente, mostrando 3 tours gastronômicos, 2 culturais e 1 misto."
 
   - task: "Tour Details Page"
     implemented: true
