@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - 9 Rocks Tours</title>
+    <link rel="stylesheet" href="/styles/checkout.css">
+</head>
+<body>
+    <header>
+        <h1>Checkout - 9 Rocks Tours</h1>
+    </header>
+
+    <main>
+        <section class="order-summary">
+            <h2>Resumo do Pedido</h2>
+            <p><strong>Tour:</strong> <span id="tour-name">Lisboa Clássica</span></p>
+            <p><strong>Preço Total:</strong> €<span id="total-price">150</span></p>
+            <p><strong>Depósito (30%):</strong> €<span id="deposit-price">45</span></p>
+        </section>
+
+        <section class="booking-form">
+            <h2>Informações do Viajante</h2>
+            <form id="bookingForm">
+                <label>Primeiro Nome*
+                    <input type="text" name="first_name" required>
+                </label>
+                <label>Último Nome*
+                    <input type="text" name="last_name" required>
+                </label>
+                <label>Email*
+                    <input type="email" name="email" required>
+                </label>
+                <label>Telefone*
+                    <input type="tel" name="phone" required>
+                </label>
+                <label>Data do Tour*
+                    <input type="date" name="tour_date" required>
+                </label>
+                <label>Número de Participantes* (máximo 4)
+                    <input type="number" name="participants" min="1" max="4" required>
+                </label>
+
+                <p class="note" id="reservation-note"></p>
+
+                <button type="submit">Proceder ao Pagamento</button>
+            </form>
+
+            <div class="info-text">
+                <p id="info-text"></p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Configuração multilíngue
+        const lang = navigator.language.startsWith('pt') ? 'pt' : navigator.language.startsWith('es') ? 'es' : 'en';
+
+        const reservationNote = {
+            "pt": "Caso queiram fazer um Tour com mais de 4 pessoas, entre em contacto connosco por WhatsApp, email ou telefone para nos informar o número de pessoas, e nós apresentaremos uma proposta.",
+            "en": "If you wish to book a tour for more than 4 people, please contact us via WhatsApp, email, or phone to let us know the number of people, and we will provide you with a proposal.",
+            "es": "Si desea reservar un tour para más de 4 personas, contáctenos por WhatsApp, correo electrónico o teléfono para informarnos la cantidad de personas, y le enviaremos una propuesta."
+        };
+
+        const infoText = {
+            "pt": "Tours: Apenas 30% do valor é devido hoje (exceto se a reserva for feita a menos de 60 dias da data de início, caso em que entraremos em contacto consigo). Aulas de um dia: pagamento total devido na confirmação. Os encargos são autorizados quando o checkout é concluído e finalizados após confirmação, geralmente em 24-48 horas. Upgrades de quarto, noites extras e serviços adicionais serão adicionados à sua fatura após confirmação.",
+            "en": "Tours: Only the 30% deposit is due today (unless you're booking within 60 days of your start date, in which case we'll contact you). One-day classes: Full payment is due at confirmation. Charges are authorized when checkout is completed and finalized upon confirmation, usually within 24-48 hours. Room upgrades, extra nights, and additional services will be added to your invoice after confirmation.",
+            "es": "Tours: Solo se requiere un depósito del 30% hoy (a menos que reserve con menos de 60 días de anticipación, en cuyo caso nos pondremos en contacto con usted). Clases de un día: pago completo al confirmar. Los cargos se autorizan al finalizar el checkout y se confirman normalmente en 24-48 horas. Las mejoras de habitación, noches adicionales y servicios adicionales se agregarán a su factura tras la confirmación."
+        };
+
+        document.getElementById('reservation-note').innerText = reservationNote[lang];
+        document.getElementById('info-text').innerText = infoText[lang];
+
+        // Cálculo automático do depósito
+        const totalPriceElement = document.getElementById('total-price');
+        const depositPriceElement = document.getElementById('deposit-price');
+        const totalPrice = parseFloat(totalPriceElement.textContent);
+        const deposit = (totalPrice * 0.30).toFixed(2);
+        depositPriceElement.textContent = deposit;
+
+        document.getElementById('bookingForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            alert('Reserva efetuada com sucesso! Será contactado por email para confirmar a reserva e o pagamento.');
+            // Aqui integras com o endpoint POST /api/bookings do FastAPI para criar a reserva
+        });
+    </script>
+</body>
+</html>
