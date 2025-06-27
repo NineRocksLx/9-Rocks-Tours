@@ -1,3 +1,4 @@
+// src/App.js
 import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -26,7 +27,7 @@ function App() {
   );
 }
 
-// Temporary placeholder components
+// Componentes de página temporários
 const AboutPage = () => (
   <div className="min-h-screen flex items-center justify-center">
     <div className="text-center">
@@ -44,8 +45,8 @@ const ContactPage = () => (
     <div className="text-center">
       <h1 className="text-3xl font-bold text-gray-900 mb-4">Contacte-nos</h1>
       <div className="space-y-4 text-lg text-gray-600">
-        <p>Email: info@9rockstours.com</p>
-        <p>Telefone: +351 912 345 678</p>
+        <p>Email: ninerockstours@gmail.com</p>
+        <p>Telefone: +351 96 3366 458</p>
         <p>Morada: Lisboa, Portugal</p>
       </div>
     </div>

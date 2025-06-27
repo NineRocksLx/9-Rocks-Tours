@@ -363,3 +363,8 @@ const i18n = new I18n();
 // Export for use in React components
 export default i18n;
 export { translations };
+
+// Função adicional para pegar o idioma atual
+export function getCurrentLanguage() {
+  return localStorage.getItem("lang") || "en";
+}
