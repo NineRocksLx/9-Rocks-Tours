@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, date
+from utils.google_calendar import get_available_dates_for_tour
 import json
 import io
 import csv
@@ -1015,36 +1016,73 @@ async def get_calendar_availability_range(availability_request: CalendarAvailabi
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Adicionar este import no topo do server.py
+from utils.google_calendar import get_available_dates_for_tour
+
+# Substituir o endpoint existente por este:
 @api_router.put("/tours/{tour_id}/availability")
-async def update_tour_availability(tour_id: str, availability_request: CalendarAvailability, user=Depends(verify_firebase_token)):
+async def update_tour_availability(
+    tour_id: str, 
+    availability_request: CalendarAvailability, 
+    user=Depends(verify_firebase_token)
+):
     """Update tour availability based on Google Calendar (Admin only)"""
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
     
     try:
-        # Get availability from Google Calendar
-        available_dates = get_calendar_availability(
+        # Buscar o tour
+        tour = await db.tours.find_one({"id": tour_id})
+        if not tour:
+            raise HTTPException(status_code=404, detail="Tour not found")
+        
+        # Obter o horário do tour (se existir)
+        tour_schedule = tour.get('availability_schedule', {
+            'monday': {'active': True, 'start': '09:00', 'end': '18:00'},
+            'tuesday': {'active': True, 'start': '09:00', 'end': '18:00'},
+            'wednesday': {'active': True, 'start': '09:00', 'end': '18:00'},
+            'thursday': {'active': True, 'start': '09:00', 'end': '18:00'},
+            'friday': {'active': True, 'start': '09:00', 'end': '18:00'},
+            'saturday': {'active': False},
+            'sunday': {'active': False}
+        })
+        
+        # Obter disponibilidade real do Google Calendar
+        available_slots = get_available_dates_for_tour(
+            tour_id,
+            tour_schedule,
             availability_request.start_date,
             availability_request.end_date
         )
         
-        # Update tour with new availability
+        # Extrair apenas as datas (formato YYYY-MM-DD)
+        available_dates = [slot['date'] for slot in available_slots]
+        
+        # Atualizar tour com nova disponibilidade
         result = await db.tours.update_one(
             {"id": tour_id},
-            {"$set": {"availability_dates": available_dates, "updated_at": datetime.utcnow()}}
+            {
+                "$set": {
+                    "availability_dates": available_dates,
+                    "availability_slots": available_slots,  # Guarda também os horários
+                    "last_calendar_sync": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+            }
         )
         
         if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Tour not found")
+            raise HTTPException(status_code=500, detail="Failed to update availability")
         
-        # Return updated tour
+        # Retornar tour atualizado
         updated_tour = await db.tours.find_one({"id": tour_id})
         return Tour(**updated_tour)
         
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error syncing calendar: {e}")
+        raise HTTPException(status_code=500, detail=f"Calendar sync error: {str(e)}")
 
 
 # Keep original test endpoints
