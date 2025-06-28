@@ -161,12 +161,47 @@ const translations = {
     'admin_active': 'Active',
     'admin_inactive': 'Inactive',
     
+    // No arquivo frontend/src/utils/i18n.js
+// Localiza a seção de Messages em cada idioma e substitui por:
+
+// Para PT:
     // Messages
+    'message.success': 'Sucesso!',
+    'message.error': 'Erro ao carregar os dados. Por favor, tente novamente.',
+    'message.loading': 'A carregar...',
+    'message.no_tours': 'Não há tours disponíveis.',
+    'message.book_success': 'Reserva realizada com sucesso!',
+    'message_success': 'Sucesso!',
+    'message_error': 'Erro ao carregar os dados. Por favor, tente novamente.',
+    'message_loading': 'A carregar...',
+    'message_no_tours': 'Não há tours disponíveis.',
+    'message_book_success': 'Reserva realizada com sucesso!',
+
+// Para EN:
+    // Messages
+    'message.success': 'Success!',
+    'message.error': 'Error loading data. Please try again.',
+    'message.loading': 'Loading...',
+    'message.no_tours': 'No tours available.',
+    'message.book_success': 'Booking successful!',
     'message_success': 'Success!',
-    'message_error': 'Error!',
+    'message_error': 'Error loading data. Please try again.',
     'message_loading': 'Loading...',
     'message_no_tours': 'No tours available.',
     'message_book_success': 'Booking successful!',
+
+// Para ES:
+    // Messages
+    'message.success': '¡Éxito!',
+    'message.error': 'Error al cargar los datos. Por favor, inténtalo de nuevo.',
+    'message.loading': 'Cargando...',
+    'message.no_tours': 'No hay tours disponibles.',
+    'message.book_success': '¡Reserva exitosa!',
+    'message_success': '¡Éxito!',
+    'message_error': 'Error al cargar los datos. Por favor, inténtalo de nuevo.',
+    'message_loading': 'Cargando...',
+    'message_no_tours': 'No hay tours disponibles.',
+    'message_book_success': '¡Reserva exitosa!',
     
     // Common
     'common_save': 'Save',
