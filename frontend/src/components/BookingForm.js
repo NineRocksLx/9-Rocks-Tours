@@ -29,8 +29,19 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
     }));
   };
 
+  // CORREÇÃO: Calcular apenas o preço total do tour (não por pessoa)
   const calculateTotal = () => {
-    return tour.price * formData.participants;
+    return tour.price; // Preço total do tour
+  };
+
+  // NOVO: Calcular depósito de 30%
+  const calculateDeposit = () => {
+    return tour.price * 0.30;
+  };
+
+  // NOVO: Calcular valor restante
+  const calculateRemaining = () => {
+    return tour.price * 0.70;
   };
 
   const formatPrice = (price) => {
@@ -67,7 +78,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('pt-PT', {
       weekday: 'long',
       year: 'numeric',
@@ -102,7 +113,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
           {step === 1 ? (
             // Booking Form
             <>
-              {/* Tour Summary */}
+              {/* CORREÇÃO: Tour Summary com breakdown de pagamento */}
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-2">
                   {tour.name[currentLang] || tour.name.pt}
@@ -124,7 +135,25 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                     <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                     </svg>
-                    {formatPrice(tour.price)} por pessoa
+                    {formatPrice(tour.price)} (preço total)
+                  </div>
+                </div>
+
+                {/* NOVO: Breakdown de pagamento */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Preço total do tour:</span>
+                      <span className="font-medium">{formatPrice(calculateTotal())}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Depósito (30%):</span>
+                      <span className="font-semibold text-blue-600">{formatPrice(calculateDeposit())}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Restante no dia:</span>
+                      <span className="font-medium">{formatPrice(calculateRemaining())}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -242,16 +271,27 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                   />
                 </div>
 
-                {/* Total */}
+                {/* CORREÇÃO: Total com depósito */}
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-medium text-gray-900">Total:</span>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-lg font-medium text-gray-900">A pagar hoje (depósito):</span>
                     <span className="text-2xl font-bold text-indigo-600">
-                      {formatPrice(calculateTotal())}
+                      {formatPrice(calculateDeposit())}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {formData.participants} × {formatPrice(tour.price)}
+                  <div className="text-sm text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Preço total do tour:</span>
+                      <span>{formatPrice(calculateTotal())}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Participantes:</span>
+                      <span>{formData.participants}</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-gray-700 mt-2 pt-2 border-t">
+                      <span>Restante a pagar no dia:</span>
+                      <span>{formatPrice(calculateRemaining())}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -279,7 +319,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
             <PaymentComponent
               booking={booking}
               tour={tour}
-              total={calculateTotal()}
+              total={calculateDeposit()} // CORREÇÃO: Passar apenas o depósito
               onSuccess={handlePaymentSuccess}
               onBack={() => setStep(1)}
             />
