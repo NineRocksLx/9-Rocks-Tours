@@ -9,7 +9,16 @@ const AdminTourManager = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // CORRIGIDO: Estados de upload separados
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState({});
+  
+  // Estados para gestão manual de datas
+  const [manualDates, setManualDates] = useState([]);
+  const [newDate, setNewDate] = useState('');
   
   // Form state
   const [formData, setFormData] = useState({
@@ -19,15 +28,15 @@ const AdminTourManager = () => {
     location: '',
     duration_hours: 4,
     price: 0,
-    max_participants: 10,
+    max_participants: 1,
     tour_type: 'cultural',
     route_description: { pt: '', en: '', es: '' },
     includes: { pt: '', en: '', es: '' },
     excludes: { pt: '', en: '', es: '' },
     active: true,
     images: [],
-    thumbnail_image: '', // Imagem pequena para homepage
-    gallery_images: [], // Imagens grandes para detalhes
+    thumbnail_image: '',
+    gallery_images: [],
     availability_schedule: {
       monday: { active: false, start: '09:00', end: '18:00' },
       tuesday: { active: false, start: '09:00', end: '18:00' },
@@ -52,34 +61,32 @@ const AdminTourManager = () => {
     }
   };
 
+  // CORRIGIDO: Upload com estados separados
   const handleImageUpload = async (file, imageType) => {
     if (!file) return;
 
-    setUploadingImage(true);
+    const setUploading = imageType === 'thumbnail' ? setUploadingThumbnail : setUploadingGallery;
+    
+    setUploading(true);
+    setUploadErrors(prev => ({...prev, [imageType]: null}));
+    
     try {
-      // Validar tipo de arquivo
-      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        alert('Por favor, envie apenas imagens JPG, PNG ou WebP');
-        return;
-      }
-
-      // Validar tamanho (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('A imagem deve ter menos de 5MB');
-        return;
-      }
-
+      console.log(`Iniciando upload de ${imageType}:`, file.name);
+      
       // Criar path único para a imagem
       const timestamp = Date.now();
-      const fileName = `tours/${timestamp}_${file.name}`;
+      const randomId = Math.random().toString(36).substring(2, 8);
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `tours/${timestamp}_${randomId}_${cleanFileName}`;
       
       // Upload para Firebase Storage
       const downloadURL = await uploadImageToStorage(file, fileName);
+      console.log(`Upload de ${imageType} concluído:`, downloadURL);
       
       // Atualizar form data
       if (imageType === 'thumbnail') {
         setFormData(prev => ({ ...prev, thumbnail_image: downloadURL }));
+        alert('Imagem de capa adicionada com sucesso!');
       } else if (imageType === 'gallery') {
         setFormData(prev => ({ 
           ...prev, 
@@ -87,13 +94,21 @@ const AdminTourManager = () => {
         }));
       }
       
-      alert('Imagem enviada com sucesso!');
     } catch (error) {
-      console.error('Erro ao enviar imagem:', error);
-      alert('Erro ao enviar imagem. Tente novamente.');
+      console.error(`Erro no upload de ${imageType}:`, error);
+      const errorMessage = error.message || `Erro ao enviar ${imageType}. Tente novamente.`;
+      
+      setUploadErrors(prev => ({...prev, [imageType]: errorMessage}));
+      alert(errorMessage);
     } finally {
-      setUploadingImage(false);
+      setUploading(false);
     }
+  };
+
+  // NOVO: Remover thumbnail
+  const removeThumbnailImage = () => {
+    setFormData(prev => ({ ...prev, thumbnail_image: '' }));
+    setUploadErrors(prev => ({...prev, thumbnail: null}));
   };
 
   const removeGalleryImage = (index) => {
@@ -101,21 +116,43 @@ const AdminTourManager = () => {
       ...prev,
       gallery_images: prev.gallery_images.filter((_, i) => i !== index)
     }));
+    setUploadErrors(prev => ({...prev, gallery: null}));
+  };
+
+  // Funções para gestão manual de datas
+  const addManualDate = () => {
+    if (newDate && !manualDates.includes(newDate)) {
+      const updatedDates = [...manualDates, newDate].sort();
+      setManualDates(updatedDates);
+      setNewDate('');
+    }
+  };
+
+  const removeManualDate = (dateToRemove) => {
+    setManualDates(manualDates.filter(date => date !== dateToRemove));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.max_participants < 1 || formData.max_participants > 4) {
+      alert('O número máximo de participantes deve ser entre 1 e 4');
+      return;
+    }
+    
     setLoading(true);
+    setIsCreating(true);
 
     try {
-      // Combinar todas as imagens
       const allImages = [formData.thumbnail_image, ...formData.gallery_images].filter(Boolean);
       
       const tourData = {
         ...formData,
         images: allImages,
-        availability_dates: [] // Será preenchido pela integração com Google Calendar
+        availability_dates: manualDates.length > 0 ? manualDates : []
       };
+
+      console.log('Enviando tour:', tourData);
 
       if (editingTour) {
         await axios.put(`${BACKEND_URL}/api/tours/${editingTour.id}`, tourData);
@@ -130,14 +167,17 @@ const AdminTourManager = () => {
       fetchTours();
     } catch (error) {
       console.error('Erro ao salvar tour:', error);
-      alert('Erro ao salvar tour. Verifique os dados.');
+      alert(`Erro ao salvar tour: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
+      setIsCreating(false);
     }
   };
 
   const handleEdit = (tour) => {
     setEditingTour(tour);
+    setManualDates(tour.availability_dates || []);
+    
     setFormData({
       ...tour,
       thumbnail_image: tour.images?.[0] || '',
@@ -179,18 +219,25 @@ const AdminTourManager = () => {
 
   const syncWithGoogleCalendar = async (tourId) => {
     try {
+      setLoading(true);
+      
       const response = await axios.put(`${BACKEND_URL}/api/tours/${tourId}/availability`, {
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       });
+      
+      console.log('Resposta da sincronização:', response.data);
       alert('Disponibilidade sincronizada com Google Calendar!');
       fetchTours();
     } catch (error) {
       console.error('Erro ao sincronizar:', error);
-      alert('Erro ao sincronizar com Google Calendar');
+      alert(`Erro ao sincronizar: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // CORRIGIDO: Reset completo
   const resetForm = () => {
     setFormData({
       name: { pt: '', en: '', es: '' },
@@ -199,7 +246,7 @@ const AdminTourManager = () => {
       location: '',
       duration_hours: 4,
       price: 0,
-      max_participants: 10,
+      max_participants: 1,
       tour_type: 'cultural',
       route_description: { pt: '', en: '', es: '' },
       includes: { pt: '', en: '', es: '' },
@@ -218,7 +265,13 @@ const AdminTourManager = () => {
         sunday: { active: false, start: '09:00', end: '18:00' }
       }
     });
+    
+    setManualDates([]);
+    setNewDate('');
     setEditingTour(null);
+    setUploadErrors({});
+    setUploadingThumbnail(false);
+    setUploadingGallery(false);
   };
 
   const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -234,12 +287,12 @@ const AdminTourManager = () => {
 
   return (
     <div className="p-6">
-      {/* Navegação removida - será gerida pelo AdminPanel */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Gestão de Tours</h2>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          disabled={isCreating || uploadingThumbnail || uploadingGallery}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           + Adicionar Tour
         </button>
@@ -262,6 +315,10 @@ const AdminTourManager = () => {
                   <div>
                     <h3 className="text-lg font-semibold">{tour.name.pt}</h3>
                     <p className="text-gray-600">{tour.location} • {tour.duration_hours}h • €{tour.price}</p>
+                    <p className="text-sm text-gray-500">
+                      Datas disponíveis: {tour.availability_dates?.length || 0} | 
+                      Participantes: 1-{tour.max_participants}
+                    </p>
                     <span className={`inline-block px-2 py-1 text-xs rounded ${
                       tour.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
@@ -285,8 +342,9 @@ const AdminTourManager = () => {
                 <button
                   onClick={() => syncWithGoogleCalendar(tour.id)}
                   className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
+                  disabled={loading}
                 >
-                  Sincronizar Calendar
+                  {loading ? 'Sincronizando...' : 'Sincronizar Calendar'}
                 </button>
                 <button
                   onClick={() => handleEdit(tour)}
@@ -354,7 +412,7 @@ const AdminTourManager = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Preço (€)</label>
+                    <label className="block text-sm font-medium mb-1">Preço Total (€)</label>
                     <input
                       type="number"
                       value={formData.price}
@@ -364,7 +422,11 @@ const AdminTourManager = () => {
                       required
                       className="w-full border rounded px-3 py-2"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Preço total do tour (não por pessoa)
+                    </p>
                   </div>
+                  
                   <div>
                     <label className="block text-sm font-medium mb-1">Máx. Participantes (1-4)</label>
                     <input
@@ -374,6 +436,14 @@ const AdminTourManager = () => {
                         const value = parseInt(e.target.value);
                         if (value >= 1 && value <= 4) {
                           setFormData({...formData, max_participants: value});
+                        } else if (e.target.value === '') {
+                          setFormData({...formData, max_participants: ''});
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const value = parseInt(e.target.value);
+                        if (isNaN(value) || value < 1 || value > 4) {
+                          setFormData({...formData, max_participants: 1});
                         }
                       }}
                       min="1"
@@ -381,6 +451,9 @@ const AdminTourManager = () => {
                       required
                       className="w-full border rounded px-3 py-2"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Para grupos maiores, contacte diretamente
+                    </p>
                   </div>
                 </div>
 
@@ -423,64 +496,134 @@ const AdminTourManager = () => {
                   </div>
                 ))}
 
-                {/* Upload de Imagens */}
+                {/* CORRIGIDO: Upload de Imagens */}
                 <div className="space-y-4">
+                  {/* Thumbnail */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Imagem de Capa (Thumbnail - Homepage)
                     </label>
+                    
+                    {uploadErrors.thumbnail && (
+                      <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                        {uploadErrors.thumbnail}
+                      </div>
+                    )}
+                    
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleImageUpload(e.target.files[0], 'thumbnail')}
-                      className="w-full"
-                      disabled={uploadingImage}
+                      className="w-full mb-2"
+                      disabled={uploadingThumbnail || uploadingGallery || loading}
                     />
+                    
+                    {uploadingThumbnail && (
+                      <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                          A enviar imagem de capa...
+                        </div>
+                      </div>
+                    )}
+                    
                     {formData.thumbnail_image && (
-                      <img 
-                        src={formData.thumbnail_image} 
-                        alt="Thumbnail" 
-                        className="mt-2 w-40 h-24 object-cover rounded"
-                      />
+                      <div className="relative inline-block">
+                        <img 
+                          src={formData.thumbnail_image} 
+                          alt="Thumbnail" 
+                          className="w-40 h-24 object-cover rounded border"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeThumbnailImage}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Remover imagem de capa"
+                        >
+                          ×
+                        </button>
+                      </div>
                     )}
                   </div>
 
+                  {/* Galeria */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Galeria de Imagens (Página de Detalhes)
                     </label>
+                    
+                    {uploadErrors.gallery && (
+                      <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                        {uploadErrors.gallery}
+                      </div>
+                    )}
+                    
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleImageUpload(e.target.files[0], 'gallery')}
-                      className="w-full"
-                      disabled={uploadingImage}
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          Array.from(e.target.files).forEach((file, index) => {
+                            setTimeout(() => {
+                              handleImageUpload(file, 'gallery');
+                            }, index * 500);
+                          });
+                        }
+                      }}
+                      className="w-full mb-2"
+                      disabled={uploadingThumbnail || uploadingGallery || loading}
                     />
-                    <div className="grid grid-cols-4 gap-2 mt-2">
+                    
+                    {uploadingGallery && (
+                      <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                        <div className="flex items-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                          A enviar imagem para galeria...
+                        </div>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-gray-500 mb-2">
+                      Pode selecionar múltiplas imagens (máx. 5MB cada). Uploads são processados sequencialmente.
+                    </p>
+                    
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                       {formData.gallery_images.map((img, index) => (
-                        <div key={index} className="relative">
+                        <div key={index} className="relative group">
                           <img 
                             src={img} 
                             alt={`Gallery ${index + 1}`} 
-                            className="w-full h-24 object-cover rounded"
+                            className="w-full h-24 object-cover rounded border"
+                            onError={(e) => {
+                              console.error('Erro ao carregar imagem:', img);
+                              e.target.style.display = 'none';
+                            }}
                           />
                           <button
                             type="button"
                             onClick={() => removeGalleryImage(index)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Remover imagem"
                           >
                             ×
                           </button>
                         </div>
                       ))}
                     </div>
+                    
+                    {formData.gallery_images.length > 0 && (
+                      <p className="text-xs text-gray-600 mt-2">
+                        {formData.gallery_images.length} {formData.gallery_images.length === 1 ? 'imagem' : 'imagens'} na galeria
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Horários de Disponibilidade */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Horários de Disponibilidade
+                    Horários de Disponibilidade (Para Google Calendar)
                   </label>
                   <div className="space-y-2">
                     {weekDays.map(day => (
@@ -534,6 +677,73 @@ const AdminTourManager = () => {
                   </div>
                 </div>
 
+                {/* Gestão Manual de Datas */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Datas Disponíveis (Gestão Manual)
+                  </label>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h4 className="font-medium text-blue-900 mb-2">Como funciona:</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• <strong>Gestão Manual:</strong> Adicione datas específicas manualmente</li>
+                      <li>• <strong>Sincronização Google Calendar:</strong> Use o botão "Sincronizar Calendar" após criar o tour</li>
+                      <li>• <strong>Ambos:</strong> Pode combinar datas manuais + sincronização automática</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="date"
+                      value={newDate}
+                      onChange={(e) => setNewDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="flex-1 border rounded px-3 py-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={addManualDate}
+                      disabled={!newDate}
+                      className={`px-4 py-2 rounded font-medium ${
+                        newDate 
+                          ? 'bg-green-600 hover:bg-green-700 text-white' 
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Adicionar Data
+                    </button>
+                  </div>
+                  
+                  {manualDates.length > 0 ? (
+                    <div className="border rounded-lg p-4 bg-gray-50 max-h-40 overflow-y-auto">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {manualDates.map(date => (
+                          <div key={date} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
+                            <span>{new Date(date + 'T00:00:00').toLocaleDateString('pt-PT')}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeManualDate(date)}
+                              className="text-red-600 hover:text-red-800 font-medium ml-2"
+                              title="Remover data"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-600">
+                        Total: {manualDates.length} {manualDates.length === 1 ? 'data' : 'datas'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg p-4 bg-gray-50 text-center text-gray-500 text-sm">
+                      Nenhuma data manual adicionada
+                      <br />
+                      <span className="text-xs">Pode adicionar datas manualmente ou usar a sincronização com Google Calendar após criar o tour</span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Botões */}
                 <div className="flex justify-end gap-4 pt-4 border-t">
                   <button
@@ -542,16 +752,20 @@ const AdminTourManager = () => {
                       setShowModal(false);
                       resetForm();
                     }}
-                    className="px-4 py-2 border rounded hover:bg-gray-100"
+                    disabled={uploadingThumbnail || uploadingGallery}
+                    className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancelar
                   </button>
+                  
                   <button
                     type="submit"
-                    disabled={loading || uploadingImage}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    disabled={loading || uploadingThumbnail || uploadingGallery || isCreating}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? 'A guardar...' : (editingTour ? 'Atualizar' : 'Criar')} Tour
+                    {(loading || isCreating) ? 'A guardar...' : 
+                     (uploadingThumbnail || uploadingGallery) ? 'A enviar imagens...' : 
+                     (editingTour ? 'Atualizar' : 'Criar')} Tour
                   </button>
                 </div>
               </form>

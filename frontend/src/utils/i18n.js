@@ -321,6 +321,29 @@ const translations = {
     'message_loading': 'Cargando...',
     'message_no_tours': 'No hay tours disponibles.',
     'message_book_success': '¡Reserva exitosa!',
+
+            // ADICIONAR estas traduções ao ficheiro frontend/src/utils/i18n.js
+
+      // No objeto 'pt':
+      'tour_type_label': 'Tipo:',
+      'tour_duration_label': 'Duração:',
+      'tour_max_group': 'Grupo máximo:',
+      'tour_deposit_info': 'Depósito (30%):',
+      'tour_remaining_payment': 'Restante no dia do tour:',
+
+      // No objeto 'en':
+      'tour_type_label': 'Type:',
+      'tour_duration_label': 'Duration:',
+      'tour_max_group': 'Max group:',
+      'tour_deposit_info': 'Deposit (30%):',
+      'tour_remaining_payment': 'Remaining on tour day:',
+
+      // No objeto 'es':
+      'tour_type_label': 'Tipo:',
+      'tour_duration_label': 'Duración:',
+      'tour_max_group': 'Grupo máximo:',
+      'tour_deposit_info': 'Depósito (30%):',
+      'tour_remaining_payment': 'Restante el día del tour:',
     
     // Common
     'common_save': 'Guardar',
