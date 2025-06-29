@@ -234,38 +234,7 @@ const AdminTourManager = () => {
 
   return (
     <div className="p-6">
-      {/* Navegação adicionada aqui */}
-      <div className="mb-8 -mx-6 px-6 border-b">
-        <nav className="flex space-x-8 pb-4">
-          <button
-            onClick={() => window.location.href = '/admin'}
-            className="py-2 px-1 border-b-2 border-indigo-500 text-indigo-600 font-medium text-sm"
-          >
-            Tours
-          </button>
-          <button
-            onClick={() => {
-              const params = new URLSearchParams(window.location.search);
-              params.set('view', 'bookings');
-              window.location.href = `/admin?${params.toString()}`;
-            }}
-            className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm"
-          >
-            Reservas
-          </button>
-          <button
-            onClick={() => {
-              const params = new URLSearchParams(window.location.search);
-              params.set('view', 'stats');
-              window.location.href = `/admin?${params.toString()}`;
-            }}
-            className="py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm"
-          >
-            Estatísticas
-          </button>
-        </nav>
-      </div>
-
+      {/* Navegação removida - será gerida pelo AdminPanel */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Gestão de Tours</h2>
         <button
@@ -397,12 +366,18 @@ const AdminTourManager = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Máx. Participantes</label>
+                    <label className="block text-sm font-medium mb-1">Máx. Participantes (1-4)</label>
                     <input
                       type="number"
                       value={formData.max_participants}
-                      onChange={(e) => setFormData({...formData, max_participants: parseInt(e.target.value)})}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value);
+                        if (value >= 1 && value <= 4) {
+                          setFormData({...formData, max_participants: value});
+                        }
+                      }}
                       min="1"
+                      max="4"
                       required
                       className="w-full border rounded px-3 py-2"
                     />

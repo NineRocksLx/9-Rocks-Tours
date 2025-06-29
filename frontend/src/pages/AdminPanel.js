@@ -1,559 +1,522 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { uploadImageToStorage } from '../config/firebase';
+import AdminTourManager from '../components/AdminTourManager'; // Caminho correto
+import i18n from '../utils/i18n';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-const AdminTourManager = () => {
+const AdminPanel = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentView, setCurrentView] = useState('tours');
   const [tours, setTours] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [editingTour, setEditingTour] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  
-  // Form state
-  const [formData, setFormData] = useState({
-    name: { pt: '', en: '', es: '' },
-    short_description: { pt: '', en: '', es: '' },
-    description: { pt: '', en: '', es: '' },
-    location: '',
-    duration_hours: 4,
-    price: 0,
-    max_participants: 10,
-    tour_type: 'cultural',
-    route_description: { pt: '', en: '', es: '' },
-    includes: { pt: '', en: '', es: '' },
-    excludes: { pt: '', en: '', es: '' },
-    active: true,
-    images: [],
-    thumbnail_image: '', // Imagem pequena para homepage
-    gallery_images: [], // Imagens grandes para detalhes
-    availability_schedule: {
-      monday: { active: false, start: '09:00', end: '18:00' },
-      tuesday: { active: false, start: '09:00', end: '18:00' },
-      wednesday: { active: false, start: '09:00', end: '18:00' },
-      thursday: { active: false, start: '09:00', end: '18:00' },
-      friday: { active: false, start: '09:00', end: '18:00' },
-      saturday: { active: false, start: '09:00', end: '18:00' },
-      sunday: { active: false, start: '09:00', end: '18:00' }
-    }
+  const [error, setError] = useState('');
+
+  // Login state
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
   });
 
   useEffect(() => {
-    fetchTours();
-  }, []);
-
-  const fetchTours = async () => {
-    try {
-      const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=false`);
-      setTours(response.data);
-    } catch (error) {
-      console.error('Erro ao buscar tours:', error);
+    // Check if already logged in
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      setIsLoggedIn(true);
+      if (currentView !== 'tours') { // Tours são geridos pelo AdminTourManager
+        fetchData();
+      }
     }
-  };
+  }, [currentView]);
 
-  const handleImageUpload = async (file, imageType) => {
-    if (!file) return;
-
-    setUploadingImage(true);
-    try {
-      // Validar tipo de arquivo
-      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        alert('Por favor, envie apenas imagens JPG, PNG ou WebP');
-        return;
-      }
-
-      // Validar tamanho (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('A imagem deve ter menos de 5MB');
-        return;
-      }
-
-      // Criar path único para a imagem
-      const timestamp = Date.now();
-      const fileName = `tours/${timestamp}_${file.name}`;
-      
-      // Upload para Firebase Storage
-      const downloadURL = await uploadImageToStorage(file, fileName);
-      
-      // Atualizar form data
-      if (imageType === 'thumbnail') {
-        setFormData(prev => ({ ...prev, thumbnail_image: downloadURL }));
-      } else if (imageType === 'gallery') {
-        setFormData(prev => ({ 
-          ...prev, 
-          gallery_images: [...prev.gallery_images, downloadURL] 
-        }));
-      }
-      
-      alert('Imagem enviada com sucesso!');
-    } catch (error) {
-      console.error('Erro ao enviar imagem:', error);
-      alert('Erro ao enviar imagem. Tente novamente.');
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const removeGalleryImage = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      gallery_images: prev.gallery_images.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
     try {
-      // Combinar todas as imagens
-      const allImages = [formData.thumbnail_image, ...formData.gallery_images].filter(Boolean);
+      const response = await axios.post(`${BACKEND_URL}/api/admin/login`, credentials);
       
-      const tourData = {
-        ...formData,
-        images: allImages,
-        availability_dates: [] // Será preenchido pela integração com Google Calendar
-      };
-
-      if (editingTour) {
-        await axios.put(`${BACKEND_URL}/api/tours/${editingTour.id}`, tourData);
-        alert('Tour atualizado com sucesso!');
-      } else {
-        await axios.post(`${BACKEND_URL}/api/tours`, tourData);
-        alert('Tour criado com sucesso!');
+      if (response.data.token) {
+        localStorage.setItem('admin_token', response.data.token);
+        setIsLoggedIn(true);
+        if (currentView !== 'tours') {
+          fetchData();
+        }
       }
-
-      resetForm();
-      setShowModal(false);
-      fetchTours();
-    } catch (error) {
-      console.error('Erro ao salvar tour:', error);
-      alert('Erro ao salvar tour. Verifique os dados.');
+    } catch (err) {
+      setError('Credenciais inválidas');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (tour) => {
-    setEditingTour(tour);
-    setFormData({
-      ...tour,
-      thumbnail_image: tour.images?.[0] || '',
-      gallery_images: tour.images?.slice(1) || [],
-      availability_schedule: tour.availability_schedule || {
-        monday: { active: false, start: '09:00', end: '18:00' },
-        tuesday: { active: false, start: '09:00', end: '18:00' },
-        wednesday: { active: false, start: '09:00', end: '18:00' },
-        thursday: { active: false, start: '09:00', end: '18:00' },
-        friday: { active: false, start: '09:00', end: '18:00' },
-        saturday: { active: false, start: '09:00', end: '18:00' },
-        sunday: { active: false, start: '09:00', end: '18:00' }
-      }
-    });
-    setShowModal(true);
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setIsLoggedIn(false);
+    setCredentials({ username: '', password: '' });
   };
 
-  const handleDelete = async (tourId) => {
-    if (window.confirm('Tem certeza que deseja eliminar este tour?')) {
-      try {
-        await axios.delete(`${BACKEND_URL}/api/tours/${tourId}`);
-        alert('Tour eliminado com sucesso!');
-        fetchTours();
-      } catch (error) {
-        console.error('Erro ao eliminar tour:', error);
-        alert('Erro ao eliminar tour.');
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      if (currentView === 'bookings') {
+        const response = await axios.get(`${BACKEND_URL}/api/bookings`);
+        setBookings(response.data);
+      } else if (currentView === 'stats') {
+        const [statsResponse, toursResponse] = await Promise.all([
+          axios.get(`${BACKEND_URL}/api/admin/stats`),
+          axios.get(`${BACKEND_URL}/api/tours?active_only=false`)
+        ]);
+        setStats(statsResponse.data);
+        setTours(toursResponse.data);
       }
+    } catch (err) {
+      setError('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleTourStatus = async (tour) => {
-    try {
-      await axios.put(`${BACKEND_URL}/api/tours/${tour.id}`, { active: !tour.active });
-      fetchTours();
-    } catch (error) {
-      console.error('Erro ao alterar status:', error);
-    }
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(price);
   };
 
-  const syncWithGoogleCalendar = async (tourId) => {
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('pt-PT');
+  };
+
+  const exportBookings = async () => {
     try {
-      const response = await axios.put(`${BACKEND_URL}/api/tours/${tourId}/availability`, {
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const response = await axios.get(`${BACKEND_URL}/api/admin/export/bookings`, {
+        responseType: 'blob'
       });
-      alert('Disponibilidade sincronizada com Google Calendar!');
-      fetchTours();
-    } catch (error) {
-      console.error('Erro ao sincronizar:', error);
-      alert('Erro ao sincronizar com Google Calendar');
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'reservas.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      setError('Erro ao exportar dados');
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: { pt: '', en: '', es: '' },
-      short_description: { pt: '', en: '', es: '' },
-      description: { pt: '', en: '', es: '' },
-      location: '',
-      duration_hours: 4,
-      price: 0,
-      max_participants: 10,
-      tour_type: 'cultural',
-      route_description: { pt: '', en: '', es: '' },
-      includes: { pt: '', en: '', es: '' },
-      excludes: { pt: '', en: '', es: '' },
-      active: true,
-      images: [],
-      thumbnail_image: '',
-      gallery_images: [],
-      availability_schedule: {
-        monday: { active: false, start: '09:00', end: '18:00' },
-        tuesday: { active: false, start: '09:00', end: '18:00' },
-        wednesday: { active: false, start: '09:00', end: '18:00' },
-        thursday: { active: false, start: '09:00', end: '18:00' },
-        friday: { active: false, start: '09:00', end: '18:00' },
-        saturday: { active: false, start: '09:00', end: '18:00' },
-        sunday: { active: false, start: '09:00', end: '18:00' }
-      }
-    });
-    setEditingTour(null);
+  // Encontrar nome do tour pelo ID
+  const getTourName = (tourId) => {
+    const tour = tours.find(t => t.id === tourId);
+    return tour ? tour.name.pt : tourId;
   };
 
-  const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const weekDaysPT = {
-    monday: 'Segunda',
-    tuesday: 'Terça',
-    wednesday: 'Quarta',
-    thursday: 'Quinta',
-    friday: 'Sexta',
-    saturday: 'Sábado',
-    sunday: 'Domingo'
-  };
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">9 Rocks Tours</h1>
+            <p className="text-gray-600 mt-2">Painel de Administração</p>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+              <div className="text-red-800">{error}</div>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <div className="mb-4">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                Utilizador
+              </label>
+              <input
+                type="text"
+                id="username"
+                value={credentials.username}
+                onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Palavra-passe
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={credentials.password}
+                onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'A entrar...' : 'Entrar'}
+            </button>
+          </form>
+
+          <div className="mt-4 text-sm text-gray-500 text-center">
+            <p>Credenciais de teste:</p>
+            <p><strong>Utilizador:</strong> admin</p>
+            <p><strong>Palavra-passe:</strong> 9rocks2025</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Gestão de Tours</h2>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          + Adicionar Tour
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              9 Rocks Tours - Admin
+            </h1>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </header>
 
-      {/* Lista de Tours */}
-      <div className="grid gap-4">
-        {tours.map((tour) => (
-          <div key={tour.id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-2">
-                  {tour.images?.[0] && (
-                    <img 
-                      src={tour.images[0]} 
-                      alt={tour.name.pt}
-                      className="w-20 h-20 object-cover rounded"
-                    />
-                  )}
-                  <div>
-                    <h3 className="text-lg font-semibold">{tour.name.pt}</h3>
-                    <p className="text-gray-600">{tour.location} • {tour.duration_hours}h • €{tour.price}</p>
-                    <span className={`inline-block px-2 py-1 text-xs rounded ${
-                      tour.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {tour.active ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </div>
-                </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Navigation */}
+        <div className="mb-8">
+          <nav className="flex space-x-8">
+            <button
+              onClick={() => setCurrentView('tours')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                currentView === 'tours'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Tours
+            </button>
+            <button
+              onClick={() => setCurrentView('bookings')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                currentView === 'bookings'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Reservas
+            </button>
+            <button
+              onClick={() => setCurrentView('stats')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                currentView === 'stats'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Estatísticas
+            </button>
+          </nav>
+        </div>
+
+        {error && currentView !== 'tours' && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+            <div className="text-red-800">{error}</div>
+          </div>
+        )}
+
+        {loading && currentView !== 'tours' && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          </div>
+        )}
+
+        {/* Tours View - Usa o novo AdminTourManager */}
+        {currentView === 'tours' && (
+          <AdminTourManager />
+        )}
+
+        {/* Bookings View */}
+        {currentView === 'bookings' && !loading && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Reservas</h2>
+              <button
+                onClick={exportBookings}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+              >
+                Exportar CSV
+              </button>
+            </div>
+
+            <div className="bg-white shadow overflow-hidden sm:rounded-md">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cliente
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Tour
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Data
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Participantes
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Pagamento
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {bookings.map((booking) => (
+                      <tr key={booking.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {booking.customer_name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {booking.customer_email}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {booking.customer_phone}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {getTourName(booking.tour_id)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatDate(booking.selected_date)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {booking.participants}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatPrice(booking.total_amount)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            booking.status === 'confirmed'
+                              ? 'bg-green-100 text-green-800'
+                              : booking.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : booking.status === 'completed'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {booking.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            booking.payment_status === 'paid'
+                              ? 'bg-green-100 text-green-800'
+                              : booking.payment_status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {booking.payment_status || 'pendente'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
               
-              <div className="flex gap-2">
-                <button
-                  onClick={() => toggleTourStatus(tour)}
-                  className={`px-3 py-1 rounded text-sm ${
-                    tour.active 
-                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                      : 'bg-green-100 text-green-700 hover:bg-green-200'
-                  }`}
-                >
-                  {tour.active ? 'Desativar' : 'Ativar'}
-                </button>
-                <button
-                  onClick={() => syncWithGoogleCalendar(tour.id)}
-                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200"
-                >
-                  Sincronizar Calendar
-                </button>
-                <button
-                  onClick={() => handleEdit(tour)}
-                  className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-sm hover:bg-yellow-200"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(tour.id)}
-                  className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200"
-                >
-                  Eliminar
-                </button>
-              </div>
+              {bookings.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhuma reserva encontrada
+                </div>
+              )}
             </div>
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Modal de Criação/Edição */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-xl font-bold mb-4">
-                {editingTour ? 'Editar Tour' : 'Adicionar Novo Tour'}
-              </h3>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Informações Básicas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Localização</label>
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData({...formData, location: e.target.value})}
-                      required
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Tipo de Tour</label>
-                    <select
-                      value={formData.tour_type}
-                      onChange={(e) => setFormData({...formData, tour_type: e.target.value})}
-                      className="w-full border rounded px-3 py-2"
-                    >
-                      <option value="cultural">Cultural</option>
-                      <option value="gastronomic">Gastronômico</option>
-                      <option value="mixed">Misto</option>
-                      <option value="custom">Personalizado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Duração (horas)</label>
-                    <input
-                      type="number"
-                      value={formData.duration_hours}
-                      onChange={(e) => setFormData({...formData, duration_hours: parseFloat(e.target.value)})}
-                      min="1"
-                      step="0.5"
-                      required
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Preço (€)</label>
-                    <input
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
-                      min="0"
-                      step="0.01"
-                      required
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Máx. Participantes</label>
-                    <input
-                      type="number"
-                      value={formData.max_participants}
-                      onChange={(e) => setFormData({...formData, max_participants: parseInt(e.target.value)})}
-                      min="1"
-                      required
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Campos Multilingues */}
-                {['name', 'short_description', 'description', 'route_description', 'includes', 'excludes'].map(field => (
-                  <div key={field} className="space-y-2">
-                    <label className="block text-sm font-medium capitalize">
-                      {field.replace('_', ' ')}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      {['pt', 'en', 'es'].map(lang => (
-                        <div key={lang}>
-                          <label className="text-xs text-gray-500">{lang.toUpperCase()}</label>
-                          {field === 'description' ? (
-                            <textarea
-                              value={formData[field][lang]}
-                              onChange={(e) => setFormData({
-                                ...formData,
-                                [field]: { ...formData[field], [lang]: e.target.value }
-                              })}
-                              required
-                              rows="3"
-                              className="w-full border rounded px-3 py-2"
-                            />
-                          ) : (
-                            <input
-                              type="text"
-                              value={formData[field][lang]}
-                              onChange={(e) => setFormData({
-                                ...formData,
-                                [field]: { ...formData[field], [lang]: e.target.value }
-                              })}
-                              required
-                              className="w-full border rounded px-3 py-2"
-                            />
-                          )}
-                        </div>
-                      ))}
+        {/* Stats View */}
+        {currentView === 'stats' && !loading && stats && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Estatísticas</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-indigo-600 rounded-md flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                      </div>
                     </div>
-                  </div>
-                ))}
-
-                {/* Upload de Imagens */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Imagem de Capa (Thumbnail - Homepage)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e.target.files[0], 'thumbnail')}
-                      className="w-full"
-                      disabled={uploadingImage}
-                    />
-                    {formData.thumbnail_image && (
-                      <img 
-                        src={formData.thumbnail_image} 
-                        alt="Thumbnail" 
-                        className="mt-2 w-40 h-24 object-cover rounded"
-                      />
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Galeria de Imagens (Página de Detalhes)
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e.target.files[0], 'gallery')}
-                      className="w-full"
-                      disabled={uploadingImage}
-                    />
-                    <div className="grid grid-cols-4 gap-2 mt-2">
-                      {formData.gallery_images.map((img, index) => (
-                        <div key={index} className="relative">
-                          <img 
-                            src={img} 
-                            alt={`Gallery ${index + 1}`} 
-                            className="w-full h-24 object-cover rounded"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeGalleryImage(index)}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          Total de Reservas
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {stats.total_bookings}
+                        </dd>
+                      </dl>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Horários de Disponibilidade */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Horários de Disponibilidade
-                  </label>
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-green-600 rounded-md flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          Receita Total
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {formatPrice(stats.total_revenue)}
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          Tours Ativos
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {tours.filter(t => t.active).length}
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="p-5">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 bg-purple-600 rounded-md flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-5 w-0 flex-1">
+                      <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">
+                          Receita Média
+                        </dt>
+                        <dd className="text-lg font-medium text-gray-900">
+                          {stats.total_bookings > 0 
+                            ? formatPrice(stats.total_revenue / stats.total_bookings)
+                            : formatPrice(0)
+                          }
+                        </dd>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white shadow rounded-lg p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Reservas por Tour
+                </h3>
+                {Object.entries(stats.bookings_by_tour).length > 0 ? (
                   <div className="space-y-2">
-                    {weekDays.map(day => (
-                      <div key={day} className="flex items-center gap-4">
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={formData.availability_schedule[day].active}
-                            onChange={(e) => setFormData({
-                              ...formData,
-                              availability_schedule: {
-                                ...formData.availability_schedule,
-                                [day]: { ...formData.availability_schedule[day], active: e.target.checked }
-                              }
-                            })}
-                            className="mr-2"
-                          />
-                          <span className="w-20">{weekDaysPT[day]}</span>
-                        </label>
-                        {formData.availability_schedule[day].active && (
-                          <>
-                            <input
-                              type="time"
-                              value={formData.availability_schedule[day].start}
-                              onChange={(e) => setFormData({
-                                ...formData,
-                                availability_schedule: {
-                                  ...formData.availability_schedule,
-                                  [day]: { ...formData.availability_schedule[day], start: e.target.value }
-                                }
-                              })}
-                              className="border rounded px-2 py-1"
-                            />
-                            <span>até</span>
-                            <input
-                              type="time"
-                              value={formData.availability_schedule[day].end}
-                              onChange={(e) => setFormData({
-                                ...formData,
-                                availability_schedule: {
-                                  ...formData.availability_schedule,
-                                  [day]: { ...formData.availability_schedule[day], end: e.target.value }
-                                }
-                              })}
-                              className="border rounded px-2 py-1"
-                            />
-                          </>
-                        )}
+                    {Object.entries(stats.bookings_by_tour).map(([tourId, count]) => (
+                      <div key={tourId} className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">{getTourName(tourId)}</span>
+                        <span className="text-sm font-medium bg-gray-100 px-2 py-1 rounded">{count}</span>
                       </div>
                     ))}
                   </div>
-                </div>
+                ) : (
+                  <p className="text-gray-500">Nenhum dado disponível</p>
+                )}
+              </div>
 
-                {/* Botões */}
-                <div className="flex justify-end gap-4 pt-4 border-t">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowModal(false);
-                      resetForm();
-                    }}
-                    className="px-4 py-2 border rounded hover:bg-gray-100"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading || uploadingImage}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {loading ? 'A guardar...' : (editingTour ? 'Atualizar' : 'Criar')} Tour
-                  </button>
-                </div>
-              </form>
+              <div className="bg-white shadow rounded-lg p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Reservas por Status
+                </h3>
+                {Object.entries(stats.bookings_by_status).length > 0 ? (
+                  <div className="space-y-2">
+                    {Object.entries(stats.bookings_by_status).map(([status, count]) => {
+                      const statusLabels = {
+                        'pending': 'Pendente',
+                        'confirmed': 'Confirmada',
+                        'completed': 'Completa',
+                        'cancelled': 'Cancelada'
+                      };
+                      return (
+                        <div key={status} className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">{statusLabels[status] || status}</span>
+                          <span className="text-sm font-medium bg-gray-100 px-2 py-1 rounded">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Nenhum dado disponível</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
 
-export default AdminTourManager;
+export default AdminPanel;
