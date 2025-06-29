@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { uploadImageToStorage } from '../config/firebase';
+import CalendarDatePicker from './CalendarDatePicker'; // ADICIONADO
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -677,72 +678,93 @@ const AdminTourManager = () => {
                   </div>
                 </div>
 
-                {/* Gestão Manual de Datas */}
+                {/* INÍCIO DA SEÇÃO SUBSTITUÍDA */}
+                {/* Gestão de Datas Disponíveis com Calendário */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Datas Disponíveis (Gestão Manual)
+                    Datas Disponíveis
                   </label>
                   
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-medium text-blue-900 mb-2">Como funciona:</h4>
+                    <h4 className="font-medium text-blue-900 mb-2">Sistema de Disponibilidade:</h4>
                     <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• <strong>Gestão Manual:</strong> Adicione datas específicas manualmente</li>
-                      <li>• <strong>Sincronização Google Calendar:</strong> Use o botão "Sincronizar Calendar" após criar o tour</li>
-                      <li>• <strong>Ambos:</strong> Pode combinar datas manuais + sincronização automática</li>
+                      <li>• <strong>Calendário Manual:</strong> Selecione datas específicas nos próximos 6 meses</li>
+                      <li>• <strong>Google Calendar:</strong> Marque dias como "Indisponível" (evento de dia inteiro) no seu Google Calendar</li>
+                      <li>• <strong>Sincronização:</strong> Use "Sincronizar Calendar" para aplicar restrições do Google Calendar</li>
+                      <li>• <strong>Fins de semana:</strong> Desabilitados por defeito (pode ser alterado nos horários acima)</li>
                     </ul>
                   </div>
 
-                  <div className="flex gap-2 mb-4">
-                    <input
-                      type="date"
-                      value={newDate}
-                      onChange={(e) => setNewDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="flex-1 border rounded px-3 py-2"
-                    />
-                    <button
-                      type="button"
-                      onClick={addManualDate}
-                      disabled={!newDate}
-                      className={`px-4 py-2 rounded font-medium ${
-                        newDate 
-                          ? 'bg-green-600 hover:bg-green-700 text-white' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      Adicionar Data
-                    </button>
-                  </div>
-                  
-                  {manualDates.length > 0 ? (
-                    <div className="border rounded-lg p-4 bg-gray-50 max-h-40 overflow-y-auto">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {manualDates.map(date => (
-                          <div key={date} className="flex items-center justify-between bg-white p-2 rounded border text-sm">
-                            <span>{new Date(date + 'T00:00:00').toLocaleDateString('pt-PT')}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeManualDate(date)}
-                              className="text-red-600 hover:text-red-800 font-medium ml-2"
-                              title="Remover data"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-2 text-xs text-gray-600">
-                        Total: {manualDates.length} {manualDates.length === 1 ? 'data' : 'datas'}
-                      </div>
+                  {/* Método rápido para adicionar uma data */}
+                  <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <h5 className="font-medium mb-2">Adicionar Data Rápida:</h5>
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        value={newDate}
+                        onChange={(e) => setNewDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="flex-1 border rounded px-3 py-2"
+                      />
+                      <button
+                        type="button"
+                        onClick={addManualDate}
+                        disabled={!newDate}
+                        className={`px-4 py-2 rounded font-medium ${
+                          newDate 
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Adicionar
+                      </button>
                     </div>
-                  ) : (
-                    <div className="border rounded-lg p-4 bg-gray-50 text-center text-gray-500 text-sm">
-                      Nenhuma data manual adicionada
-                      <br />
-                      <span className="text-xs">Pode adicionar datas manualmente ou usar a sincronização com Google Calendar após criar o tour</span>
+                  </div>
+
+                  {/* Calendário Visual */}
+                  <CalendarDatePicker
+                    selectedDates={manualDates}
+                    onDatesChange={setManualDates}
+                    className="mb-4"
+                  />
+                  
+                  {/* Lista compacta das datas selecionadas */}
+                  {manualDates.length > 0 && (
+                    <div className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-medium text-gray-900">
+                          Datas Selecionadas ({manualDates.length})
+                        </h5>
+                        <button
+                          type="button"
+                          onClick={() => setManualDates([])}
+                          className="text-sm text-red-600 hover:text-red-800"
+                        >
+                          Limpar Todas
+                        </button>
+                      </div>
+                      
+                      <div className="max-h-32 overflow-y-auto">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                          {manualDates.map(date => (
+                            <div key={date} className="flex items-center justify-between bg-white p-2 rounded border">
+                              <span>{new Date(date + 'T00:00:00').toLocaleDateString('pt-PT')}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeManualDate(date)}
+                                className="text-red-600 hover:text-red-800 font-medium ml-1"
+                                title="Remover data"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
+                {/* FIM DA SEÇÃO SUBSTITUÍDA */}
 
                 {/* Botões */}
                 <div className="flex justify-end gap-4 pt-4 border-t">
