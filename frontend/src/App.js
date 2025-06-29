@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import TourDetails from "./pages/TourDetails";
 import AdminPanel from "./pages/AdminPanel";
+import ToursPage from "./pages/ToursPage";
 
 function App() {
   return (
@@ -14,7 +15,7 @@ function App() {
         <Routes>
           <Route path="/" element={<><Header /><HomePage /></>} />
           <Route path="/tour/:id" element={<><Header /><TourDetails /></>} />
-          <Route path="/tours" element={<><Header /><HomePage /></>} />
+          <Route path="/tours" element={<><Header /><ToursPage /></>} />
           <Route path="/about" element={<><Header /><AboutPage /></>} />
           <Route path="/contact" element={<><Header /><ContactPage /></>} />
           <Route path="/admin" element={<AdminPanel />} />

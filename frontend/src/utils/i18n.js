@@ -77,6 +77,21 @@ const translations = {
     'message_loading': 'A carregar...',
     'message_no_tours': 'Não há tours disponíveis.',
     'message_book_success': 'Reserva realizada com sucesso!',
+
+      // PT - Adicionar estas chaves:
+    'tour_description': 'Descrição',
+    'tour_route': 'Percurso',
+    'tour_included': 'Incluído',
+    'tour_not_included': 'Não Incluído',
+    'tour_per_person': 'por pessoa',
+    'tour_no_dates_available': 'Sem datas disponíveis no momento',
+    'tour_instant_confirmation': 'Confirmação imediata',
+    'tour_free_cancellation': 'Cancelamento gratuito até 24h antes',
+    'tour_professional_guide': 'Guia profissional',
+    'tour_reserve_now': 'Reservar Agora',
+    'tour_select_date': 'Selecione uma data',
+    'tour_person': 'pessoa',
+    'tour_people': 'pessoas',
     
     // Common
     'common_save': 'Guardar',
@@ -138,6 +153,20 @@ const translations = {
     'booking_payment_method': 'Payment Method',
     'booking_submit': 'Confirm Booking',
     'booking_total': 'Total',
+
+    'tour_description': 'Description',
+    'tour_route': 'Route',
+    'tour_included': 'Included',
+    'tour_not_included': 'Not Included',
+    'tour_per_person': 'per person',
+    'tour_no_dates_available': 'No available dates at the moment',
+    'tour_instant_confirmation': 'Instant confirmation',
+    'tour_free_cancellation': 'Free cancellation up to 24h before',
+    'tour_professional_guide': 'Professional guide',
+    'tour_reserve_now': 'Book Now',
+    'tour_select_date': 'Select a date',
+    'tour_person': 'person',
+    'tour_people': 'people',
     
     // Payment
     'payment_paypal': 'PayPal',
