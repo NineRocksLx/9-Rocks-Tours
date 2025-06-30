@@ -3,13 +3,20 @@
 
 const translations = {
   pt: {
+
+     // Tabs e Navegação
+    'tab_overview': 'Visão Geral',
+    'tab_itinerary': 'Itinerário', 
+    'tab_details': 'Detalhes',
+
     // Navigation & Header
     'nav_home': 'Início',
     'nav_tours': 'Tours',
     'nav_about': 'Sobre Nós',
     'nav_contact': 'Contacto',
     'nav_admin': 'Admin',
-    
+
+       
     // Homepage
     'home_title': '9 Rocks Tours',
     'home_subtitle': 'Descubra Portugal de forma autêntica',
@@ -36,7 +43,76 @@ const translations = {
     'tour_view_details': 'Ver Detalhes',
     'tour_hours': 'horas',
     'tour_max_people': 'máx. pessoas',
-    
+    'tour_type_label': 'Tipo:',
+    'tour_duration_label': 'Duração:',
+    'tour_max_group': 'Grupo máximo:',
+    'tour_deposit_info': 'Depósito (30%):',
+    'tour_remaining_payment': 'Restante no dia do tour:',
+
+       
+        // Itinerário
+    'itinerary_tour_schedule': 'Itinerário do Tour',
+    'itinerary_detailed_schedule': 'Itinerário Detalhado',
+    'itinerary_duration': 'Duração',
+    'itinerary_activities': 'atividades',
+    'itinerary_main_stops': 'Horários principais',
+    'itinerary_included_activities': 'Atividades incluídas',
+    'itinerary_detailed_program': 'Programa Detalhado',
+    'itinerary_tour_program': 'Programa do Tour',
+    'itinerary_tour_in': 'Tour em',
+    'itinerary_unique_experience': 'Experiência única pelos pontos de interesse',
+    'itinerary_guided_visit': 'Visita guiada pelos principais locais',
+    'itinerary_local_stories': 'Histórias e curiosidades locais',
+    'itinerary_photo_time': 'Tempo para fotografias e descobertas',
+    'itinerary_additional_info': 'Informação Adicional',
+    'itinerary_small_group': 'Grupo pequeno',
+    'itinerary_max': 'máximo',
+    'itinerary_people': 'pessoas',
+    'itinerary_professional_guide': 'Guia profissional incluído',
+    'itinerary_tour_region': 'Região do Tour',
+    'itinerary_important_info': 'Informações Importantes',
+    'itinerary_group': 'Grupo',
+    'itinerary_payment': 'Pagamento',
+    'itinerary_payment_details': '30% depósito + 70% no dia',
+    'itinerary_cancellation': 'Cancelamento',
+    'itinerary_cancellation_details': 'Gratuito até 24h antes',
+    'itinerary_activity_at': 'Atividade às {time}',
+    'itinerary_other_stops': 'Outras paradas',
+    'itinerary_tour_info': 'Informações do Tour',
+    'itinerary_meeting_point': 'Ponto de encontro confirmado 24h antes',
+    'itinerary_whatsapp_contact': 'Guia contactável via WhatsApp',
+    'itinerary_flexible_schedule': 'Horários flexíveis conforme ritmo do grupo',
+
+     // Sidebar
+    'sidebar_total_price': 'Preço total do tour',
+    'sidebar_deposit': 'Depósito (30%):',
+    'sidebar_remaining': 'Restante no dia do tour:',
+    'sidebar_dates_available': 'datas disponíveis',
+    'sidebar_instant_confirmation': 'Confirmação imediata',
+    'sidebar_free_cancellation': 'Cancelamento gratuito até 24h antes',
+    'sidebar_professional_guide': 'Guia profissional',
+    'sidebar_type': 'Tipo:',
+    'sidebar_duration': 'Duração:',
+    'sidebar_max_group': 'Grupo máximo:',
+
+     // Common
+    'common_save': 'Guardar',
+    'common_cancel': 'Cancelar',
+    'common_delete': 'Eliminar',
+    'common_edit': 'Editar',
+    'common_back': 'Voltar',
+    'common_next': 'Seguinte',
+    'common_previous': 'Anterior',
+    'common_close': 'Fechar',
+    'common_yes': 'Sim',
+    'common_no': 'Não',
+    'common_try_again': 'Tentar Novamente',
+    'common_hours': 'horas',
+    'common_hour': 'hora',
+    'common_person': 'pessoa',
+    'common_people': 'pessoas',
+    'common_up_to': 'Até',
+
     // Booking Form
     'booking_title': 'Reservar Tour',
     'booking_customer_name': 'Nome Completo',
@@ -77,6 +153,17 @@ const translations = {
     'message_loading': 'A carregar...',
     'message_no_tours': 'Não há tours disponíveis.',
     'message_book_success': 'Reserva realizada com sucesso!',
+    'message.success': 'Sucesso!',
+    'message.error': 'Erro ao carregar os dados. Por favor, tente novamente.',
+    'message.loading': 'A carregar...',
+    'message.no_tours': 'Não há tours disponíveis.',
+    'message.book_success': 'Reserva realizada com sucesso!',
+    'message_success': 'Sucesso!',
+    'message_error': 'Erro ao carregar os dados. Por favor, tente novamente.',
+    'message_loading': 'A carregar...',
+    'message_no_tours': 'Não há tours disponíveis.',
+    'message_book_success': 'Reserva realizada com sucesso!',
+
 
       // PT - Adicionar estas chaves:
     'tour_description': 'Descrição',
@@ -93,28 +180,24 @@ const translations = {
     'tour_person': 'pessoa',
     'tour_people': 'pessoas',
     
-    // Common
-    'common_save': 'Guardar',
-    'common_cancel': 'Cancelar',
-    'common_delete': 'Eliminar',
-    'common_edit': 'Editar',
-    'common_back': 'Voltar',
-    'common_next': 'Seguinte',
-    'common_previous': 'Anterior',
-    'common_close': 'Fechar',
-    'common_yes': 'Sim',
-    'common_no': 'Não',
-    'common_try_again': 'Tentar Novamente'
+   
   },
   
   en: {
+
+    // Tabs e Navegação
+    'tab_overview': 'Overview',
+    'tab_itinerary': 'Itinerary',
+    'tab_details': 'Details',
+
     // Navigation & Header
     'nav_home': 'Home',
     'nav_tours': 'Tours',
     'nav_about': 'About Us',
     'nav_contact': 'Contact',
     'nav_admin': 'Admin',
-    
+
+        
     // Homepage
     'home_title': '9 Rocks Tours',
     'home_subtitle': 'Discover Portugal authentically',
@@ -141,6 +224,69 @@ const translations = {
     'tour_view_details': 'View Details',
     'tour_hours': 'hours',
     'tour_max_people': 'max people',
+
+      // Itinerário
+    'itinerary_tour_schedule': 'Tour Schedule',
+    'itinerary_detailed_schedule': 'Detailed Itinerary',
+    'itinerary_duration': 'Duration',
+    'itinerary_activities': 'activities',
+    'itinerary_main_stops': 'Main stops',
+    'itinerary_included_activities': 'Included activities',
+    'itinerary_detailed_program': 'Detailed Program',
+    'itinerary_tour_program': 'Tour Program',
+    'itinerary_tour_in': 'Tour in',
+    'itinerary_unique_experience': 'Unique experience through points of interest',
+    'itinerary_guided_visit': 'Guided visit to main locations',
+    'itinerary_local_stories': 'Local stories and curiosities',
+    'itinerary_photo_time': 'Time for photos and discoveries',
+    'itinerary_additional_info': 'Additional Information',
+    'itinerary_small_group': 'Small group',
+    'itinerary_max': 'maximum',
+    'itinerary_people': 'people',
+    'itinerary_professional_guide': 'Professional guide included',
+    'itinerary_tour_region': 'Tour Region',
+    'itinerary_important_info': 'Important Information',
+    'itinerary_group': 'Group',
+    'itinerary_payment': 'Payment',
+    'itinerary_payment_details': '30% deposit + 70% on tour day',
+    'itinerary_cancellation': 'Cancellation',
+    'itinerary_cancellation_details': 'Free up to 24h before',
+    'itinerary_activity_at': 'Activity at {time}',
+    'itinerary_other_stops': 'Other stops',
+    'itinerary_tour_info': 'Tour Information',
+    'itinerary_meeting_point': 'Meeting point confirmed 24h before',
+    'itinerary_whatsapp_contact': 'Guide contactable via WhatsApp',
+    'itinerary_flexible_schedule': 'Flexible schedule according to group pace',
+
+    // Sidebar
+    'sidebar_total_price': 'Total tour price',
+    'sidebar_deposit': 'Deposit (30%):',
+    'sidebar_remaining': 'Remaining on tour day:',
+    'sidebar_dates_available': 'available dates',
+    'sidebar_instant_confirmation': 'Instant confirmation',
+    'sidebar_free_cancellation': 'Free cancellation up to 24h before',
+    'sidebar_professional_guide': 'Professional guide',
+    'sidebar_type': 'Type:',
+    'sidebar_duration': 'Duration:',
+    'sidebar_max_group': 'Max group:',
+
+     // Common
+    'common_save': 'Save',
+    'common_cancel': 'Cancel',
+    'common_delete': 'Delete',
+    'common_edit': 'Edit',
+    'common_back': 'Back',
+    'common_next': 'Next',
+    'common_previous': 'Previous',
+    'common_close': 'Close',
+    'common_yes': 'Yes',
+    'common_no': 'No',
+    'common_try_again': 'Try Again',
+    'common_hours': 'hours',
+    'common_hour': 'hour',
+    'common_person': 'person',
+    'common_people': 'people',
+    'common_up_to': 'Up to',
     
     // Booking Form
     'booking_title': 'Book Tour',
@@ -167,6 +313,11 @@ const translations = {
     'tour_select_date': 'Select a date',
     'tour_person': 'person',
     'tour_people': 'people',
+    'tour_type_label': 'Type:',
+    'tour_duration_label': 'Duration:',
+    'tour_max_group': 'Max group:',
+    'tour_deposit_info': 'Deposit (30%):',
+    'tour_remaining_payment': 'Remaining on tour day:',
     
     // Payment
     'payment_paypal': 'PayPal',
@@ -189,24 +340,8 @@ const translations = {
     'admin_delete_tour': 'Delete Tour',
     'admin_active': 'Active',
     'admin_inactive': 'Inactive',
-    
-    // No arquivo frontend/src/utils/i18n.js
-// Localiza a seção de Messages em cada idioma e substitui por:
 
-// Para PT:
-    // Messages
-    'message.success': 'Sucesso!',
-    'message.error': 'Erro ao carregar os dados. Por favor, tente novamente.',
-    'message.loading': 'A carregar...',
-    'message.no_tours': 'Não há tours disponíveis.',
-    'message.book_success': 'Reserva realizada com sucesso!',
-    'message_success': 'Sucesso!',
-    'message_error': 'Erro ao carregar os dados. Por favor, tente novamente.',
-    'message_loading': 'A carregar...',
-    'message_no_tours': 'Não há tours disponíveis.',
-    'message_book_success': 'Reserva realizada com sucesso!',
-
-// Para EN:
+    // Para EN:
     // Messages
     'message.success': 'Success!',
     'message.error': 'Error loading data. Please try again.',
@@ -218,35 +353,20 @@ const translations = {
     'message_loading': 'Loading...',
     'message_no_tours': 'No tours available.',
     'message_book_success': 'Booking successful!',
-
-// Para ES:
-    // Messages
-    'message.success': '¡Éxito!',
-    'message.error': 'Error al cargar los datos. Por favor, inténtalo de nuevo.',
-    'message.loading': 'Cargando...',
-    'message.no_tours': 'No hay tours disponibles.',
-    'message.book_success': '¡Reserva exitosa!',
-    'message_success': '¡Éxito!',
-    'message_error': 'Error al cargar los datos. Por favor, inténtalo de nuevo.',
-    'message_loading': 'Cargando...',
-    'message_no_tours': 'No hay tours disponibles.',
-    'message_book_success': '¡Reserva exitosa!',
     
-    // Common
-    'common_save': 'Save',
-    'common_cancel': 'Cancel',
-    'common_delete': 'Delete',
-    'common_edit': 'Edit',
-    'common_back': 'Back',
-    'common_next': 'Next',
-    'common_previous': 'Previous',
-    'common_close': 'Close',
-    'common_yes': 'Yes',
-    'common_no': 'No',
-    'common_try_again': 'Try Again'
+    // No arquivo frontend/src/utils/i18n.js
+// Localiza a seção de Messages em cada idioma e substitui por:
+    
+   
   },
   
   es: {
+
+    // Tabs e Navegação
+    'tab_overview': 'Resumen',
+    'tab_itinerary': 'Itinerario',
+    'tab_details': 'Detalles',
+
     // Navigation & Header
     'nav_home': 'Inicio',
     'nav_tours': 'Tours',
@@ -260,6 +380,8 @@ const translations = {
     'home_description': 'Tours gastronómicos y culturales únicos por los tesoros escondidos de Portugal',
     'home_cta': 'Explorar Tours',
     'home_featured_tours': 'Tours Destacados',
+
+    
     
     // Tour Types
     'tour_type_gastronomic': 'Gastronómico',
@@ -280,7 +402,82 @@ const translations = {
     'tour_view_details': 'Ver Detalles',
     'tour_hours': 'horas',
     'tour_max_people': 'máx. personas',
+    'tour_description': 'Descripción',
+    'tour_included': 'Incluido',
+    'tour_not_included': 'No Incluido',
+    'tour_reserve_now': 'Reservar Ahora', 
+    'tour_no_dates_available': 'No hay fechas disponibles en este momento',
+
+    // Itinerário
+    'itinerary_tour_schedule': 'Horario del Tour',
+    'itinerary_detailed_schedule': 'Itinerario Detallado',
+    'itinerary_duration': 'Duración',
+    'itinerary_activities': 'actividades',
+    'itinerary_main_stops': 'Paradas principales',
+    'itinerary_included_activities': 'Actividades incluidas',
+    'itinerary_detailed_program': 'Programa Detallado',
+    'itinerary_tour_program': 'Programa del Tour',
+    'itinerary_tour_in': 'Tour en',
+    'itinerary_unique_experience': 'Experiencia única por puntos de interés',
+    'itinerary_guided_visit': 'Visita guiada a lugares principales',
+    'itinerary_local_stories': 'Historias y curiosidades locales',
+    'itinerary_photo_time': 'Tiempo para fotos y descubrimientos',
+    'itinerary_additional_info': 'Información Adicional',
+    'itinerary_small_group': 'Grupo pequeño',
+    'itinerary_max': 'máximo',
+    'itinerary_people': 'personas',
+    'itinerary_professional_guide': 'Guía profesional incluido',
+    'itinerary_tour_region': 'Región del Tour',
+    'itinerary_important_info': 'Información Importante',
+    'itinerary_group': 'Grupo',
+    'itinerary_payment': 'Pago',
+    'itinerary_payment_details': '30% depósito + 70% el día del tour',
+    'itinerary_cancellation': 'Cancelación',
+    'itinerary_cancellation_details': 'Gratuita hasta 24h antes',
+    'itinerary_activity_at': 'Actividad a las {time}',
+    'itinerary_detailed_schedule': 'Horario Detallado',
+    'itinerary_tour_region': 'Región del Tour',
+    'itinerary_small_group': 'Grupo pequeño',
+    'itinerary_max': 'máx.',
+    'itinerary_people': 'personas',
+    'itinerary_other_stops': 'Otras paradas',
+    'itinerary_tour_info': 'Información del Tour',
+    'itinerary_meeting_point': 'Punto de encuentro confirmado 24h antes',
+    'itinerary_whatsapp_contact': 'Guía contactable vía WhatsApp',
+    'itinerary_flexible_schedule': 'Horarios flexibles según ritmo del grupo',
+    'common_hours': 'horas',
     
+    // Sidebar
+    'sidebar_total_price': 'Precio total del tour',
+    'sidebar_deposit': 'Depósito (30%):',
+    'sidebar_remaining': 'Restante el día del tour:',
+    'sidebar_dates_available': 'fechas disponibles',
+    'sidebar_instant_confirmation': 'Confirmación inmediata',
+    'sidebar_free_cancellation': 'Cancelación gratuita hasta 24h antes',
+    'sidebar_professional_guide': 'Guía profesional',
+    'sidebar_type': 'Tipo:',
+    'sidebar_duration': 'Duración:',
+    'sidebar_max_group': 'Grupo máximo:',
+
+      // Common
+    'common_save': 'Guardar',
+    'common_cancel': 'Cancelar',
+    'common_delete': 'Eliminar',
+    'common_edit': 'Editar',
+    'common_back': 'Volver',
+    'common_next': 'Siguiente',
+    'common_previous': 'Anterior',
+    'common_close': 'Cerrar',
+    'common_yes': 'Sí',
+    'common_no': 'No',
+    'common_try_again': 'Intentar de Nuevo',
+    'common_hours': 'horas',
+    'common_hour': 'hora',
+    'common_person': 'persona',
+    'common_people': 'personas',
+    'common_up_to': 'Hasta',
+
+
     // Booking Form
     'booking_title': 'Reservar Tour',
     'booking_customer_name': 'Nombre Completo',
@@ -321,42 +518,26 @@ const translations = {
     'message_loading': 'Cargando...',
     'message_no_tours': 'No hay tours disponibles.',
     'message_book_success': '¡Reserva exitosa!',
+    'message.success': '¡Éxito!',
+    'message.error': 'Error al cargar los datos. Por favor, inténtalo de nuevo.',
+    'message.loading': 'Cargando...',
+    'message.no_tours': 'No hay tours disponibles.',
+    'message.book_success': '¡Reserva exitosa!',
+    'message_success': '¡Éxito!',
+    'message_loading': 'Cargando...',
+    'message_no_tours': 'No hay tours disponibles.',
+    'message_book_success': '¡Reserva exitosa!',
 
-            // ADICIONAR estas traduções ao ficheiro frontend/src/utils/i18n.js
+      
 
-      // No objeto 'pt':
-      'tour_type_label': 'Tipo:',
-      'tour_duration_label': 'Duração:',
-      'tour_max_group': 'Grupo máximo:',
-      'tour_deposit_info': 'Depósito (30%):',
-      'tour_remaining_payment': 'Restante no dia do tour:',
-
-      // No objeto 'en':
-      'tour_type_label': 'Type:',
-      'tour_duration_label': 'Duration:',
-      'tour_max_group': 'Max group:',
-      'tour_deposit_info': 'Deposit (30%):',
-      'tour_remaining_payment': 'Remaining on tour day:',
-
-      // No objeto 'es':
-      'tour_type_label': 'Tipo:',
-      'tour_duration_label': 'Duración:',
-      'tour_max_group': 'Grupo máximo:',
-      'tour_deposit_info': 'Depósito (30%):',
-      'tour_remaining_payment': 'Restante el día del tour:',
-    
-    // Common
-    'common_save': 'Guardar',
-    'common_cancel': 'Cancelar',
-    'common_delete': 'Eliminar',
-    'common_edit': 'Editar',
-    'common_back': 'Volver',
-    'common_next': 'Siguiente',
-    'common_previous': 'Anterior',
-    'common_close': 'Cerrar',
-    'common_yes': 'Sí',
-    'common_no': 'No',
-    'common_try_again': 'Intentar de Nuevo'
+     // No objeto 'es':
+    'tour_type_label': 'Tipo:',
+    'tour_duration_label': 'Duración:',
+    'tour_max_group': 'Grupo máximo:',
+    'tour_deposit_info': 'Depósito (30%):',
+    'tour_remaining_payment': 'Restante el día del tour:',
+   
+  
   }
 };
 
