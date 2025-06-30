@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { uploadImageToStorage } from '../config/firebase';
-import CalendarDatePicker from './CalendarDatePicker'; // ADICIONADO
+import CalendarDatePicker from './CalendarDatePicker';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -11,7 +11,7 @@ const AdminTourManager = () => {
   const [editingTour, setEditingTour] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  // CORRIGIDO: Estados de upload separados
+  // Estados de upload separados
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -62,7 +62,42 @@ const AdminTourManager = () => {
     }
   };
 
-  // CORRIGIDO: Upload com estados separados
+  // Função helper para preview do itinerário
+  const parseItineraryPreview = (text) => {
+    if (!text) return [];
+    
+    const timeRegex = /(\d{1,2}[:h]\d{2}|\d{1,2}h)/gi;
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    
+    const timeBlocks = [];
+    let currentBlock = null;
+    
+    lines.forEach((line) => {
+      const timeMatch = line.match(timeRegex);
+      
+      if (timeMatch) {
+        if (currentBlock) {
+          timeBlocks.push(currentBlock);
+        }
+        
+        const time = timeMatch[0].replace('h', ':');
+        const cleanText = line.replace(timeRegex, '').replace(':', '').trim();
+        
+        currentBlock = {
+          time: time,
+          title: cleanText || `Atividade às ${time}`
+        };
+      }
+    });
+    
+    if (currentBlock) {
+      timeBlocks.push(currentBlock);
+    }
+    
+    return timeBlocks;
+  };
+
+  // Upload com estados separados
   const handleImageUpload = async (file, imageType) => {
     if (!file) return;
 
@@ -106,7 +141,7 @@ const AdminTourManager = () => {
     }
   };
 
-  // NOVO: Remover thumbnail
+  // Remover thumbnail
   const removeThumbnailImage = () => {
     setFormData(prev => ({ ...prev, thumbnail_image: '' }));
     setUploadErrors(prev => ({...prev, thumbnail: null}));
@@ -238,7 +273,7 @@ const AdminTourManager = () => {
     }
   };
 
-  // CORRIGIDO: Reset completo
+  // Reset completo
   const resetForm = () => {
     setFormData({
       name: { pt: '', en: '', es: '' },
@@ -368,7 +403,7 @@ const AdminTourManager = () => {
       {/* Modal de Criação/Edição */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h3 className="text-xl font-bold mb-4">
                 {editingTour ? 'Editar Tour' : 'Adicionar Novo Tour'}
@@ -458,8 +493,8 @@ const AdminTourManager = () => {
                   </div>
                 </div>
 
-                {/* Campos Multilingues */}
-                {['name', 'short_description', 'description', 'route_description', 'includes', 'excludes'].map(field => (
+                {/* Campos Multilingues (Nome, Descrição Curta, Descrição) */}
+                {['name', 'short_description', 'description'].map(field => (
                   <div key={field} className="space-y-2">
                     <label className="block text-sm font-medium capitalize">
                       {field.replace('_', ' ')}
@@ -497,7 +532,109 @@ const AdminTourManager = () => {
                   </div>
                 ))}
 
-                {/* CORRIGIDO: Upload de Imagens */}
+                {/* NOVO: Campo Route Description Melhorado */}
+                <div>
+                  <label className="block text-sm font-medium capitalize mb-2">
+                    Itinerário por Horários (Route Description)
+                  </label>
+                  
+                  {/* Instruções claras */}
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">📋 Como criar o itinerário:</h4>
+                    <div className="text-sm text-blue-800 space-y-1">
+                      <p><strong>Formato:</strong> Hora + Descrição da atividade</p>
+                      <p><strong>Exemplo:</strong></p>
+                      <div className="bg-white p-2 rounded border mt-2 font-mono text-xs">
+                        10:00 Manhã: Encontro no centro histórico<br/>
+                        Visita guiada pelos pontos principais<br/>
+                        Introdução à história local<br/>
+                        <br/>
+                        12:30 Almoço: Restaurante tradicional<br/>
+                        Pratos típicos da região<br/>
+                        Degustação de vinhos locais<br/>
+                        <br/>
+                        14:30 Tarde: Visita aos monumentos<br/>
+                        Fotografias nos miradouros<br/>
+                        Tempo livre para compras
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {['pt', 'en', 'es'].map(lang => (
+                      <div key={lang}>
+                        <label className="text-xs text-gray-500 flex items-center justify-between">
+                          <span>{lang.toUpperCase()}</span>
+                          <span className="text-xs text-blue-600">Use horários (10:00, 12:30, etc.)</span>
+                        </label>
+                        <textarea
+                          value={formData.route_description[lang]}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            route_description: { ...formData.route_description, [lang]: e.target.value }
+                          })}
+                          required
+                          rows="8"
+                          placeholder={`10:00 Início do tour
+Encontro no ponto central
+Apresentação do guia
+
+12:30 Almoço tradicional
+Restaurante local
+Pratos típicos
+
+14:30 Visitas culturais
+Monumentos históricos
+Tempo para fotos`}
+                          className="w-full border rounded px-3 py-2 text-sm font-mono"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Preview do itinerário */}
+                  {formData.route_description.pt && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <h4 className="font-medium text-green-900 mb-2">✅ Preview do Itinerário:</h4>
+                      <div className="text-sm text-green-800">
+                        {parseItineraryPreview(formData.route_description.pt).map((block, index) => (
+                          <div key={index} className="mb-2 flex items-start">
+                            <span className="font-bold text-indigo-600 mr-2 min-w-[50px]">{block.time}</span>
+                            <span>{block.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Campos Includes e Excludes */}
+                {['includes', 'excludes'].map(field => (
+                  <div key={field} className="space-y-2">
+                    <label className="block text-sm font-medium capitalize">
+                      {field.replace('_', ' ')}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      {['pt', 'en', 'es'].map(lang => (
+                        <div key={lang}>
+                          <label className="text-xs text-gray-500">{lang.toUpperCase()}</label>
+                          <input
+                            type="text"
+                            value={formData[field][lang]}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              [field]: { ...formData[field], [lang]: e.target.value }
+                            })}
+                            required
+                            className="w-full border rounded px-3 py-2"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Upload de Imagens */}
                 <div className="space-y-4">
                   {/* Thumbnail */}
                   <div>
@@ -678,7 +815,6 @@ const AdminTourManager = () => {
                   </div>
                 </div>
 
-                {/* INÍCIO DA SEÇÃO SUBSTITUÍDA */}
                 {/* Gestão de Datas Disponíveis com Calendário */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -764,7 +900,6 @@ const AdminTourManager = () => {
                     </div>
                   )}
                 </div>
-                {/* FIM DA SEÇÃO SUBSTITUÍDA */}
 
                 {/* Botões */}
                 <div className="flex justify-end gap-4 pt-4 border-t">
