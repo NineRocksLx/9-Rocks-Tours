@@ -81,7 +81,7 @@ const ToursPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <h1 className="text-3xl font-bold text-gray-900">{t('nav_tours')}</h1>
           <p className="mt-2 text-lg text-gray-600">
-            Explore as nossas experiências únicas por Portugal
+            {t('tours_page_subtitle')}
           </p>
         </div>
       </div>
@@ -98,7 +98,7 @@ const ToursPage = () => {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            Todos os Tours
+            {t('tours_filter_all')}
           </button>
           <button
             onClick={() => setSelectedType('gastronomic')}
@@ -201,13 +201,13 @@ const ToursPage = () => {
                     </div>
                   </div>
 
-                  {/* Price and Action */}
+                  {/* Price and Action - CORRIGIDO: Removido "/ pessoa" */}
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-2xl font-bold text-indigo-600">
                         {formatPrice(tour.price)}
                       </span>
-                      <span className="text-gray-500 text-sm ml-1">/ {t('tour_person')}</span>
+                      {/* REMOVIDO: / {t('tour_person')} */}
                     </div>
                     <Link
                       to={`/tour/${tour.id}`}
@@ -221,6 +221,26 @@ const ToursPage = () => {
             ))}
           </div>
         )}
+      </div>
+
+      {/* CTA Section - CORRIGIDO: Agora com traduções */}
+      <div className="bg-indigo-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4">
+              {t('cta_ready_for_experience')}
+            </h2>
+            <p className="text-xl mb-8">
+              {t('cta_join_us_description')}
+            </p>
+            <Link
+              to="/contact"
+              className="inline-block bg-white text-indigo-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors duration-300"
+            >
+              {t('cta_contact_us')}
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

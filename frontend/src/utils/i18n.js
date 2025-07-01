@@ -3,8 +3,7 @@
 
 const translations = {
   pt: {
-
-     // Tabs e Navegação
+    // Tabs e Navegação
     'tab_overview': 'Visão Geral',
     'tab_itinerary': 'Itinerário', 
     'tab_details': 'Detalhes',
@@ -16,16 +15,45 @@ const translations = {
     'nav_contact': 'Contacto',
     'nav_admin': 'Admin',
 
-       
     // Homepage
     'home_title': '9 Rocks Tours',
     'home_subtitle': 'Descubra Portugal de forma autêntica',
-    'home_description': 'Tours gastronômicos e culturais únicos pelos tesouros escondidos de Portugal',
+    'home_description': 'Tours gastronómicos e culturais únicos pelos tesouros escondidos de Portugal',
     'home_cta': 'Explorar Tours',
     'home_featured_tours': 'Tours em Destaque',
+    'home_featured_tours_description': 'Descubra experiências únicas pelos tesouros escondidos de Portugal',
+    'why_choose_us_title': 'Porquê escolher a 9 Rocks Tours?',
+    'why_choose_us_subtitle': 'A sua experiência em Portugal começa aqui',
+    'specialized_guides_title': 'Guias Especializados',
+    'specialized_guides_description': 'Guias locais experientes que conhecem cada segredo de Portugal',
+    'small_groups_title': 'Grupos Pequenos',
+    'small_groups_description': 'Máximo 4 pessoas por tour para uma experiência mais pessoal. Fale connosco para grupos maiores de 4 pessoas, temos uma solução.',
+    'authentic_experiences_title': 'Experiências Autênticas',
+    'authentic_experiences_description': 'Descubra Portugal como um local, não como um turista',
+    'view_all_tours': 'Ver Todos os Tours',
+    'years_experience': 'Anos Experiência',
+    'tours_completed': 'Tours Realizados',
+    'average_rating': 'Avaliação Média',
+    'satisfied_clients': 'Clientes Satisfeitos',
+    
+    // Tours Page
+    'tours_page_subtitle': 'Explore as nossas experiências únicas por Portugal',
+    'tours_filter_all': 'Todos os Tours',
+    
+    // CTA Section
+    'cta_ready_for_experience': 'Pronto para uma experiência única?',
+    'cta_join_us_description': 'Junte-se a nós e descubra os sabores e histórias de Portugal',
+    'cta_contact_us': 'Entre em Contacto',
+    
+    // About & Contact
+    'about_page_title': 'Sobre a 9 Rocks Tours',
+    'about_page_description': 'Somos especialistas em tours gastronómicos e culturais por Portugal. A nossa missão é mostrar-lhe os tesouros escondidos do nosso belo país.',
+    'contact_page_title': 'Contacte-nos',
+    'contact_phone': 'Telefone',
+    'contact_address': 'Morada',
     
     // Tour Types
-    'tour_type_gastronomic': 'Gastronômico',
+    'tour_type_gastronomic': 'Gastronómico',
     'tour_type_cultural': 'Cultural', 
     'tour_type_mixed': 'Misto',
     'tour_type_custom': 'Personalizado',
@@ -48,9 +76,20 @@ const translations = {
     'tour_max_group': 'Grupo máximo:',
     'tour_deposit_info': 'Depósito (30%):',
     'tour_remaining_payment': 'Restante no dia do tour:',
+    'tour_description': 'Descrição',
+    'tour_included': 'Incluído',
+    'tour_not_included': 'Não Incluído',
+    'tour_per_person': 'por pessoa',
+    'tour_no_dates_available': 'Sem datas disponíveis no momento',
+    'tour_instant_confirmation': 'Confirmação imediata',
+    'tour_free_cancellation': 'Cancelamento gratuito até 24h antes',
+    'tour_professional_guide': 'Guia profissional',
+    'tour_reserve_now': 'Reservar Agora',
+    'tour_select_date': 'Selecione uma data',
+    'tour_person': 'pessoa',
+    'tour_people': 'pessoas',
 
-       
-        // Itinerário
+    // Itinerário
     'itinerary_tour_schedule': 'Itinerário do Tour',
     'itinerary_detailed_schedule': 'Itinerário Detalhado',
     'itinerary_duration': 'Duração',
@@ -83,7 +122,7 @@ const translations = {
     'itinerary_whatsapp_contact': 'Guia contactável via WhatsApp',
     'itinerary_flexible_schedule': 'Horários flexíveis conforme ritmo do grupo',
 
-     // Sidebar
+    // Sidebar
     'sidebar_total_price': 'Preço total do tour',
     'sidebar_deposit': 'Depósito (30%):',
     'sidebar_remaining': 'Restante no dia do tour:',
@@ -95,7 +134,7 @@ const translations = {
     'sidebar_duration': 'Duração:',
     'sidebar_max_group': 'Grupo máximo:',
 
-     // Common
+    // Common
     'common_save': 'Guardar',
     'common_cancel': 'Cancelar',
     'common_delete': 'Eliminar',
@@ -124,6 +163,8 @@ const translations = {
     'booking_payment_method': 'Método de Pagamento',
     'booking_submit': 'Confirmar Reserva',
     'booking_total': 'Total',
+    'booking_success_title': 'Reserva Confirmada!',
+    'booking_success_description': 'Obrigado pela sua reserva. Receberá um email de confirmação em breve.',
     
     // Payment
     'payment_paypal': 'PayPal',
@@ -133,6 +174,11 @@ const translations = {
     'payment_processing': 'A processar pagamento...',
     'payment_success': 'Pagamento realizado com sucesso!',
     'payment_error': 'Erro no pagamento. Tente novamente.',
+    'payment_success_title': 'Pagamento Realizado!',
+    'payment_success_description': 'O seu pagamento foi processado com sucesso. A sua reserva está confirmada.',
+    'payment_cancel_title': 'Pagamento Cancelado',
+    'payment_cancel_description': 'O pagamento foi cancelado. Pode tentar novamente quando estiver pronto.',
+    'back_to_home': 'Voltar ao Início',
     
     // Admin Panel
     'admin_title': 'Painel de Administração',
@@ -149,7 +195,7 @@ const translations = {
     
     // Messages
     'message_success': 'Sucesso!',
-    'message_error': 'Erro!',
+    'message_error': 'Erro ao carregar os dados. Por favor, tente novamente.',
     'message_loading': 'A carregar...',
     'message_no_tours': 'Não há tours disponíveis.',
     'message_book_success': 'Reserva realizada com sucesso!',
@@ -158,33 +204,9 @@ const translations = {
     'message.loading': 'A carregar...',
     'message.no_tours': 'Não há tours disponíveis.',
     'message.book_success': 'Reserva realizada com sucesso!',
-    'message_success': 'Sucesso!',
-    'message_error': 'Erro ao carregar os dados. Por favor, tente novamente.',
-    'message_loading': 'A carregar...',
-    'message_no_tours': 'Não há tours disponíveis.',
-    'message_book_success': 'Reserva realizada com sucesso!',
-
-
-      // PT - Adicionar estas chaves:
-    'tour_description': 'Descrição',
-    'tour_route': 'Percurso',
-    'tour_included': 'Incluído',
-    'tour_not_included': 'Não Incluído',
-    'tour_per_person': 'por pessoa',
-    'tour_no_dates_available': 'Sem datas disponíveis no momento',
-    'tour_instant_confirmation': 'Confirmação imediata',
-    'tour_free_cancellation': 'Cancelamento gratuito até 24h antes',
-    'tour_professional_guide': 'Guia profissional',
-    'tour_reserve_now': 'Reservar Agora',
-    'tour_select_date': 'Selecione uma data',
-    'tour_person': 'pessoa',
-    'tour_people': 'pessoas',
-    
-   
   },
   
   en: {
-
     // Tabs e Navegação
     'tab_overview': 'Overview',
     'tab_itinerary': 'Itinerary',
@@ -197,13 +219,42 @@ const translations = {
     'nav_contact': 'Contact',
     'nav_admin': 'Admin',
 
-        
     // Homepage
     'home_title': '9 Rocks Tours',
     'home_subtitle': 'Discover Portugal authentically',
     'home_description': 'Unique gastronomic and cultural tours through Portugal\'s hidden treasures',
     'home_cta': 'Explore Tours',
     'home_featured_tours': 'Featured Tours',
+    'home_featured_tours_description': 'Discover unique experiences through Portugal\'s hidden treasures',
+    'why_choose_us_title': 'Why choose 9 Rocks Tours?',
+    'why_choose_us_subtitle': 'Your Portuguese experience starts here',
+    'specialized_guides_title': 'Specialized Guides',
+    'specialized_guides_description': 'Experienced local guides who know every secret of Portugal',
+    'small_groups_title': 'Small Groups',
+    'small_groups_description': 'Maximum 4 people per tour for a more personal experience. Contact us for groups larger than 4 people, we have a solution.',
+    'authentic_experiences_title': 'Authentic Experiences',
+    'authentic_experiences_description': 'Discover Portugal like a local, not like a tourist',
+    'view_all_tours': 'View All Tours',
+    'years_experience': 'Years Experience',
+    'tours_completed': 'Tours Completed',
+    'average_rating': 'Average Rating',
+    'satisfied_clients': 'Satisfied Clients',
+    
+    // Tours Page
+    'tours_page_subtitle': 'Explore our unique experiences through Portugal',
+    'tours_filter_all': 'All Tours',
+    
+    // CTA Section
+    'cta_ready_for_experience': 'Ready for a unique experience?',
+    'cta_join_us_description': 'Join us and discover the flavors and stories of Portugal',
+    'cta_contact_us': 'Get in Touch',
+    
+    // About & Contact
+    'about_page_title': 'About 9 Rocks Tours',
+    'about_page_description': 'We are specialists in gastronomic and cultural tours through Portugal. Our mission is to show you the hidden treasures of our beautiful country.',
+    'contact_page_title': 'Contact Us',
+    'contact_phone': 'Phone',
+    'contact_address': 'Address',
     
     // Tour Types
     'tour_type_gastronomic': 'Gastronomic',
@@ -224,8 +275,25 @@ const translations = {
     'tour_view_details': 'View Details',
     'tour_hours': 'hours',
     'tour_max_people': 'max people',
+    'tour_description': 'Description',
+    'tour_included': 'Included',
+    'tour_not_included': 'Not Included',
+    'tour_per_person': 'per person',
+    'tour_no_dates_available': 'No available dates at the moment',
+    'tour_instant_confirmation': 'Instant confirmation',
+    'tour_free_cancellation': 'Free cancellation up to 24h before',
+    'tour_professional_guide': 'Professional guide',
+    'tour_reserve_now': 'Book Now',
+    'tour_select_date': 'Select a date',
+    'tour_person': 'person',
+    'tour_people': 'people',
+    'tour_type_label': 'Type:',
+    'tour_duration_label': 'Duration:',
+    'tour_max_group': 'Max group:',
+    'tour_deposit_info': 'Deposit (30%):',
+    'tour_remaining_payment': 'Remaining on tour day:',
 
-      // Itinerário
+    // Itinerário
     'itinerary_tour_schedule': 'Tour Schedule',
     'itinerary_detailed_schedule': 'Detailed Itinerary',
     'itinerary_duration': 'Duration',
@@ -270,7 +338,7 @@ const translations = {
     'sidebar_duration': 'Duration:',
     'sidebar_max_group': 'Max group:',
 
-     // Common
+    // Common
     'common_save': 'Save',
     'common_cancel': 'Cancel',
     'common_delete': 'Delete',
@@ -299,25 +367,8 @@ const translations = {
     'booking_payment_method': 'Payment Method',
     'booking_submit': 'Confirm Booking',
     'booking_total': 'Total',
-
-    'tour_description': 'Description',
-    'tour_route': 'Route',
-    'tour_included': 'Included',
-    'tour_not_included': 'Not Included',
-    'tour_per_person': 'per person',
-    'tour_no_dates_available': 'No available dates at the moment',
-    'tour_instant_confirmation': 'Instant confirmation',
-    'tour_free_cancellation': 'Free cancellation up to 24h before',
-    'tour_professional_guide': 'Professional guide',
-    'tour_reserve_now': 'Book Now',
-    'tour_select_date': 'Select a date',
-    'tour_person': 'person',
-    'tour_people': 'people',
-    'tour_type_label': 'Type:',
-    'tour_duration_label': 'Duration:',
-    'tour_max_group': 'Max group:',
-    'tour_deposit_info': 'Deposit (30%):',
-    'tour_remaining_payment': 'Remaining on tour day:',
+    'booking_success_title': 'Booking Confirmed!',
+    'booking_success_description': 'Thank you for your booking. You will receive a confirmation email shortly.',
     
     // Payment
     'payment_paypal': 'PayPal',
@@ -327,6 +378,11 @@ const translations = {
     'payment_processing': 'Processing payment...',
     'payment_success': 'Payment successful!',
     'payment_error': 'Payment error. Please try again.',
+    'payment_success_title': 'Payment Successful!',
+    'payment_success_description': 'Your payment has been processed successfully. Your booking is confirmed.',
+    'payment_cancel_title': 'Payment Cancelled',
+    'payment_cancel_description': 'The payment was cancelled. You can try again when ready.',
+    'back_to_home': 'Back to Home',
     
     // Admin Panel
     'admin_title': 'Administration Panel',
@@ -341,7 +397,6 @@ const translations = {
     'admin_active': 'Active',
     'admin_inactive': 'Inactive',
 
-    // Para EN:
     // Messages
     'message.success': 'Success!',
     'message.error': 'Error loading data. Please try again.',
@@ -353,15 +408,9 @@ const translations = {
     'message_loading': 'Loading...',
     'message_no_tours': 'No tours available.',
     'message_book_success': 'Booking successful!',
-    
-    // No arquivo frontend/src/utils/i18n.js
-// Localiza a seção de Messages em cada idioma e substitui por:
-    
-   
   },
   
   es: {
-
     // Tabs e Navegação
     'tab_overview': 'Resumen',
     'tab_itinerary': 'Itinerario',
@@ -380,8 +429,36 @@ const translations = {
     'home_description': 'Tours gastronómicos y culturales únicos por los tesoros escondidos de Portugal',
     'home_cta': 'Explorar Tours',
     'home_featured_tours': 'Tours Destacados',
+    'home_featured_tours_description': 'Descubre experiencias únicas por los tesoros escondidos de Portugal',
+    'why_choose_us_title': '¿Por qué elegir 9 Rocks Tours?',
+    'why_choose_us_subtitle': 'Tu experiencia portuguesa comienza aquí',
+    'specialized_guides_title': 'Guías Especializados',
+    'specialized_guides_description': 'Guías locales experimentados que conocen cada secreto de Portugal',
+    'small_groups_title': 'Grupos Pequeños',
+    'small_groups_description': 'Máximo 4 personas por tour para una experiencia más personal. Contáctanos para grupos de más de 4 personas, tenemos una solución.',
+    'authentic_experiences_title': 'Experiencias Auténticas',
+    'authentic_experiences_description': 'Descubre Portugal como un local, no como un turista',
+    'view_all_tours': 'Ver Todos los Tours',
+    'years_experience': 'Años de Experiencia',
+    'tours_completed': 'Tours Realizados',
+    'average_rating': 'Valoración Media',
+    'satisfied_clients': 'Clientes Satisfechos',
 
+    // Tours Page
+    'tours_page_subtitle': 'Explora nuestras experiencias únicas por Portugal',
+    'tours_filter_all': 'Todos los Tours',
     
+    // CTA Section
+    'cta_ready_for_experience': '¿Listo para una experiencia única?',
+    'cta_join_us_description': 'Únete a nosotros y descubre los sabores e historias de Portugal',
+    'cta_contact_us': 'Ponte en Contacto',
+    
+    // About & Contact
+    'about_page_title': 'Sobre 9 Rocks Tours',
+    'about_page_description': 'Somos especialistas en tours gastronómicos y culturales por Portugal. Nuestra misión es mostrarte los tesoros escondidos de nuestro hermoso país.',
+    'contact_page_title': 'Contáctanos',
+    'contact_phone': 'Teléfono',
+    'contact_address': 'Dirección',
     
     // Tour Types
     'tour_type_gastronomic': 'Gastronómico',
@@ -407,6 +484,11 @@ const translations = {
     'tour_not_included': 'No Incluido',
     'tour_reserve_now': 'Reservar Ahora', 
     'tour_no_dates_available': 'No hay fechas disponibles en este momento',
+    'tour_type_label': 'Tipo:',
+    'tour_duration_label': 'Duración:',
+    'tour_max_group': 'Grupo máximo:',
+    'tour_deposit_info': 'Depósito (30%):',
+    'tour_remaining_payment': 'Restante el día del tour:',
 
     // Itinerário
     'itinerary_tour_schedule': 'Horario del Tour',
@@ -435,17 +517,11 @@ const translations = {
     'itinerary_cancellation': 'Cancelación',
     'itinerary_cancellation_details': 'Gratuita hasta 24h antes',
     'itinerary_activity_at': 'Actividad a las {time}',
-    'itinerary_detailed_schedule': 'Horario Detallado',
-    'itinerary_tour_region': 'Región del Tour',
-    'itinerary_small_group': 'Grupo pequeño',
-    'itinerary_max': 'máx.',
-    'itinerary_people': 'personas',
     'itinerary_other_stops': 'Otras paradas',
     'itinerary_tour_info': 'Información del Tour',
     'itinerary_meeting_point': 'Punto de encuentro confirmado 24h antes',
     'itinerary_whatsapp_contact': 'Guía contactable vía WhatsApp',
     'itinerary_flexible_schedule': 'Horarios flexibles según ritmo del grupo',
-    'common_hours': 'horas',
     
     // Sidebar
     'sidebar_total_price': 'Precio total del tour',
@@ -459,7 +535,7 @@ const translations = {
     'sidebar_duration': 'Duración:',
     'sidebar_max_group': 'Grupo máximo:',
 
-      // Common
+    // Common
     'common_save': 'Guardar',
     'common_cancel': 'Cancelar',
     'common_delete': 'Eliminar',
@@ -477,7 +553,6 @@ const translations = {
     'common_people': 'personas',
     'common_up_to': 'Hasta',
 
-
     // Booking Form
     'booking_title': 'Reservar Tour',
     'booking_customer_name': 'Nombre Completo',
@@ -489,6 +564,8 @@ const translations = {
     'booking_payment_method': 'Método de Pago',
     'booking_submit': 'Confirmar Reserva',
     'booking_total': 'Total',
+    'booking_success_title': '¡Reserva Confirmada!',
+    'booking_success_description': 'Gracias por tu reserva. Recibirás un email de confirmación en breve.',
     
     // Payment
     'payment_paypal': 'PayPal',
@@ -498,6 +575,11 @@ const translations = {
     'payment_processing': 'Procesando pago...',
     'payment_success': '¡Pago exitoso!',
     'payment_error': 'Error en el pago. Inténtalo de nuevo.',
+    'payment_success_title': '¡Pago Exitoso!',
+    'payment_success_description': 'Tu pago ha sido procesado exitosamente. Tu reserva está confirmada.',
+    'payment_cancel_title': 'Pago Cancelado',
+    'payment_cancel_description': 'El pago fue cancelado. Puedes intentar de nuevo cuando estés listo.',
+    'back_to_home': 'Volver al Inicio',
     
     // Admin Panel
     'admin_title': 'Panel de Administración',
@@ -514,7 +596,7 @@ const translations = {
     
     // Messages
     'message_success': '¡Éxito!',
-    'message_error': '¡Error!',
+    'message_error': 'Error al cargar los datos. Por favor, inténtalo de nuevo.',
     'message_loading': 'Cargando...',
     'message_no_tours': 'No hay tours disponibles.',
     'message_book_success': '¡Reserva exitosa!',
@@ -523,21 +605,6 @@ const translations = {
     'message.loading': 'Cargando...',
     'message.no_tours': 'No hay tours disponibles.',
     'message.book_success': '¡Reserva exitosa!',
-    'message_success': '¡Éxito!',
-    'message_loading': 'Cargando...',
-    'message_no_tours': 'No hay tours disponibles.',
-    'message_book_success': '¡Reserva exitosa!',
-
-      
-
-     // No objeto 'es':
-    'tour_type_label': 'Tipo:',
-    'tour_duration_label': 'Duración:',
-    'tour_max_group': 'Grupo máximo:',
-    'tour_deposit_info': 'Depósito (30%):',
-    'tour_remaining_payment': 'Restante el día del tour:',
-   
-  
   }
 };
 
