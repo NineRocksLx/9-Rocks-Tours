@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from '../utils/useTranslation';
-import { tourFiltersService } from '../services/tourFiltersService'; // 🔥 NOVO
+import { tourFiltersService } from '../services/tourFiltersService';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -13,14 +13,14 @@ const ToursPage = () => {
   const [error, setError] = useState(null);
   const [selectedType, setSelectedType] = useState('all');
   
-  // 🔥 NOVO: Estados para filtros dinâmicos
+  // Estados para filtros dinâmicos
   const [tourFilters, setTourFilters] = useState([]);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [filtersError, setFiltersError] = useState(null);
 
   useEffect(() => {
     fetchTours();
-    fetchTourFilters(); // 🔥 NOVO
+    fetchTourFilters();
   }, []);
 
   const fetchTours = async () => {
@@ -36,31 +36,25 @@ const ToursPage = () => {
     }
   };
 
-  // 🔥 NOVA FUNÇÃO: Buscar filtros do Firebase
   const fetchTourFilters = async () => {
     try {
       setFiltersLoading(true);
       setFiltersError(null);
       
-      console.log('🔍 ToursPage: Fetching tour filters from Firebase...');
       const filters = await tourFiltersService.getActiveFilters();
-      
-      console.log('✅ ToursPage: Tour filters loaded:', filters);
       setTourFilters(filters);
       
     } catch (err) {
-      console.error('❌ ToursPage: Error fetching tour filters:', err);
+      console.error('Error fetching tour filters:', err);
       setFiltersError(err.message);
       
       // Fallback: usar filtros padrão
-      console.log('ToursPage: Using fallback filters');
       setTourFilters(tourFiltersService.getDefaultFilters());
     } finally {
       setFiltersLoading(false);
     }
   };
 
-  // 🔥 NOVA FUNÇÃO: Obter label traduzido dos filtros
   const getFilterLabel = (filter) => {
     const currentLang = getCurrentLanguage();
     if (filter.labels && filter.labels[currentLang]) {
@@ -69,7 +63,6 @@ const ToursPage = () => {
     return filter.labels?.pt || filter.key || 'Filtro';
   };
 
-  // 🔥 NOVA FUNÇÃO: Obter cor do filtro baseada na chave
   const getFilterColor = (filterKey) => {
     const colors = {
       all: 'bg-indigo-600 hover:bg-indigo-700',
@@ -108,7 +101,6 @@ const ToursPage = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">{t('message_loading')}</p>
-          {filtersLoading && <p className="text-sm text-gray-500 mt-2">A carregar filtros...</p>}
         </div>
       </div>
     );
@@ -144,7 +136,7 @@ const ToursPage = () => {
 
       {/* Tours Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* 🔥 NOVO: Tour Type Filter Dinâmico do Firebase */}
+        {/* Tour Type Filter Dinâmico do Firebase */}
         <div className="flex flex-wrap justify-center gap-4 mb-12">
           {tourFilters.map((filter) => (
             <button
@@ -160,31 +152,6 @@ const ToursPage = () => {
             </button>
           ))}
         </div>
-
-        {/* 🔥 DEBUG: Mostrar info dos filtros em desenvolvimento */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-8 p-4 bg-gray-100 rounded-lg text-sm">
-            <strong>🔍 Debug Filtros (ToursPage):</strong>
-            <div>Filtros carregados: {tourFilters.length}</div>
-            <div>Filtro selecionado: {selectedType}</div>
-            <div>Tours filtrados: {filteredTours.length}</div>
-            <div className="mt-2">
-              <strong>Filtros disponíveis:</strong>
-              <ul className="ml-4">
-                {tourFilters.map(filter => (
-                  <li key={filter.key}>
-                    {filter.key}: "{getFilterLabel(filter)}" (ativo: {filter.active ? 'sim' : 'não'})
-                  </li>
-                ))}
-              </ul>
-            </div>
-            {filtersError && (
-              <div className="mt-2 text-red-600">
-                <strong>Erro nos filtros:</strong> {filtersError}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Tours Grid */}
         {filteredTours.length === 0 ? (
@@ -216,7 +183,7 @@ const ToursPage = () => {
                     </div>
                   )}
                   
-                  {/* Tour Type Badge - MELHORADO: Usa o filtro personalizado se existir */}
+                  {/* Tour Type Badge */}
                   <div className="absolute top-4 left-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTourTypeColor(tour.tour_type)}`}>
                       {(() => {
@@ -279,7 +246,7 @@ const ToursPage = () => {
         )}
       </div>
 
-      {/* CTA Section - CORRIGIDO: Agora com traduções */}
+      {/* CTA Section */}
       <div className="bg-indigo-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
