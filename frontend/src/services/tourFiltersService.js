@@ -246,6 +246,20 @@ class TourFiltersService {
     }
   }
 
+  // ADICIONA esta função ao final da classe TourFiltersService
+async testFirebaseConnection() {
+  try {
+    const querySnapshot = await getDocs(collection(db, this.collectionName));
+    return { success: true, documentsFound: querySnapshot.size };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error.message,
+      code: error.code || 'unknown'
+    };
+  }
+ }
+
   // Deletar filtro
   async deleteFilter(filterId) {
     try {
