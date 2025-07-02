@@ -29,17 +29,14 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
     }));
   };
 
-  // CORREÇÃO: Calcular apenas o preço total do tour (não por pessoa)
   const calculateTotal = () => {
     return tour.price; // Preço total do tour
   };
 
-  // NOVO: Calcular depósito de 30%
   const calculateDeposit = () => {
     return tour.price * 0.30;
   };
 
-  // NOVO: Calcular valor restante
   const calculateRemaining = () => {
     return tour.price * 0.70;
   };
@@ -62,11 +59,15 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
         tour_id: tour.id
       };
 
+      console.log('📋 Criando reserva:', bookingData);
+
       const response = await axios.post(`${BACKEND_URL}/api/bookings`, bookingData);
+      console.log('✅ Reserva criada:', response.data);
+      
       setBooking(response.data);
       setStep(2); // Move to payment step
     } catch (err) {
-      console.error('Error creating booking:', err);
+      console.error('❌ Error creating booking:', err);
       setError(err.response?.data?.detail || 'Erro ao criar reserva. Tente novamente.');
     } finally {
       setLoading(false);
@@ -74,10 +75,11 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
   };
 
   const handlePaymentSuccess = () => {
+    console.log('✅ Pagamento concluído com sucesso');
     onBookingComplete();
   };
 
-  const formatDate = (dateString) => {
+  const formatDateForDisplay = (dateString) => {
     const date = new Date(dateString + 'T00:00:00');
     return date.toLocaleDateString('pt-PT', {
       weekday: 'long',
@@ -86,6 +88,11 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
       day: 'numeric'
     });
   };
+
+  // Ordenar datas disponíveis por ordem cronológica
+  const sortedAvailableDates = tour.availability_dates 
+    ? [...tour.availability_dates].sort((a, b) => new Date(a) - new Date(b))
+    : [];
 
   const { t, getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -113,7 +120,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
           {step === 1 ? (
             // Booking Form
             <>
-              {/* CORREÇÃO: Tour Summary com breakdown de pagamento */}
+              {/* Tour Summary com breakdown de pagamento */}
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <h3 className="font-semibold text-gray-900 mb-2">
                   {tour.name[currentLang] || tour.name.pt}
@@ -139,7 +146,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                   </div>
                 </div>
 
-                {/* NOVO: Breakdown de pagamento */}
+                {/* Breakdown de pagamento */}
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -217,8 +224,9 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="selected_date" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking_selected_date')} *
+                      {t('booking_selected_date')} * ({sortedAvailableDates.length} datas disponíveis)
                     </label>
+                    
                     <select
                       id="selected_date"
                       name="selected_date"
@@ -228,17 +236,26 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       <option value="">Selecione uma data</option>
-                      {tour.availability_dates?.map((date) => (
+                      {sortedAvailableDates.map((date) => (
                         <option key={date} value={date}>
-                          {formatDate(date)}
+                          {formatDateForDisplay(date)}
                         </option>
                       ))}
                     </select>
+                    
+                    {/* Aviso se não há datas */}
+                    {sortedAvailableDates.length === 0 && (
+                      <p className="text-sm text-red-600 mt-1">
+                        ⚠️ Sem datas disponíveis. Contacte-nos diretamente.
+                      </p>
+                    )}
                   </div>
+                  
                   <div>
                     <label htmlFor="participants" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking_participants')} *
+                      {t('booking_participants')} * (máx. {tour.max_participants})
                     </label>
+                    
                     <select
                       id="participants"
                       name="participants"
@@ -253,6 +270,11 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                         </option>
                       ))}
                     </select>
+                    
+                    {/* Nota sobre grupos maiores */}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Para grupos {tour.max_participants + 1}+ pessoas, contacte-nos diretamente
+                    </p>
                   </div>
                 </div>
 
@@ -271,7 +293,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                   />
                 </div>
 
-                {/* CORREÇÃO: Total com depósito */}
+                {/* Total com depósito */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-lg font-medium text-gray-900">A pagar hoje (depósito):</span>
@@ -306,7 +328,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || sortedAvailableDates.length === 0}
                     className="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {loading ? 'A processar...' : 'Continuar para Pagamento'}
@@ -319,7 +341,7 @@ const BookingForm = ({ tour, onClose, onBookingComplete }) => {
             <PaymentComponent
               booking={booking}
               tour={tour}
-              total={calculateDeposit()} // CORREÇÃO: Passar apenas o depósito
+              total={calculateDeposit()}
               onSuccess={handlePaymentSuccess}
               onBack={() => setStep(1)}
             />
