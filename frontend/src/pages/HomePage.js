@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from '../utils/useTranslation';
 import { heroImagesService } from '../services/heroImagesService';
+import { tourFiltersService } from '../services/tourFiltersService';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -13,6 +14,11 @@ const HomePage = () => {
   const [error, setError] = useState(null);
   const [selectedType, setSelectedType] = useState('all');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Estados para filtros dinâmicos
+  const [tourFilters, setTourFilters] = useState([]);
+  const [filtersLoading, setFiltersLoading] = useState(true);
+  const [filtersError, setFiltersError] = useState(null);
 
   // Estados para Hero Images do Firebase
   const [heroImages, setHeroImages] = useState([]);
@@ -90,6 +96,7 @@ const HomePage = () => {
   useEffect(() => {
     fetchTours();
     fetchHeroImages();
+    fetchTourFilters();
   }, []);
 
   useEffect(() => {
@@ -121,25 +128,36 @@ const HomePage = () => {
       setHeroLoading(true);
       setHeroError(null);
       
-      console.log('Fetching hero images from Firebase...');
       const images = await heroImagesService.getActiveHeroImages();
       
       if (images && images.length > 0) {
-        console.log('Hero images loaded from Firebase:', images.length);
         setHeroImages(images);
       } else {
-        console.log('No hero images found in Firebase, using fallback');
         setHeroImages(fallbackHeroImages);
       }
     } catch (err) {
       console.error('Error fetching hero images from Firebase:', err);
       setHeroError(err.message);
-      
-      // Use fallback images se Firebase falhar
-      console.log('Using fallback hero images due to error');
       setHeroImages(fallbackHeroImages);
     } finally {
       setHeroLoading(false);
+    }
+  };
+
+  const fetchTourFilters = async () => {
+    try {
+      setFiltersLoading(true);
+      setFiltersError(null);
+      
+      const filters = await tourFiltersService.getActiveFilters();
+      setTourFilters(filters);
+      
+    } catch (err) {
+      console.error('Error fetching tour filters:', err);
+      setFiltersError(err.message);
+      setTourFilters(tourFiltersService.getDefaultFilters());
+    } finally {
+      setFiltersLoading(false);
     }
   };
 
@@ -148,6 +166,15 @@ const HomePage = () => {
     if (!textObj) return '';
     const currentLang = getCurrentLanguage();
     return textObj[currentLang] || textObj.pt || textObj.en || '';
+  };
+
+  // Obter label traduzido dos filtros
+  const getFilterLabel = (filter) => {
+    const currentLang = getCurrentLanguage();
+    if (filter.labels && filter.labels[currentLang]) {
+      return filter.labels[currentLang];
+    }
+    return filter.labels?.pt || filter.key || 'Filtro';
   };
 
   const filteredTours = selectedType === 'all' 
@@ -171,21 +198,18 @@ const HomePage = () => {
     }).format(price);
   };
 
-  if (loading || heroLoading) {
+  if (loading || heroLoading || filtersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-20 w-20 border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">{t('message_loading')}</p>
-          {heroLoading && (
-            <p className="text-sm text-gray-500 mt-2">A carregar imagens...</p>
-          )}
         </div>
       </div>
     );
   }
 
-  if (error && !heroError) {
+  if (error && !heroError && !filtersError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -221,7 +245,6 @@ const HomePage = () => {
                 loading={index === 0 ? "eager" : "lazy"}
                 onError={(e) => {
                   console.error('Erro ao carregar imagem:', image.imageUrl);
-                  // Fallback para uma imagem padrão se falhar
                   e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080"><rect width="1920" height="1080" fill="%23e5e7eb"/><text x="960" y="540" text-anchor="middle" fill="%236b7280" font-size="48">Imagem não disponível</text></svg>';
                 }}
               />
@@ -230,7 +253,7 @@ const HomePage = () => {
           ))}
         </div>
 
-        {/* Hero Content - DINÂMICO baseado na imagem atual */}
+        {/* Hero Content */}
         <div className="relative z-10 h-full flex items-center justify-center">
           <div className="text-center text-white px-4 max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
@@ -269,7 +292,7 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Hero Navigation Dots - só mostra se houver múltiplas imagens */}
+        {/* Hero Navigation Dots */}
         {heroImages.length > 1 && (
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
             {heroImages.map((_, index) => (
@@ -295,16 +318,9 @@ const HomePage = () => {
             <span className="text-sm font-medium">Scroll</span>
           </div>
         </div>
-
-        {/* Debug Info (só visível em desenvolvimento) */}
-        {process.env.NODE_ENV === 'development' && heroError && (
-          <div className="absolute top-4 right-4 bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded text-xs">
-            Firebase Error: {heroError} (usando fallback)
-          </div>
-        )}
       </div>
 
-      {/* Seção de Confiança/Credibilidade - TRADUZIDA */}
+      {/* Seção de Confiança/Credibilidade */}
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center opacity-60">
@@ -339,29 +355,19 @@ const HomePage = () => {
           </p>
         </div>
 
-        {/* Tour Type Filter */}
+        {/* Tour Type Filter Dinâmico do Firebase */}
         <div className="flex flex-wrap justify-center gap-4 mb-16">
-          <button
-            onClick={() => setSelectedType('all')}
-            className={`px-8 py-4 rounded-full font-semibold transition-all duration-300 ${
-              selectedType === 'all'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-indigo-300 hover:shadow-md'
-            }`}
-          >
-            {t('tours_filter_all')}
-          </button>
-          {['gastronomic', 'cultural', 'mixed'].map(type => (
+          {tourFilters.map((filter) => (
             <button
-              key={type}
-              onClick={() => setSelectedType(type)}
+              key={filter.key}
+              onClick={() => setSelectedType(filter.key)}
               className={`px-8 py-4 rounded-full font-semibold transition-all duration-300 ${
-                selectedType === type
+                selectedType === filter.key
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transform scale-105'
                   : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-indigo-300 hover:shadow-md'
               }`}
             >
-              {t(`tour_type_${type}`)}
+              {getFilterLabel(filter)}
             </button>
           ))}
         </div>
@@ -400,7 +406,10 @@ const HomePage = () => {
                   {/* Tour Type Badge */}
                   <div className="absolute top-4 left-4">
                     <span className={`px-4 py-2 rounded-full text-sm font-bold text-white shadow-lg ${getTourTypeColor(tour.tour_type)}`}>
-                      {t(`tour_type_${tour.tour_type}`)}
+                      {(() => {
+                        const matchingFilter = tourFilters.find(f => f.key === tour.tour_type);
+                        return matchingFilter ? getFilterLabel(matchingFilter) : t(`tour_type_${tour.tour_type}`);
+                      })()}
                     </span>
                   </div>
 
@@ -450,7 +459,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Why Choose Us Section - TOTALMENTE TRADUZIDA */}
+      {/* Why Choose Us Section */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -509,7 +518,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* CTA Section Final - TRADUZIDA */}
+      {/* CTA Section Final */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">

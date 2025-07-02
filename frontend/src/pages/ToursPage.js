@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from '../utils/useTranslation';
+import { tourFiltersService } from '../services/tourFiltersService'; // 🔥 NOVO
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -11,9 +12,15 @@ const ToursPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedType, setSelectedType] = useState('all');
+  
+  // 🔥 NOVO: Estados para filtros dinâmicos
+  const [tourFilters, setTourFilters] = useState([]);
+  const [filtersLoading, setFiltersLoading] = useState(true);
+  const [filtersError, setFiltersError] = useState(null);
 
   useEffect(() => {
     fetchTours();
+    fetchTourFilters(); // 🔥 NOVO
   }, []);
 
   const fetchTours = async () => {
@@ -27,6 +34,51 @@ const ToursPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🔥 NOVA FUNÇÃO: Buscar filtros do Firebase
+  const fetchTourFilters = async () => {
+    try {
+      setFiltersLoading(true);
+      setFiltersError(null);
+      
+      console.log('🔍 ToursPage: Fetching tour filters from Firebase...');
+      const filters = await tourFiltersService.getActiveFilters();
+      
+      console.log('✅ ToursPage: Tour filters loaded:', filters);
+      setTourFilters(filters);
+      
+    } catch (err) {
+      console.error('❌ ToursPage: Error fetching tour filters:', err);
+      setFiltersError(err.message);
+      
+      // Fallback: usar filtros padrão
+      console.log('ToursPage: Using fallback filters');
+      setTourFilters(tourFiltersService.getDefaultFilters());
+    } finally {
+      setFiltersLoading(false);
+    }
+  };
+
+  // 🔥 NOVA FUNÇÃO: Obter label traduzido dos filtros
+  const getFilterLabel = (filter) => {
+    const currentLang = getCurrentLanguage();
+    if (filter.labels && filter.labels[currentLang]) {
+      return filter.labels[currentLang];
+    }
+    return filter.labels?.pt || filter.key || 'Filtro';
+  };
+
+  // 🔥 NOVA FUNÇÃO: Obter cor do filtro baseada na chave
+  const getFilterColor = (filterKey) => {
+    const colors = {
+      all: 'bg-indigo-600 hover:bg-indigo-700',
+      gastronomic: 'bg-orange-600 hover:bg-orange-700',
+      cultural: 'bg-blue-600 hover:bg-blue-700',
+      mixed: 'bg-purple-600 hover:bg-purple-700',
+      custom: 'bg-green-600 hover:bg-green-700'
+    };
+    return colors[filterKey] || 'bg-gray-600 hover:bg-gray-700';
   };
 
   const filteredTours = selectedType === 'all' 
@@ -50,15 +102,19 @@ const ToursPage = () => {
     }).format(price);
   };
 
-  if (loading) {
+  if (loading || filtersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">{t('message_loading')}</p>
+          {filtersLoading && <p className="text-sm text-gray-500 mt-2">A carregar filtros...</p>}
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !filtersError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -88,49 +144,47 @@ const ToursPage = () => {
 
       {/* Tours Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Tour Type Filter */}
+        {/* 🔥 NOVO: Tour Type Filter Dinâmico do Firebase */}
         <div className="flex flex-wrap justify-center gap-4 mb-12">
-          <button
-            onClick={() => setSelectedType('all')}
-            className={`px-6 py-3 rounded-full font-medium transition-colors ${
-              selectedType === 'all'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {t('tours_filter_all')}
-          </button>
-          <button
-            onClick={() => setSelectedType('gastronomic')}
-            className={`px-6 py-3 rounded-full font-medium transition-colors ${
-              selectedType === 'gastronomic'
-                ? 'bg-orange-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {t('tour_type_gastronomic')}
-          </button>
-          <button
-            onClick={() => setSelectedType('cultural')}
-            className={`px-6 py-3 rounded-full font-medium transition-colors ${
-              selectedType === 'cultural'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {t('tour_type_cultural')}
-          </button>
-          <button
-            onClick={() => setSelectedType('mixed')}
-            className={`px-6 py-3 rounded-full font-medium transition-colors ${
-              selectedType === 'mixed'
-                ? 'bg-purple-600 text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            {t('tour_type_mixed')}
-          </button>
+          {tourFilters.map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setSelectedType(filter.key)}
+              className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                selectedType === filter.key
+                  ? `${getFilterColor(filter.key)} text-white`
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {getFilterLabel(filter)}
+            </button>
+          ))}
         </div>
+
+        {/* 🔥 DEBUG: Mostrar info dos filtros em desenvolvimento */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-8 p-4 bg-gray-100 rounded-lg text-sm">
+            <strong>🔍 Debug Filtros (ToursPage):</strong>
+            <div>Filtros carregados: {tourFilters.length}</div>
+            <div>Filtro selecionado: {selectedType}</div>
+            <div>Tours filtrados: {filteredTours.length}</div>
+            <div className="mt-2">
+              <strong>Filtros disponíveis:</strong>
+              <ul className="ml-4">
+                {tourFilters.map(filter => (
+                  <li key={filter.key}>
+                    {filter.key}: "{getFilterLabel(filter)}" (ativo: {filter.active ? 'sim' : 'não'})
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {filtersError && (
+              <div className="mt-2 text-red-600">
+                <strong>Erro nos filtros:</strong> {filtersError}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tours Grid */}
         {filteredTours.length === 0 ? (
@@ -162,10 +216,13 @@ const ToursPage = () => {
                     </div>
                   )}
                   
-                  {/* Tour Type Badge */}
+                  {/* Tour Type Badge - MELHORADO: Usa o filtro personalizado se existir */}
                   <div className="absolute top-4 left-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getTourTypeColor(tour.tour_type)}`}>
-                      {t(`tour_type_${tour.tour_type}`)}
+                      {(() => {
+                        const matchingFilter = tourFilters.find(f => f.key === tour.tour_type);
+                        return matchingFilter ? getFilterLabel(matchingFilter) : t(`tour_type_${tour.tour_type}`);
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -201,13 +258,12 @@ const ToursPage = () => {
                     </div>
                   </div>
 
-                  {/* Price and Action - CORRIGIDO: Removido "/ pessoa" */}
+                  {/* Price and Action */}
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-2xl font-bold text-indigo-600">
                         {formatPrice(tour.price)}
                       </span>
-                      {/* REMOVIDO: / {t('tour_person')} */}
                     </div>
                     <Link
                       to={`/tour/${tour.id}`}
