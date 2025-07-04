@@ -1,354 +1,568 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useTranslation } from '../utils/useTranslation';
-import PaymentComponent from './PaymentComponent';
+// frontend/src/pages/BookingForm.js
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useLocation, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// Hook SEO (mesmo dos outros componentes)
+const useSEO = () => {
+  const location = useLocation();
+  const [currentLang, setCurrentLang] = useState('pt');
 
-const BookingForm = ({ tour, onClose, onBookingComplete }) => {
-  const [step, setStep] = useState(1); // 1: Booking Form, 2: Payment
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [booking, setBooking] = useState(null);
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.startsWith('/en')) setCurrentLang('en');
+    else if (path.startsWith('/es')) setCurrentLang('es');
+    else setCurrentLang('pt');
+  }, [location]);
+
+  return { currentLang, setCurrentLang };
+};
+
+// Componente SEO para Booking
+const BookingSEOHead = ({ tourData }) => {
+  const { currentLang } = useSEO();
+  const baseUrl = "https://9rockstours.com"; // ALTERE PARA SEU DOMÍNIO
+
+  const seoContent = {
+    pt: {
+      title: tourData 
+        ? `Reservar ${tourData.name} | Confirme Sua Aventura Agora`
+        : "Reserve Agora | Garanta a Sua Aventura dos Sonhos",
+      description: tourData
+        ? `Reserve ${tourData.name} com segurança. Processo simples, pagamento protegido e confirmação imediata. A partir de €${tourData.price}!`
+        : "Últimas vagas disponíveis! Processo simples, pagamento seguro e confirmação imediata. A sua próxima aventura está a um clique.",
+      keywords: "reservar tour, booking online, viagem dos sonhos, aventura garantida, pagamento seguro"
+    },
+    en: {
+      title: tourData
+        ? `Book ${tourData.name} | Confirm Your Adventure Now`
+        : "Book Now | Secure Your Dream Adventure",
+      description: tourData
+        ? `Book ${tourData.name} securely. Simple process, protected payment and instant confirmation. From €${tourData.price}!`
+        : "Last spots available! Simple process, secure payment, instant confirmation. Your next adventure is one click away.",
+      keywords: "book tour, online booking, dream trip, guaranteed adventure, secure payment"
+    },
+    es: {
+      title: tourData
+        ? `Reservar ${tourData.name} | Confirma Tu Aventura Ahora`
+        : "Reserva Ahora | Asegura Tu Aventura de Ensueño",
+      description: tourData
+        ? `Reserva ${tourData.name} con seguridad. Proceso simple, pago protegido y confirmación inmediata. ¡Desde €${tourData.price}!`
+        : "¡Últimos cupos disponibles! Proceso simple, pago seguro y confirmación instantánea. Tu próxima aventura está a un clic.",
+      keywords: "reservar tour, booking online, viaje de ensueño, aventura garantizada, pago seguro"
+    }
+  };
+
+  const seoData = seoContent[currentLang];
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": seoData.title,
+    "description": seoData.description,
+    "url": `${baseUrl}${window.location.pathname}`,
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": currentLang === 'pt' ? 'Início' : currentLang === 'en' ? 'Home' : 'Inicio',
+          "item": `${baseUrl}${currentLang === 'pt' ? '/' : `/${currentLang}/`}`
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": seoData.title,
+          "item": `${baseUrl}${window.location.pathname}`
+        }
+      ]
+    }
+  };
+
+  return (
+    <Helmet>
+      <title>{seoData.title}</title>
+      <meta name="description" content={seoData.description} />
+      <meta name="keywords" content={seoData.keywords} />
+      
+      <meta property="og:title" content={seoData.title} />
+      <meta property="og:description" content={seoData.description} />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content={`${baseUrl}${window.location.pathname}`} />
+      <meta property="og:image" content={`${baseUrl}/og-image-booking.jpg`} />
+      <meta property="og:site_name" content="9 Rocks Tours" />
+      
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={seoData.title} />
+      <meta name="twitter:description" content={seoData.description} />
+      <meta name="twitter:image" content={`${baseUrl}/twitter-card-booking.jpg`} />
+      
+      <link rel="canonical" href={`${baseUrl}${window.location.pathname}`} />
+      
+      <script type="application/ld+json">
+        {JSON.stringify(structuredData)}
+      </script>
+      
+      <html lang={currentLang === 'pt' ? 'pt-PT' : currentLang === 'es' ? 'es-ES' : 'en-US'} />
+    </Helmet>
+  );
+};
+
+// Componente Principal BookingForm
+const BookingForm = () => {
+  const { currentLang } = useSEO();
+  const [searchParams] = useSearchParams();
+  const tourSlug = searchParams.get('tour');
   
+  const [tourData, setTourData] = useState(null);
   const [formData, setFormData] = useState({
-    customer_name: '',
-    customer_email: '',
-    customer_phone: '',
-    selected_date: '',
-    participants: 1,
-    special_requests: '',
-    payment_method: 'paypal'
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    numberOfPeople: 1,
+    date: '',
+    specialRequests: '',
+    terms: false
   });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Conteúdo traduzido
+  const content = {
+    pt: {
+      title: "Reserve Sua Aventura",
+      subtitle: "Preencha os dados abaixo para confirmar sua reserva",
+      personalInfo: "Informações Pessoais",
+      firstName: "Nome",
+      lastName: "Sobrenome", 
+      email: "E-mail",
+      phone: "Telefone",
+      bookingDetails: "Detalhes da Reserva",
+      numberOfPeople: "Número de Pessoas",
+      preferredDate: "Data Preferida",
+      specialRequests: "Pedidos Especiais",
+      specialRequestsPlaceholder: "Alguma necessidade especial, restrições alimentares, etc.",
+      termsText: "Aceito os",
+      termsLink: "termos e condições",
+      submit: "CONFIRMAR RESERVA",
+      summary: "Resumo da Reserva",
+      total: "Total",
+      perPerson: "por pessoa",
+      processing: "Processando...",
+      successTitle: "Reserva Confirmada!",
+      successMessage: "Obrigado! Sua reserva foi confirmada. Você receberá um e-mail com todos os detalhes.",
+      backToTours: "Voltar aos Tours",
+      errors: {
+        firstName: "Nome é obrigatório",
+        lastName: "Sobrenome é obrigatório",
+        email: "E-mail válido é obrigatório",
+        phone: "Telefone é obrigatório",
+        date: "Data é obrigatória",
+        terms: "Você deve aceitar os termos e condições"
+      }
+    },
+    en: {
+      title: "Book Your Adventure",
+      subtitle: "Fill in the details below to confirm your booking",
+      personalInfo: "Personal Information",
+      firstName: "First Name",
+      lastName: "Last Name",
+      email: "Email",
+      phone: "Phone",
+      bookingDetails: "Booking Details", 
+      numberOfPeople: "Number of People",
+      preferredDate: "Preferred Date",
+      specialRequests: "Special Requests",
+      specialRequestsPlaceholder: "Any special needs, dietary restrictions, etc.",
+      termsText: "I accept the",
+      termsLink: "terms and conditions",
+      submit: "CONFIRM BOOKING",
+      summary: "Booking Summary",
+      total: "Total",
+      perPerson: "per person",
+      processing: "Processing...",
+      successTitle: "Booking Confirmed!",
+      successMessage: "Thank you! Your booking has been confirmed. You will receive an email with all the details.",
+      backToTours: "Back to Tours",
+      errors: {
+        firstName: "First name is required",
+        lastName: "Last name is required", 
+        email: "Valid email is required",
+        phone: "Phone is required",
+        date: "Date is required",
+        terms: "You must accept the terms and conditions"
+      }
+    },
+    es: {
+      title: "Reserva Tu Aventura",
+      subtitle: "Completa los datos a continuación para confirmar tu reserva",
+      personalInfo: "Información Personal",
+      firstName: "Nombre",
+      lastName: "Apellido",
+      email: "Correo",
+      phone: "Teléfono",
+      bookingDetails: "Detalles de la Reserva",
+      numberOfPeople: "Número de Personas",
+      preferredDate: "Fecha Preferida", 
+      specialRequests: "Solicitudes Especiales",
+      specialRequestsPlaceholder: "Alguna necesidad especial, restricciones alimentarias, etc.",
+      termsText: "Acepto los",
+      termsLink: "términos y condiciones", 
+      submit: "CONFIRMAR RESERVA",
+      summary: "Resumen de la Reserva",
+      total: "Total",
+      perPerson: "por persona",
+      processing: "Procesando...",
+      successTitle: "¡Reserva Confirmada!",
+      successMessage: "¡Gracias! Tu reserva ha sido confirmada. Recibirás un correo con todos los detalles.",
+      backToTours: "Volver a Tours",
+      errors: {
+        firstName: "El nombre es obligatorio",
+        lastName: "El apellido es obligatorio",
+        email: "Se requiere un correo válido",
+        phone: "El teléfono es obligatorio", 
+        date: "La fecha es obligatoria",
+        terms: "Debes aceptar los términos y condiciones"
+      }
+    }
   };
 
-  const calculateTotal = () => {
-    return tour.price; // Preço total do tour
+  // Carregar dados do tour se especificado
+  useEffect(() => {
+    if (tourSlug) {
+      const fetchTourData = async () => {
+        try {
+          const response = await fetch(`/api/tours/${tourSlug}?lang=${currentLang}`);
+          const data = await response.json();
+          setTourData(data);
+        } catch (error) {
+          console.error('Erro ao carregar tour:', error);
+        }
+      };
+      fetchTourData();
+    }
+  }, [tourSlug, currentLang]);
+
+  // Validação do formulário
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.firstName.trim()) newErrors.firstName = content[currentLang].errors.firstName;
+    if (!formData.lastName.trim()) newErrors.lastName = content[currentLang].errors.lastName;
+    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = content[currentLang].errors.email;
+    }
+    if (!formData.phone.trim()) newErrors.phone = content[currentLang].errors.phone;
+    if (!formData.date) newErrors.date = content[currentLang].errors.date;
+    if (!formData.terms) newErrors.terms = content[currentLang].errors.terms;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const calculateDeposit = () => {
-    return tour.price * 0.30;
-  };
-
-  const calculateRemaining = () => {
-    return tour.price * 0.70;
-  };
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(price);
-  };
-
+  // Submeter formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    
+    if (!validateForm()) return;
 
+    setLoading(true);
+    
     try {
       const bookingData = {
         ...formData,
-        tour_id: tour.id
+        tourId: tourData?.id,
+        tourSlug: tourSlug,
+        language: currentLang,
+        totalPrice: tourData ? tourData.price * formData.numberOfPeople : 0
       };
 
-      console.log('📋 Criando reserva:', bookingData);
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData)
+      });
 
-      const response = await axios.post(`${BACKEND_URL}/api/bookings`, bookingData);
-      console.log('✅ Reserva criada:', response.data);
-      
-      setBooking(response.data);
-      setStep(2); // Move to payment step
-    } catch (err) {
-      console.error('❌ Error creating booking:', err);
-      setError(err.response?.data?.detail || 'Erro ao criar reserva. Tente novamente.');
+      if (response.ok) {
+        setSubmitted(true);
+        
+        // Google Analytics Event
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'purchase', {
+            transaction_id: Date.now(),
+            value: bookingData.totalPrice,
+            currency: 'EUR',
+            items: [{
+              item_id: tourSlug,
+              item_name: tourData?.name,
+              price: tourData?.price,
+              quantity: formData.numberOfPeople
+            }]
+          });
+        }
+      } else {
+        throw new Error('Erro ao processar reserva');
+      }
+    } catch (error) {
+      console.error('Erro ao submeter formulário:', error);
+      alert('Erro ao processar sua reserva. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePaymentSuccess = () => {
-    console.log('✅ Pagamento concluído com sucesso');
-    onBookingComplete();
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+
+    // Limpar erro quando o usuário começar a digitar
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
   };
 
-  const formatDateForDisplay = (dateString) => {
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('pt-PT', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const getToursUrl = () => {
+    const langPrefix = currentLang === 'pt' ? '' : `/${currentLang}`;
+    return `${langPrefix}/tours`;
   };
 
-  // Ordenar datas disponíveis por ordem cronológica
-  const sortedAvailableDates = tour.availability_dates 
-    ? [...tour.availability_dates].sort((a, b) => new Date(a) - new Date(b))
-    : [];
+  const getTotalPrice = () => {
+    return tourData ? tourData.price * formData.numberOfPeople : 0;
+  };
 
-  const { t, getCurrentLanguage } = useTranslation();
-  const currentLang = getCurrentLanguage();
+  // Página de sucesso
+  if (submitted) {
+    return (
+      <>
+        <BookingSEOHead tourData={tourData} />
+        <div className="booking-success">
+          <div className="container">
+            <div className="success-content">
+              <div className="success-icon">✅</div>
+              <h1>{content[currentLang].successTitle}</h1>
+              <p>{content[currentLang].successMessage}</p>
+              
+              {tourData && (
+                <div className="booking-summary">
+                  <h3>{tourData.name}</h3>
+                  <p>{content[currentLang].numberOfPeople}: {formData.numberOfPeople}</p>
+                  <p>{content[currentLang].preferredDate}: {formData.date}</p>
+                  <p>{content[currentLang].total}: €{getTotalPrice()}</p>
+                </div>
+              )}
+              
+              <Link to={getToursUrl()} className="back-button">
+                {content[currentLang].backToTours}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {step === 1 ? t('booking_title') : 'Pagamento'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
+    <>
+      <BookingSEOHead tourData={tourData} />
+      
+      <div className="booking-form">
+        <div className="container">
+          <div className="booking-header">
+            <h1>{content[currentLang].title}</h1>
+            <p>{content[currentLang].subtitle}</p>
+          </div>
 
-        {/* Content */}
-        <div className="p-6">
-          {step === 1 ? (
-            // Booking Form
-            <>
-              {/* Tour Summary com breakdown de pagamento */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  {tour.name[currentLang] || tour.name.pt}
-                </h3>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                    </svg>
-                    {tour.location}
+          <div className="booking-content">
+            <div className="form-section">
+              <form onSubmit={handleSubmit}>
+                {/* Informações Pessoais */}
+                <div className="form-group">
+                  <h2>{content[currentLang].personalInfo}</h2>
+                  
+                  <div className="form-row">
+                    <div className="form-field">
+                      <label htmlFor="firstName">{content[currentLang].firstName} *</label>
+                      <input
+                        type="text"
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        className={errors.firstName ? 'error' : ''}
+                        required
+                      />
+                      {errors.firstName && <span className="error-message">{errors.firstName}</span>}
+                    </div>
+                    
+                    <div className="form-field">
+                      <label htmlFor="lastName">{content[currentLang].lastName} *</label>
+                      <input
+                        type="text"
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        className={errors.lastName ? 'error' : ''}
+                        required
+                      />
+                      {errors.lastName && <span className="error-message">{errors.lastName}</span>}
+                    </div>
                   </div>
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                    {tour.duration_hours} horas
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                    </svg>
-                    {formatPrice(tour.price)} (preço total)
+
+                  <div className="form-row">
+                    <div className="form-field">
+                      <label htmlFor="email">{content[currentLang].email} *</label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={errors.email ? 'error' : ''}
+                        required
+                      />
+                      {errors.email && <span className="error-message">{errors.email}</span>}
+                    </div>
+                    
+                    <div className="form-field">
+                      <label htmlFor="phone">{content[currentLang].phone} *</label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className={errors.phone ? 'error' : ''}
+                        required
+                      />
+                      {errors.phone && <span className="error-message">{errors.phone}</span>}
+                    </div>
                   </div>
                 </div>
 
-                {/* Breakdown de pagamento */}
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Preço total do tour:</span>
-                      <span className="font-medium">{formatPrice(calculateTotal())}</span>
+                {/* Detalhes da Reserva */}
+                <div className="form-group">
+                  <h2>{content[currentLang].bookingDetails}</h2>
+                  
+                  <div className="form-row">
+                    <div className="form-field">
+                      <label htmlFor="numberOfPeople">{content[currentLang].numberOfPeople} *</label>
+                      <select
+                        id="numberOfPeople"
+                        name="numberOfPeople"
+                        value={formData.numberOfPeople}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        {[1,2,3,4,5,6,7,8].map(num => (
+                          <option key={num} value={num}>{num}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Depósito (30%):</span>
-                      <span className="font-semibold text-blue-600">{formatPrice(calculateDeposit())}</span>
+                    
+                    <div className="form-field">
+                      <label htmlFor="date">{content[currentLang].preferredDate} *</label>
+                      <input
+                        type="date"
+                        id="date"
+                        name="date"
+                        value={formData.date}
+                        onChange={handleInputChange}
+                        className={errors.date ? 'error' : ''}
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                      {errors.date && <span className="error-message">{errors.date}</span>}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Restante no dia:</span>
-                      <span className="font-medium">{formatPrice(calculateRemaining())}</span>
+                  </div>
+
+                  <div className="form-field">
+                    <label htmlFor="specialRequests">{content[currentLang].specialRequests}</label>
+                    <textarea
+                      id="specialRequests"
+                      name="specialRequests"
+                      value={formData.specialRequests}
+                      onChange={handleInputChange}
+                      placeholder={content[currentLang].specialRequestsPlaceholder}
+                      rows="4"
+                    />
+                  </div>
+                </div>
+
+                {/* Termos e Condições */}
+                <div className="form-group">
+                  <div className="checkbox-field">
+                    <input
+                      type="checkbox"
+                      id="terms"
+                      name="terms"
+                      checked={formData.terms}
+                      onChange={handleInputChange}
+                      className={errors.terms ? 'error' : ''}
+                      required
+                    />
+                    <label htmlFor="terms">
+                      {content[currentLang].termsText} <a href="/terms" target="_blank">{content[currentLang].termsLink}</a> *
+                    </label>
+                    {errors.terms && <span className="error-message">{errors.terms}</span>}
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="submit-button"
+                  disabled={loading}
+                >
+                  {loading ? content[currentLang].processing : content[currentLang].submit}
+                </button>
+              </form>
+            </div>
+
+            {/* Sidebar com resumo */}
+            {tourData && (
+              <div className="booking-sidebar">
+                <div className="booking-summary">
+                  <h3>{content[currentLang].summary}</h3>
+                  
+                  <div className="tour-info">
+                    <img src={tourData.images[0]} alt={tourData.name} />
+                    <div>
+                      <h4>{tourData.name}</h4>
+                      <p>{tourData.duration}</p>
+                    </div>
+                  </div>
+
+                  <div className="price-breakdown">
+                    <div className="price-line">
+                      <span>€{tourData.price} x {formData.numberOfPeople} {content[currentLang].perPerson}</span>
+                      <span>€{getTotalPrice()}</span>
+                    </div>
+                    
+                    <div className="total-line">
+                      <strong>
+                        <span>{content[currentLang].total}</span>
+                        <span>€{getTotalPrice()}</span>
+                      </strong>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-                  <div className="text-red-800">{error}</div>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Customer Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking_customer_name')} *
-                    </label>
-                    <input
-                      type="text"
-                      id="customer_name"
-                      name="customer_name"
-                      value={formData.customer_name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="customer_email" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking_customer_email')} *
-                    </label>
-                    <input
-                      type="email"
-                      id="customer_email"
-                      name="customer_email"
-                      value={formData.customer_email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="customer_phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('booking_customer_phone')} *
-                  </label>
-                  <input
-                    type="tel"
-                    id="customer_phone"
-                    name="customer_phone"
-                    value={formData.customer_phone}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="+351 912 345 678"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                {/* Tour Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="selected_date" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking_selected_date')} * ({sortedAvailableDates.length} datas disponíveis)
-                    </label>
-                    
-                    <select
-                      id="selected_date"
-                      name="selected_date"
-                      value={formData.selected_date}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="">Selecione uma data</option>
-                      {sortedAvailableDates.map((date) => (
-                        <option key={date} value={date}>
-                          {formatDateForDisplay(date)}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    {/* Aviso se não há datas */}
-                    {sortedAvailableDates.length === 0 && (
-                      <p className="text-sm text-red-600 mt-1">
-                        ⚠️ Sem datas disponíveis. Contacte-nos diretamente.
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="participants" className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('booking_participants')} * (máx. {tour.max_participants})
-                    </label>
-                    
-                    <select
-                      id="participants"
-                      name="participants"
-                      value={formData.participants}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      {Array.from({ length: tour.max_participants }, (_, i) => i + 1).map(num => (
-                        <option key={num} value={num}>
-                          {num} {num === 1 ? 'pessoa' : 'pessoas'}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    {/* Nota sobre grupos maiores */}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Para grupos {tour.max_participants + 1}+ pessoas, contacte-nos diretamente
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="special_requests" className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('booking_special_requests')}
-                  </label>
-                  <textarea
-                    id="special_requests"
-                    name="special_requests"
-                    value={formData.special_requests}
-                    onChange={handleInputChange}
-                    rows="3"
-                    placeholder="Alergias alimentares, necessidades especiais, etc."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-
-                {/* Total com depósito */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-lg font-medium text-gray-900">A pagar hoje (depósito):</span>
-                    <span className="text-2xl font-bold text-indigo-600">
-                      {formatPrice(calculateDeposit())}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <div className="flex justify-between">
-                      <span>Preço total do tour:</span>
-                      <span>{formatPrice(calculateTotal())}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Participantes:</span>
-                      <span>{formData.participants}</span>
-                    </div>
-                    <div className="flex justify-between font-medium text-gray-700 mt-2 pt-2 border-t">
-                      <span>Restante a pagar no dia:</span>
-                      <span>{formatPrice(calculateRemaining())}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
-                  >
-                    {t('common_cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading || sortedAvailableDates.length === 0}
-                    className="flex-1 bg-indigo-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loading ? 'A processar...' : 'Continuar para Pagamento'}
-                  </button>
-                </div>
-              </form>
-            </>
-          ) : (
-            // Payment Step
-            <PaymentComponent
-              booking={booking}
-              tour={tour}
-              total={calculateDeposit()}
-              onSuccess={handlePaymentSuccess}
-              onBack={() => setStep(1)}
-            />
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
