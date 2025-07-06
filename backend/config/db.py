@@ -1,10 +1,16 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
+#from motor.motor_asyncio import AsyncIOMotorClient
+#import os
+#from pathlib import Path
+#from dotenv import load_dotenv
 
-MONGO_URL = os.environ["MONGO_URL"]
-DB_NAME = os.environ["DB_NAME"]
+# Carregar .env
+#ROOT_DIR = Path(__file__).parent.parent
+#load_dotenv(ROOT_DIR / '.env')
 
-client = AsyncIOMotorClient(MONGO_URL)
-db = client[DB_NAME]
+#MONGO_URL = os.environ["MONGO_URL"]
+#DB_NAME = os.environ["DB_NAME"]
 
-tours_collection = db["tours"]
+#client = AsyncIOMotorClient(MONGO_URL)
+#db = client[DB_NAME]
+
+#tours_collection = db["tours"]

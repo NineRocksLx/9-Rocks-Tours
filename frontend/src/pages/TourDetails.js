@@ -1,9 +1,8 @@
-// frontend/src/pages/TourDetails.js
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 
-// Hook SEO (mesmo do HomePage)
+// Hook SEO
 const useSEO = () => {
   const location = useLocation();
   const [currentLang, setCurrentLang] = useState('pt');
@@ -21,7 +20,7 @@ const useSEO = () => {
 // Componente SEO para Tours
 const TourSEOHead = ({ tourData }) => {
   const { currentLang } = useSEO();
-  const baseUrl = "https://9rockstours.com"; // ALTERE PARA SEU DOMÍNIO
+  const baseUrl = "https://9rocks.pt";
 
   if (!tourData) return null;
 
@@ -106,14 +105,14 @@ const TourSEOHead = ({ tourData }) => {
       <meta property="og:description" content={seoData.description} />
       <meta property="og:type" content="product" />
       <meta property="og:url" content={`${baseUrl}${window.location.pathname}`} />
-      <meta property="og:image" content={tourData.images[0]} />
+      <meta property="og:image" content={tourData.images?.[0]} />
       <meta property="og:site_name" content="9 Rocks Tours" />
       <meta property="og:locale" content={currentLang === 'pt' ? 'pt_PT' : currentLang === 'es' ? 'es_ES' : 'en_US'} />
       
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={seoData.title} />
       <meta name="twitter:description" content={seoData.description} />
-      <meta name="twitter:image" content={tourData.images[0]} />
+      <meta name="twitter:image" content={tourData.images?.[0]} />
       
       <link rel="canonical" href={`${baseUrl}${window.location.pathname}`} />
       
@@ -171,12 +170,18 @@ const Breadcrumbs = ({ tourName }) => {
       <script type="application/ld+json">
         {JSON.stringify(breadcrumbData)}
       </script>
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link to={getUrl('home')}>{labels[currentLang].home}</Link>
-        <span> &gt; </span>
-        <Link to={getUrl('tours')}>{labels[currentLang].tours}</Link>
-        <span> &gt; </span>
-        <span>{tourName}</span>
+      <nav className="breadcrumbs bg-gray-100 py-3 px-4" aria-label="Breadcrumb">
+        <div className="max-w-6xl mx-auto">
+          <Link to={getUrl('home')} className="text-blue-600 hover:text-blue-800">
+            {labels[currentLang].home}
+          </Link>
+          <span className="mx-2 text-gray-500"> &gt; </span>
+          <Link to={getUrl('tours')} className="text-blue-600 hover:text-blue-800">
+            {labels[currentLang].tours}
+          </Link>
+          <span className="mx-2 text-gray-500"> &gt; </span>
+          <span className="text-gray-700">{tourName}</span>
+        </div>
       </nav>
     </>
   );
@@ -207,7 +212,9 @@ const TourDetails = () => {
       description: "Descrição",
       highlights: "Destaques",
       loading: "A carregar...",
-      error: "Erro ao carregar tour"
+      error: "Erro ao carregar tour",
+      home: "Início",
+      readyForAdventure: "Pronto para Viver Esta Aventura?"
     },
     en: {
       duration: "Duration",
@@ -224,7 +231,9 @@ const TourDetails = () => {
       description: "Description",
       highlights: "Highlights",
       loading: "Loading...",
-      error: "Error loading tour"
+      error: "Error loading tour",
+      home: "Home",
+      readyForAdventure: "Ready for This Adventure?"
     },
     es: {
       duration: "Duración",
@@ -241,7 +250,9 @@ const TourDetails = () => {
       description: "Descripción",
       highlights: "Destacados",
       loading: "Cargando...",
-      error: "Error al cargar tour"
+      error: "Error al cargar tour",
+      home: "Inicio",
+      readyForAdventure: "¿Listo para Esta Aventura?"
     }
   };
 
@@ -249,7 +260,8 @@ const TourDetails = () => {
   useEffect(() => {
     const fetchTourData = async () => {
       try {
-        const response = await fetch(`/api/tours/${slug}?lang=${currentLang}`);
+        const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+        const response = await fetch(`${BACKEND_URL}/api/tours/${slug}?lang=${currentLang}`);
         if (!response.ok) throw new Error('Tour not found');
         const data = await response.json();
         setTourData(data);
@@ -271,17 +283,24 @@ const TourDetails = () => {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading">{content[currentLang].loading}</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">{content[currentLang].loading}</p>
+        </div>
       </div>
     );
   }
 
   if (!tourData) {
     return (
-      <div className="error-container">
-        <h1>{content[currentLang].error}</h1>
-        <Link to="/" className="back-home">← {content[currentLang].home}</Link>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{content[currentLang].error}</h1>
+          <Link to="/" className="text-blue-600 hover:text-blue-800">
+            ← {content[currentLang].home}
+          </Link>
+        </div>
       </div>
     );
   }
@@ -294,116 +313,181 @@ const TourDetails = () => {
         <Breadcrumbs tourName={tourData.name} />
 
         {/* Hero Section */}
-        <section className="tour-hero">
-          <div className="tour-gallery-main">
-            <img 
-              src={tourData.images[activeImageIndex]} 
-              alt={`${tourData.name} - Image ${activeImageIndex + 1}`}
-              className="main-image"
-            />
-            <div className="gallery-thumbnails">
-              {tourData.images.map((image, index) => (
-                <img
-                  key={index}
-                  src={image}
-                  alt={`${tourData.name} - Thumbnail ${index + 1}`}
-                  className={`thumbnail ${index === activeImageIndex ? 'active' : ''}`}
-                  onClick={() => setActiveImageIndex(index)}
-                  loading="lazy"
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="tour-info">
-            <h1>{tourData.name}</h1>
-            <div className="tour-rating">
-              <span className="stars">
-                {'★'.repeat(Math.floor(tourData.rating))}
-                {'☆'.repeat(5 - Math.floor(tourData.rating))}
-              </span>
-              <span className="rating-text">
-                {tourData.rating} ({tourData.reviewCount} {content[currentLang].reviews})
-              </span>
-            </div>
-
-            <div className="tour-quick-info">
-              <div className="info-item">
-                <strong>{content[currentLang].duration}:</strong> {tourData.duration}
+        <section className="tour-hero bg-white">
+          <div className="max-w-6xl mx-auto px-4 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Gallery */}
+              <div className="tour-gallery">
+                <div className="main-image mb-4">
+                  <img 
+                    src={tourData.images?.[activeImageIndex] || '/placeholder-tour.jpg'} 
+                    alt={`${tourData.name} - Image ${activeImageIndex + 1}`}
+                    className="w-full h-96 object-cover rounded-lg shadow-lg"
+                  />
+                </div>
+                {tourData.images && tourData.images.length > 1 && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {tourData.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`${tourData.name} - Thumbnail ${index + 1}`}
+                        className={`w-full h-20 object-cover rounded cursor-pointer transition-opacity ${
+                          index === activeImageIndex ? 'opacity-100 ring-2 ring-blue-500' : 'opacity-70 hover:opacity-100'
+                        }`}
+                        onClick={() => setActiveImageIndex(index)}
+                        loading="lazy"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="info-item">
-                <strong>{content[currentLang].groupSize}:</strong> {tourData.maxGroupSize} pessoas
-              </div>
-              <div className="info-item">
-                <strong>{content[currentLang].difficulty}:</strong> {tourData.difficulty}
+
+              {/* Tour Info */}
+              <div className="tour-info">
+                <h1 className="text-4xl font-bold text-gray-900 mb-4">{tourData.name}</h1>
+                
+                {/* Rating */}
+                <div className="tour-rating mb-6">
+                  <div className="flex items-center">
+                    <div className="flex text-yellow-400 text-xl">
+                      {'★'.repeat(Math.floor(tourData.rating || 5))}
+                      {'☆'.repeat(5 - Math.floor(tourData.rating || 5))}
+                    </div>
+                    <span className="ml-2 text-gray-600">
+                      {tourData.rating || '4.8'} ({tourData.reviewCount || '89'} {content[currentLang].reviews})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Info */}
+                <div className="tour-quick-info grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="info-item p-4 bg-gray-50 rounded-lg">
+                    <div className="font-semibold text-gray-900">{content[currentLang].duration}</div>
+                    <div className="text-gray-600">{tourData.duration || '8 horas'}</div>
+                  </div>
+                  <div className="info-item p-4 bg-gray-50 rounded-lg">
+                    <div className="font-semibold text-gray-900">{content[currentLang].groupSize}</div>
+                    <div className="text-gray-600">{tourData.maxGroupSize || '8'} pessoas</div>
+                  </div>
+                  <div className="info-item p-4 bg-gray-50 rounded-lg">
+                    <div className="font-semibold text-gray-900">{content[currentLang].difficulty}</div>
+                    <div className="text-gray-600">{tourData.difficulty || 'Fácil'}</div>
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="pricing mb-8">
+                  <div className="flex items-baseline">
+                    <span className="text-sm text-gray-600 mr-2">{content[currentLang].from}</span>
+                    <span className="text-4xl font-bold text-green-600">€{tourData.price || '65'}</span>
+                    <span className="text-sm text-gray-600 ml-2">{content[currentLang].perPerson}</span>
+                  </div>
+                </div>
+
+                {/* Book Button */}
+                <Link 
+                  to={getBookingUrl()} 
+                  className="inline-block w-full md:w-auto bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition-colors text-center"
+                >
+                  {content[currentLang].bookNow}
+                </Link>
               </div>
             </div>
-
-            <div className="pricing">
-              <span className="from">{content[currentLang].from}</span>
-              <span className="price">€{tourData.price}</span>
-              <span className="per-person">{content[currentLang].perPerson}</span>
-            </div>
-
-            <Link to={getBookingUrl()} className="book-button">
-              {content[currentLang].bookNow}
-            </Link>
           </div>
         </section>
 
         {/* Description Section */}
-        <section className="tour-description">
-          <div className="container">
-            <div className="description-grid">
-              <div className="main-content">
-                <h2>{content[currentLang].description}</h2>
-                <p>{tourData.description}</p>
-
-                <h3>{content[currentLang].highlights}</h3>
-                <ul className="highlights-list">
-                  {tourData.highlights?.map((highlight, index) => (
-                    <li key={index}>{highlight}</li>
-                  ))}
-                </ul>
-
-                <h3>{content[currentLang].itinerary}</h3>
-                <div className="itinerary">
-                  {tourData.itinerary?.map((item, index) => (
-                    <div key={index} className="itinerary-item">
-                      <div className="time">{item.time}</div>
-                      <div className="activity">
-                        <h4>{item.title}</h4>
-                        <p>{item.description}</p>
-                      </div>
-                    </div>
-                  ))}
+        <section className="tour-description py-16 bg-gray-50">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Content */}
+              <div className="lg:col-span-2">
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">{content[currentLang].description}</h2>
+                <div className="prose max-w-none text-gray-700 mb-8">
+                  <p>{tourData.description || 'Descrição do tour em desenvolvimento...'}</p>
                 </div>
+
+                {/* Highlights */}
+                {tourData.highlights && tourData.highlights.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">{content[currentLang].highlights}</h3>
+                    <ul className="space-y-2">
+                      {tourData.highlights.map((highlight, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-green-500 mr-2">✓</span>
+                          <span className="text-gray-700">{highlight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Itinerary */}
+                {tourData.itinerary && tourData.itinerary.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-6">{content[currentLang].itinerary}</h3>
+                    <div className="space-y-6">
+                      {tourData.itinerary.map((item, index) => (
+                        <div key={index} className="flex">
+                          <div className="flex-shrink-0 w-20 text-sm font-semibold text-blue-600 bg-blue-50 rounded px-2 py-1 h-fit">
+                            {item.time}
+                          </div>
+                          <div className="ml-4">
+                            <h4 className="font-semibold text-gray-900 mb-1">{item.title}</h4>
+                            <p className="text-gray-700">{item.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="sidebar">
-                <div className="included-section">
-                  <h3>{content[currentLang].included}</h3>
-                  <ul className="included-list">
-                    {tourData.included?.map((item, index) => (
-                      <li key={index}>✓ {item}</li>
-                    ))}
-                  </ul>
+              {/* Sidebar */}
+              <div className="lg:col-span-1">
+                {/* Included/Not Included */}
+                <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                  {tourData.included && tourData.included.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="font-bold text-gray-900 mb-3">{content[currentLang].included}</h3>
+                      <ul className="space-y-2">
+                        {tourData.included.map((item, index) => (
+                          <li key={index} className="flex items-start text-sm">
+                            <span className="text-green-500 mr-2">✓</span>
+                            <span className="text-gray-700">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                  <h3>{content[currentLang].notIncluded}</h3>
-                  <ul className="not-included-list">
-                    {tourData.notIncluded?.map((item, index) => (
-                      <li key={index}>✗ {item}</li>
-                    ))}
-                  </ul>
+                  {tourData.notIncluded && tourData.notIncluded.length > 0 && (
+                    <div>
+                      <h3 className="font-bold text-gray-900 mb-3">{content[currentLang].notIncluded}</h3>
+                      <ul className="space-y-2">
+                        {tourData.notIncluded.map((item, index) => (
+                          <li key={index} className="flex items-start text-sm">
+                            <span className="text-red-500 mr-2">✗</span>
+                            <span className="text-gray-700">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
-                <div className="booking-widget">
-                  <div className="widget-price">
-                    <span className="from">{content[currentLang].from}</span>
-                    <span className="price">€{tourData.price}</span>
-                    <span className="per-person">{content[currentLang].perPerson}</span>
+                {/* Booking Widget */}
+                <div className="bg-white rounded-lg shadow-lg p-6 sticky top-6">
+                  <div className="text-center mb-4">
+                    <div className="text-sm text-gray-600">{content[currentLang].from}</div>
+                    <div className="text-3xl font-bold text-green-600">€{tourData.price || '65'}</div>
+                    <div className="text-sm text-gray-600">{content[currentLang].perPerson}</div>
                   </div>
-                  <Link to={getBookingUrl()} className="widget-book-button">
+                  <Link 
+                    to={getBookingUrl()} 
+                    className="block w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors text-center"
+                  >
                     {content[currentLang].bookNow}
                   </Link>
                 </div>
@@ -414,21 +498,21 @@ const TourDetails = () => {
 
         {/* Reviews Section */}
         {tourData.reviews && tourData.reviews.length > 0 && (
-          <section className="reviews-section">
-            <div className="container">
-              <h2>{content[currentLang].reviews}</h2>
-              <div className="reviews-grid">
+          <section className="reviews-section py-16 bg-white">
+            <div className="max-w-6xl mx-auto px-4">
+              <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">{content[currentLang].reviews}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tourData.reviews.slice(0, 6).map((review, index) => (
-                  <div key={index} className="review-card">
-                    <div className="review-header">
-                      <div className="reviewer-name">{review.author}</div>
-                      <div className="review-rating">
+                  <div key={index} className="bg-gray-50 rounded-lg p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-semibold text-gray-900">{review.author}</div>
+                      <div className="flex text-yellow-400">
                         {'★'.repeat(review.rating)}
                         {'☆'.repeat(5 - review.rating)}
                       </div>
                     </div>
-                    <p className="review-text">{review.comment}</p>
-                    <div className="review-date">{review.date}</div>
+                    <p className="text-gray-700 mb-3">{review.comment}</p>
+                    <div className="text-sm text-gray-500">{review.date}</div>
                   </div>
                 ))}
               </div>
@@ -436,11 +520,14 @@ const TourDetails = () => {
           </section>
         )}
 
-        {/* Call to Action Final */}
-        <section className="tour-final-cta">
-          <div className="container">
-            <h2>Pronto para Viver Esta Aventura?</h2>
-            <Link to={getBookingUrl()} className="final-cta-button">
+        {/* Final CTA */}
+        <section className="tour-final-cta py-16 bg-blue-600 text-white">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <h2 className="text-4xl font-bold mb-8">{content[currentLang].readyForAdventure}</h2>
+            <Link 
+              to={getBookingUrl()} 
+              className="inline-block bg-yellow-500 text-gray-900 px-8 py-4 rounded-lg text-lg font-bold hover:bg-yellow-400 transition-colors"
+            >
               {content[currentLang].bookNow}
             </Link>
           </div>

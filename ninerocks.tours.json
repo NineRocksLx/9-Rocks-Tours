@@ -1,0 +1,527 @@
+[{
+  "_id": {
+    "$oid": "685f1dca0a8515933e90d1d6"
+  },
+  "id": "c11813c9-4d26-4bf2-a707-854fcf15c122",
+  "name": {
+    "pt": "Évora Clássica",
+    "en": "Classic Évora",
+    "es": "Évora Clásica"
+  },
+  "short_description": {
+    "pt": "A visita começa pela bela cidade medieval de Évora",
+    "en": "The visit begins with the beautiful medieval city of Évora",
+    "es": "La visita comienza con la hermosa ciudad medieval de Évora."
+  },
+  "description": {
+    "pt": "Évora é o centro histórico do Alto Alentejo, uma região declarada Património Mundial pela UNESCO em 1986, onde poderá visitar monumentos como a Catedral, o Templo Romano, a Igreja de São Francisco e a sua Capela dos Ossos. De seguida, seguiremos para conhecer as incríveis vinhas locais. Depois, poderá desfrutar do seu almoço num ambiente acolhedor, conhecido pela sua excelente gastronomia e por oferecer os melhores vinhos do mundo. Antes do regresso, poderá visitar a fábrica e loja de cortiça.",
+    "en": "Évora is the historical center in Alto Alentejo, an area which has been declared world cultural heritage by UNESCO in 1986, and where you can visit monuments like: The Catederal, Roman Temple, Church of St. Francisco and its bones chapel. Then we drive to see the amazing local vineyards. After that you can enjoy your lunch in a friendly local atmosphere that is known for its excellent cuisine and for offering the world`s finest wines. Before return, you may visit the cork factory and store",
+    "es": "Évora es el centro histórico del Alto Alentejo, una zona declarada Patrimonio Cultural de la Humanidad por la UNESCO en 1986. Allí podrá visitar monumentos como la Catedral, el Templo Romano, la Iglesia de San Francisco y su capilla de los huesos. A continuación, nos dirigiremos a los impresionantes viñedos locales. Después, podrá disfrutar de un almuerzo en un ambiente acogedor, conocido por su excelente gastronomía y por ofrecer los mejores vinos del mundo. Antes de regresar, podrá visitar la fábrica y el almacén de corcho."
+  },
+  "location": "Évora",
+  "duration_hours": 8,
+  "max_participants": 4,
+  "tour_type": "cultural",
+  "route_description": {
+    "pt": "A Catedral, o Templo Romano, a Igreja de São Francisco e a sua capela dos ossos. De seguida, seguiremos para conhecer os incríveis vinhedos locais. Almoçaremos num ambiente acolhedor, conhecido pela sua excelente gastronomia e por oferecer os melhores vinhos do mundo. Antes do regresso, poderá visitar a fábrica e a loja de cortiça.",
+    "en": "The Catederal, Roman Temple, Church of St. Francisco and its bones chapel. Then we drive to see the amazing local vineyards. Lunch in a friendly local atmosphere that is known for its excellent cuisine and for offering the world`s finest wines. Before return, you may visit the cork factory and store.",
+    "es": "La Catedral, el Templo Romano, la Iglesia de San Francisco y su capilla de los huesos. A continuación, nos dirigiremos a los impresionantes viñedos locales. Almorzaremos en un ambiente acogedor, conocido por su excelente gastronomía y por ofrecer los mejores vinos del mundo. Antes de regresar, podrá visitar la fábrica y el almacén de corcho."
+  },
+  "includes": {
+    "pt": "Água, regresso incluído, Wi-Fi a bordo",
+    "en": "Water,return included, Wifi onboard ",
+    "es": "Incluye agua, devolución y wifi"
+  },
+  "excludes": {
+    "pt": "Bilhetes de entrada para monumentos / museus Refeições Dicas Despesas pessoais",
+    "en": "Entrance tickets to monuments / museums Meals Tips Personal Expenses",
+    "es": "Entradas a monumentos/museos Comidas Propinas Gastos personales"
+  },
+  "price": 570,
+  "active": true,
+  "images": [],
+  "availability_dates": [],
+  "created_at": {
+    "$date": "2025-06-27T22:40:09.955Z"
+  },
+  "updated_at": {
+    "$date": "2025-06-28T22:37:43.392Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "685f1dca0a8515933e90d1d7"
+  },
+  "id": "6dafa61c-2767-4f43-ab95-f7c19e6008db",
+  "name": {
+    "pt": "Peniche: Ondas, Penhascos e Histórias do Mar",
+    "en": "Peniche: Waves, Cliffs and Stories of the Sea",
+    "es": "Peniche: olas, acantilados e historias del mar"
+  },
+  "short_description": {
+    "pt": "Peniche combina a força do Atlântico, com falésias dramáticas e ondas notórias para surfistas. O centro histórico com fortaleza e porto de pesca dá-lhe charme tradicional.",
+    "en": "Peniche combines the power of the Atlantic with dramatic cliffs and famous waves for surfers. The historic center with fortress and fishing port gives it traditional charm.",
+    "es": "Peniche combina la fuerza del Atlántico con espectaculares acantilados y olas famosas para los surfistas. Su centro histórico, con su fortaleza y puerto pesquero, le confiere un encanto tradicional."
+  },
+  "description": {
+    "pt": "Peniche é uma cidade vibrante, moldada pela sua profunda ligação com o oceano. Famosa mundialmente pelas suas praias, como a dos Supertubos, palco de campeonatos de surf, Peniche oferece paisagens costeiras de uma beleza selvagem e dramática. A imponente Fortaleza de Peniche, que em tempos serviu de prisão política, é hoje um museu que conta histórias de resistência e liberdade, oferecendo vistas espetaculares sobre o mar. A tradição piscatória está bem viva no porto, onde se pode saborear peixe e marisco frescos, considerados dos melhores do país. Para os amantes da natureza, uma viagem de barco até ao Arquipélago das Berlengas é imperdível. Esta reserva natural, com as suas águas cristalinas e o impressionante Forte de São João Baptista, é um paraíso de tranquilidade e biodiversidade. Peniche é o destino perfeito para quem procura a combinação de adrenalina, história e a beleza pura do Atlântico.",
+    "en": "Peniche is a vibrant city shaped by its deep connection to the ocean. World-famous for its beaches, such as Supertubos, which hosts surfing championships, Peniche offers coastal landscapes of wild and dramatic beauty. The imposing Peniche Fortress, which once served as a political prison, is now a museum that tells stories of resistance and freedom, offering spectacular views of the sea. The fishing tradition is very much alive in the port, where you can taste fresh fish and seafood, considered to be some of the best in the country. For nature lovers, a boat trip to the Berlengas Archipelago is a must. This nature reserve, with its crystal-clear waters and the impressive São João Baptista Fort, is a haven of tranquility and biodiversity. Peniche is the perfect destination for those seeking a combination of adrenaline, history and the pure beauty of the Atlantic.",
+    "es": "Peniche es una ciudad vibrante, marcada por su profunda conexión con el océano. Mundialmente famosa por sus playas, como Supertubos, sede de campeonatos de surf, Peniche ofrece paisajes costeros de una belleza salvaje e impresionante. La imponente Fortaleza de Peniche, que antiguamente sirvió como prisión política, es ahora un museo que narra historias de resistencia y libertad, con espectaculares vistas al mar. La tradición pesquera está muy presente en el puerto, donde se puede degustar pescado y marisco fresco, considerados entre los mejores del país. Para los amantes de la naturaleza, una excursión en barco al Archipiélago de las Berlengas es imprescindible. Esta reserva natural, con sus aguas cristalinas y el impresionante Fuerte de São João Baptista, es un remanso de paz y biodiversidad. Peniche es el destino perfecto para quienes buscan una combinación de adrenalina, historia y la belleza pura del Atlántico."
+  },
+  "location": "Peniche",
+  "duration_hours": 6.5,
+  "max_participants": 4,
+  "tour_type": "mixed",
+  "route_description": {
+    "pt": "09:00 Chegada e visita ao Forte de Peniche + porto.\n\n09:30 Visita à Fortaleza de Peniche e ao Museu Nacional Resistência e Liberdade.\n\n11:00 Viagem de barco para o Arquipélago das Berlengas (duração aproximada de 45 minutos).\n\n12:00 Chegada à Berlenga e visita guiada à ilha, incluindo o Forte de São João Baptista.\n\n13:30h Almoço livre na Berlenga (existem opções de restaurantes na ilha).\n\n15:00h Tempo livre para nadar nas águas cristalinas ou fazer um pequeno passeio de caiaque (opcional).\n\n16:30 Viagem de regresso a Peniche.\n\n17:30 Visita ao Cabo Carvoeiro para admirar as formações rochosas e o farol.\n\n18:30h Fim do tour.",
+    "en": "09:00 Arrival and visit to Peniche Fort + port.\n\n09:30 Visit to Peniche Fortress and the National Museum of Resistance and Freedom.\n\n11:00 Boat trip to the Berlengas Archipelago (approximate duration 45 minutes).\n\n12:00 Arrival at Berlenga and guided tour of the island, including the São João Baptista Fort.\n\n13:30 Free lunch on Berlenga (there are restaurant options on the island).\n\n15:00 Free time to swim in the crystal clear waters or take a short kayak ride (optional).\n\n16:30 Return trip to Peniche.\n\n17:30 Visit to Cabo Carvoeiro to admire the rock formations and the lighthouse.\n\n18:30 End of the tour.",
+    "es": "09:00 Llegada y visita al Fuerte de Peniche y al puerto.\n\n09:30 Visita a la Fortaleza de Peniche y al Museo Nacional de la Resistencia y la Libertad.\n\n11:00 Paseo en barco al Archipiélago de las Berlengas (duración aproximada de 45 minutos).\n\n12:00 Llegada a Berlenga y visita guiada por la isla, incluyendo el Fuerte de São João Baptista.\n\n13:30 Almuerzo libre en Berlenga (hay opciones de restaurantes en la isla).\n\n15:00 Tiempo libre para nadar en las aguas cristalinas o dar un pequeño paseo en kayak (opcional).\n\n16:30 Regreso a Peniche.\n\n17:30 Visita a Cabo Carvoeiro para admirar las formaciones rocosas y el faro.\n\n18:30 Fin del tour."
+  },
+  "includes": {
+    "pt": "Guia especializado, bilhetes para ilhas Berlengas",
+    "en": "Specialized guide, tickets to Berlengas Islands",
+    "es": "Guía especializado, entradas a las Islas Berlengas"
+  },
+  "excludes": {
+    "pt": "Refeições. Gorjetas. Despesas pessoais. Alteração da rota.",
+    "en": "Meals. Tips. Personal expenses. Change of route.",
+    "es": "Comidas. Propinas. Gastos personales. Cambio de ruta."
+  },
+  "price": 495,
+  "active": true,
+  "images": [
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751308337496_wswr0w_forte-de-peniche-4-1024x795.jpg?alt=media&token=f2162edd-9536-453e-bffa-9e32335bdc8b",
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751308358447_p7vu1o_3832_pedrolima_supertubos2_1_2500_2500.jpg?alt=media&token=f583d8b6-cae7-4f9e-a725-cc9f51da7e84",
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751308358944_xizti9_Forte-Sao-Joao-Baptista-Portogallo-2.jpg?alt=media&token=716c39ee-c4b6-4a5d-8317-8e82173d36c8",
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751308359443_h7dwz6_Nazare-scaled.jpg?alt=media&token=195967b0-aa4c-417d-8bd7-b32e0f0b79d2"
+  ],
+  "availability_dates": [
+    "2025-06-30",
+    "2025-07-01",
+    "2025-07-02",
+    "2025-07-03",
+    "2025-07-06",
+    "2025-07-07",
+    "2025-07-08",
+    "2025-07-09",
+    "2025-07-10",
+    "2025-07-13",
+    "2025-07-14",
+    "2025-07-15",
+    "2025-07-16",
+    "2025-07-17",
+    "2025-07-20",
+    "2025-07-21",
+    "2025-07-22",
+    "2025-07-23",
+    "2025-07-24",
+    "2025-07-27",
+    "2025-07-28",
+    "2025-07-29",
+    "2025-07-30",
+    "2025-07-31",
+    "2025-08-03",
+    "2025-08-04",
+    "2025-08-05",
+    "2025-08-06",
+    "2025-08-07",
+    "2025-08-10",
+    "2025-08-11",
+    "2025-08-12",
+    "2025-08-13",
+    "2025-08-17",
+    "2025-08-18",
+    "2025-08-19",
+    "2025-08-20",
+    "2025-08-21",
+    "2025-08-24",
+    "2025-08-25",
+    "2025-08-26",
+    "2025-08-27",
+    "2025-08-28",
+    "2025-08-31",
+    "2025-09-01",
+    "2025-09-02",
+    "2025-09-03",
+    "2025-09-04",
+    "2025-09-07",
+    "2025-09-08",
+    "2025-09-09",
+    "2025-09-10",
+    "2025-09-14",
+    "2025-09-15",
+    "2025-09-16",
+    "2025-09-17",
+    "2025-09-18",
+    "2025-09-21",
+    "2025-09-22",
+    "2025-09-23",
+    "2025-09-24",
+    "2025-09-25",
+    "2025-09-28",
+    "2025-09-29",
+    "2025-09-30",
+    "2025-10-01",
+    "2025-10-02",
+    "2025-10-05",
+    "2025-10-06",
+    "2025-10-07",
+    "2025-10-08",
+    "2025-10-09",
+    "2025-10-12",
+    "2025-10-13",
+    "2025-10-14",
+    "2025-10-15",
+    "2025-10-16",
+    "2025-10-19",
+    "2025-10-20",
+    "2025-10-21",
+    "2025-10-22",
+    "2025-10-23",
+    "2025-10-27",
+    "2025-10-28",
+    "2025-10-29",
+    "2025-10-30",
+    "2025-10-31"
+  ],
+  "created_at": {
+    "$date": "2025-06-27T22:40:09.956Z"
+  },
+  "updated_at": {
+    "$date": "2025-06-30T18:41:51.919Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "685f1dca0a8515933e90d1d8"
+  },
+  "id": "6ebe65d0-daec-43c7-9429-074470ef1356",
+  "name": {
+    "pt": "Fátima Espiritual",
+    "en": "Spiritual Fatima",
+    "es": "Fátima Espiritual"
+  },
+  "short_description": {
+    "pt": "Visite o Santuário de Fátima e arredores",
+    "en": "Visit the Sanctuary of Fatima and surroundings",
+    "es": "Visita el Santuario de Fátima y alrededores"
+  },
+  "description": {
+    "pt": "Visite o Santuário de Fátima e arredores.",
+    "en": "Visit the Sanctuary of Fatima and its surroundings.",
+    "es": "Visita el Santuario de Fátima y sus alrededores."
+  },
+  "location": "Fátima",
+  "duration_hours": 6,
+  "max_participants": 4,
+  "tour_type": "cultural",
+  "route_description": {
+    "pt": "Santuário de Fátima, Capelinha das Aparições",
+    "en": "Sanctuary of Fatima, Chapel of Apparitions",
+    "es": "Santuario de Fátima, Capilla de las Apariciones"
+  },
+  "includes": {
+    "pt": "Guia especializado em história religiosa",
+    "en": "Guide specialized in religious history",
+    "es": "Guía especializado en historia religiosa"
+  },
+  "excludes": {
+    "pt": "Transporte, refeições",
+    "en": "Transportation, meals",
+    "es": "Transporte, comidas"
+  },
+  "price": 410,
+  "active": true,
+  "images": [],
+  "availability_dates": [],
+  "created_at": {
+    "$date": "2025-06-27T22:40:09.956Z"
+  },
+  "updated_at": {
+    "$date": "2025-06-28T22:40:37.922Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "685f1dca0a8515933e90d1d9"
+  },
+  "id": "79f3ce2c-c661-49ed-b4dd-44fcb5ff55b9",
+  "name": {
+    "pt": "Explore o charme desta cidade histórica. Descubra as ruas pitorescas e a famosa Ribeira",
+    "en": "Explore the charm of this historic city. Discover the picturesque streets and the famous Ribeira",
+    "es": "Explora el encanto de esta ciudad histórica. Descubre sus pintorescas calles y la famosa Ribeira."
+  },
+  "short_description": {
+    "pt": "Deixe-se encantar pela cidade invicta, onde o antigo e o moderno se encontram nas margens do majestoso rio Douro. Descubra caves de Vinho do Porto, monumentos históricos e uma gastronomia que conforta a alma.",
+    "en": "Discover Porto and its wine cellars",
+    "es": "Descubre Oporto y sus bodegas de vino"
+  },
+  "description": {
+    "pt": "Explore a cidade do Porto, um tesouro à beira do rio Douro e Património Mundial da UNESCO. Perca-se nas ruelas sinuosas da Ribeira, com as suas fachadas coloridas e ambiente vibrante que conta histórias de séculos de comércio e navegação. Sinta a pulsação da cidade ao atravessar a icónica Ponte Dom Luís I, uma obra-prima de engenharia que oferece vistas panorâmicas inesquecíveis sobre o rio e as caves de Vinho do Porto em Vila Nova de Gaia. Do esplendor barroco da Igreja de São Francisco à imponência da Torre dos Clérigos, cada esquina do Porto revela um novo segredo. Delicie-se com a gastronomia local, desde a tradicional francesinha a petiscos de marisco fresco, e, claro, não perca a oportunidade de provar o mundialmente famoso Vinho do Porto numa das suas caves históricas. O Porto é uma cidade que cativa todos os sentidos, prometendo uma experiência rica em cultura, história e sabores autênticos.",
+    "en": "Explore the city of Porto, a treasure on the banks of the Douro River and a UNESCO World Heritage Site. Lose yourself in the winding streets of Ribeira, with their colorful facades and vibrant atmosphere that tell the tale of centuries of trade and shipping. Feel the pulse of the city as you cross the iconic Dom Luís I Bridge, an engineering masterpiece that offers unforgettable panoramic views over the river and the Port wine cellars of Vila Nova de Gaia. From the baroque splendor of the Church of São Francisco to the imposing Torre dos Clérigos, every corner of Porto reveals a new secret. Indulge in the local cuisine, from the traditional francesinha to fresh seafood snacks, and of course, don’t miss the opportunity to sample the world-famous Port wine in one of its historic cellars. Porto is a city that captivates all the senses, promising an experience rich in culture, history and authentic flavors.",
+    "es": "Explora la ciudad de Oporto, un tesoro a orillas del río Duero y Patrimonio de la Humanidad por la UNESCO. Piérdete en las sinuosas calles de Ribeira, con sus coloridas fachadas y su vibrante atmósfera que narra siglos de comercio y navegación. Siente el pulso de la ciudad al cruzar el icónico Puente Dom Luís I, una obra maestra de la ingeniería que ofrece inolvidables vistas panorámicas del río y las bodegas de vino de Oporto de Vila Nova de Gaia. Desde el esplendor barroco de la Iglesia de São Francisco hasta la imponente Torre dos Clérigos, cada rincón de Oporto revela un nuevo secreto. Deléitate con la gastronomía local, desde la tradicional francesinha hasta los aperitivos de marisco fresco, y, por supuesto, no te pierdas la oportunidad de degustar el mundialmente famoso vino de Oporto en una de sus históricas bodegas. Oporto es una ciudad que cautiva todos los sentidos, prometiendo una experiencia rica en cultura, historia y sabores auténticos."
+  },
+  "location": "Porto",
+  "duration_hours": 12,
+  "max_participants": 4,
+  "tour_type": "mixed",
+  "route_description": {
+    "pt": "09:45 Começamos na Estação de São Bento para admirar os seus famosos painéis de azulejos.\n\n10:20 Visita à Sé Catedral do Porto e vistas panorâmicas sobre a cidade.\n\n11:00h Passeio pela Ponte Dom Luís I (tabuleiro superior) em direção a Vila Nova de Gaia.\n\n11:30 Visita guiada e prova de vinhos numa Cave de Vinho do Porto.\n\n13:00 Almoço livre na Ribeira de Gaia, com sugestões do guia.\n\n14:30h Cruzeiro das Seis Pontes no Rio Douro.\n\n15:30h Subida à Torre dos Clérigos para uma vista de 360 graus sobre o Porto.\n\n16:30h Visita à Livraria Lello (sugere-se compra antecipada de bilhetes).\n\n17:30 Tempo livre para compras na Rua de Santa Catarina.\n\n18:30 Fim do tour.",
+    "en": "09:45 We start at São Bento Station to admire its famous tile panels.\n\n10:20 Visit to Porto Cathedral and panoramic views of the city.\n\n11:00 am Walk across the Dom Luís I Bridge (upper deck) towards Vila Nova de Gaia.\n\n11:30 am Guided tour and wine tasting at a Port Wine Cellar.\n\n1:00 pm Free lunch in Ribeira de Gaia, with suggestions from the guide.\n\n2:30 pm Six Bridges Cruise on the Douro River.\n\n3:30 pm Climb the Clérigos Tower for a 360-degree view of Porto.\n\n4:30 pm Visit to Livraria Lello (advance purchase of tickets is recommended).\n\n5:30 pm Free time for shopping on Rua de Santa Catarina.\n\n18:30 End of the tour.",
+    "es": "09:45 Salimos de la Estación de São Bento para admirar sus famosos paneles de azulejos.\n\n10:20 Visita a la Catedral de Oporto y vistas panorámicas de la ciudad.\n\n11:00 Paseo por el Puente Dom Luís I (cubierta superior) hacia Vila Nova de Gaia.\n\n11:30 Visita guiada y cata de vinos en una bodega de Oporto.\n\n13:00 Almuerzo libre en Ribeira de Gaia, con sugerencias del guía.\n\n14:30 Crucero de los Seis Puentes por el río Duero.\n\n15:30 Subida a la Torre de los Clérigos para disfrutar de una vista panorámica de 360 ​​grados de Oporto.\n\n16:30 Visita a la Librería Lello (se recomienda la compra anticipada de entradas).\n\n17:30 Tiempo libre para compras en la Rua de Santa Catarina.\n\n18:30 Fin del tour."
+  },
+  "includes": {
+    "pt": "Guia, degustação de vinho do Porto",
+    "en": "Guide, Port wine tasting",
+    "es": "Guía, degustación de vino de Oporto"
+  },
+  "excludes": {
+    "pt": "Refeições. Gorjetas. Despesas pessoais. Alteração da rota.",
+    "en": "Meals. Tips. Personal expenses. Change of route.",
+    "es": "Comidas. Propinas. Gastos personales. Cambio de ruta."
+  },
+  "price": 690,
+  "active": true,
+  "images": [
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751307630246_690pi2_porto-2048723_1280.jpg?alt=media&token=f6e1656f-ab87-45eb-b4d3-fb62e22f5034",
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751306819346_t0ywvs_pexels-helena-i-1489651-2867903.jpg?alt=media&token=2fdd02b5-2daf-4db5-b7e7-12484ed16d62",
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751306849197_fpe74r_gettyimages-595679399-1024x1024.jpg?alt=media&token=e81515bf-045d-4006-a23c-8dc8ed8c2983"
+  ],
+  "availability_dates": [
+    "2025-06-30",
+    "2025-07-01",
+    "2025-07-02",
+    "2025-07-03",
+    "2025-07-06",
+    "2025-07-07",
+    "2025-07-08",
+    "2025-07-09",
+    "2025-07-10",
+    "2025-07-13",
+    "2025-07-14",
+    "2025-07-15",
+    "2025-07-16",
+    "2025-07-17",
+    "2025-07-20",
+    "2025-07-21",
+    "2025-07-22",
+    "2025-07-23",
+    "2025-07-24",
+    "2025-07-27",
+    "2025-07-28",
+    "2025-07-29",
+    "2025-07-30",
+    "2025-07-31",
+    "2025-08-03",
+    "2025-08-04",
+    "2025-08-05",
+    "2025-08-06",
+    "2025-08-07",
+    "2025-08-10",
+    "2025-08-11",
+    "2025-08-12",
+    "2025-08-13",
+    "2025-08-17",
+    "2025-08-18",
+    "2025-08-19",
+    "2025-08-20",
+    "2025-08-21",
+    "2025-08-24",
+    "2025-08-25",
+    "2025-08-26",
+    "2025-08-27",
+    "2025-08-28",
+    "2025-08-31",
+    "2025-09-01",
+    "2025-09-02",
+    "2025-09-03",
+    "2025-09-04",
+    "2025-09-07",
+    "2025-09-08",
+    "2025-09-09",
+    "2025-09-10",
+    "2025-09-14",
+    "2025-09-15",
+    "2025-09-16",
+    "2025-09-17",
+    "2025-09-18",
+    "2025-09-21",
+    "2025-09-22",
+    "2025-09-23",
+    "2025-09-24",
+    "2025-09-25",
+    "2025-09-28",
+    "2025-09-29",
+    "2025-09-30",
+    "2025-10-01",
+    "2025-10-02",
+    "2025-10-05",
+    "2025-10-06",
+    "2025-10-07",
+    "2025-10-08",
+    "2025-10-09",
+    "2025-10-12",
+    "2025-10-13",
+    "2025-10-14",
+    "2025-10-15",
+    "2025-10-16",
+    "2025-10-19",
+    "2025-10-20",
+    "2025-10-21",
+    "2025-10-22",
+    "2025-10-23",
+    "2025-10-27",
+    "2025-10-28",
+    "2025-10-29",
+    "2025-10-30",
+    "2025-10-31"
+  ],
+  "created_at": {
+    "$date": "2025-06-27T22:40:09.957Z"
+  },
+  "updated_at": {
+    "$date": "2025-06-30T18:40:03.266Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68616eca5d52e33872e7d2fe"
+  },
+  "id": "3fc881fd-2490-43aa-9b42-51943275bf73",
+  "name": {
+    "pt": "Tour a Tomar: No Coração da História Templária",
+    "en": "Tour to Tomar: In the Heart of Templar History",
+    "es": "Visita a Tomar: En el corazón de la historia templaria"
+  },
+  "description": {
+    "pt": "Visite Tomar, a capital templária de Portugal. Suba ao Castelo e ao Convento de Cristo, uma joia arquitetónica e espiritual. Passeie pela Mata dos Sete Montes, descubra a antiga Sinagoga no centro histórico e sinta a atmosfera única da Praça da República. Uma viagem inesquecível pela história, lendas e beleza natural.",
+    "en": "Visit Tomar, the Templar capital of Portugal. Climb to the Castle and Convent of Christ, an architectural and spiritual gem. Stroll through the Mata dos Sete Montes, visit the old Synagogue in the historic center and feel the unique atmosphere of Praça da República. An unforgettable journey through history, legends and natural beauty.",
+    "es": "Visita Tomar, la capital templaria de Portugal. Sube al Castillo y Convento de Cristo, una joya arquitectónica y espiritual. Pasea por la Mata dos Sete Montes, visita la antigua Sinagoga en el centro histórico y siente el ambiente único de la Praça da República. Un viaje inolvidable a través de la historia, las leyendas y la belleza natural."
+  },
+  "short_description": {
+    "pt": "Explore Tomar, a cidade que foi o coração da misteriosa Ordem dos Cavaleiros Templários em Portugal. Descubra o imponente Convento de Cristo, Património Mundial da UNESCO, e perca-se nas ruas charmosas do seu centro histórico, banhado pelo rio Nabão.",
+    "en": "Explore Tomar, the city that was the heart of the mysterious Order of the Knights Templar in Portugal. Discover the imposing Convent of Christ, a UNESCO World Heritage Site, and lose yourself in the charming streets of its historic center, bathed by the Nabão River.",
+    "es": "Explora Tomar, la ciudad que fue el corazón de la misteriosa Orden de los Caballeros Templarios en Portugal. Descubre el imponente Convento de Cristo, declarado Patrimonio de la Humanidad por la UNESCO, y piérdete por las encantadoras calles de su centro histórico, bañadas por el río Nabão."
+  },
+  "location": "Tomar",
+  "duration_hours": 4,
+  "price": 570,
+  "max_participants": 3,
+  "tour_type": "cultural",
+  "images": [
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751215756640_1v1012_tomar-1664378563.webp?alt=media&token=a8a6e659-b1a8-443f-b043-1cf2312b6b1c",
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751215769632_9bllhz_Castelo_dos_Templ_rios_-_Tomar__10638091393_.jpg?alt=media&token=1b3b0654-6995-417c-86de-a569c49d4e94",
+    "https://firebasestorage.googleapis.com/v0/b/tours-81516-acfbc.firebasestorage.app/o/tours%2F1751215778022_15h2pr_Tomar_Castelo_0244.jpg?alt=media&token=6b41b4d5-e66d-455d-8c1e-dd820e805bc1"
+  ],
+  "availability_dates": [
+    "2025-06-30",
+    "2025-07-01",
+    "2025-07-02",
+    "2025-07-03",
+    "2025-07-06",
+    "2025-07-07",
+    "2025-07-08",
+    "2025-07-09",
+    "2025-07-10",
+    "2025-07-13",
+    "2025-07-14",
+    "2025-07-15",
+    "2025-07-16",
+    "2025-07-17",
+    "2025-07-20",
+    "2025-07-21",
+    "2025-07-22",
+    "2025-07-23",
+    "2025-07-24",
+    "2025-07-27",
+    "2025-07-28",
+    "2025-07-29",
+    "2025-07-30",
+    "2025-07-31",
+    "2025-08-03",
+    "2025-08-04",
+    "2025-08-05",
+    "2025-08-06",
+    "2025-08-07",
+    "2025-08-10",
+    "2025-08-11",
+    "2025-08-12",
+    "2025-08-13",
+    "2025-08-17",
+    "2025-08-18",
+    "2025-08-19",
+    "2025-08-20",
+    "2025-08-21",
+    "2025-08-24",
+    "2025-08-25",
+    "2025-08-26",
+    "2025-08-27",
+    "2025-08-28",
+    "2025-08-31",
+    "2025-09-01",
+    "2025-09-02",
+    "2025-09-03",
+    "2025-09-04",
+    "2025-09-07",
+    "2025-09-08",
+    "2025-09-09",
+    "2025-09-10",
+    "2025-09-14",
+    "2025-09-15",
+    "2025-09-16",
+    "2025-09-17",
+    "2025-09-18",
+    "2025-09-21",
+    "2025-09-22",
+    "2025-09-23",
+    "2025-09-24",
+    "2025-09-25",
+    "2025-09-28",
+    "2025-09-29",
+    "2025-09-30",
+    "2025-10-01",
+    "2025-10-02",
+    "2025-10-05",
+    "2025-10-06",
+    "2025-10-07",
+    "2025-10-08",
+    "2025-10-09",
+    "2025-10-12",
+    "2025-10-13",
+    "2025-10-14",
+    "2025-10-15",
+    "2025-10-16",
+    "2025-10-19",
+    "2025-10-20",
+    "2025-10-21",
+    "2025-10-22",
+    "2025-10-23",
+    "2025-10-27",
+    "2025-10-28",
+    "2025-10-29",
+    "2025-10-30",
+    "2025-10-31"
+  ],
+  "active": true,
+  "route_description": {
+    "pt": "10:00 - Castelo de Tomar e Convento de Cristo: Comece o seu dia no monumento mais emblemático da cidade. Explore as muralhas do castelo, fundado por Gualdim Pais em 1160, e mergulhe na grandiosidade do Convento de Cristo. Não perca a Charola, o oratório templário de inspiração oriental, e a famosa Janela do Capítulo, uma obra-prima do estilo Manuelino. Reserve pelo menos duas a três horas para esta visita. \n\n12:30 - Mata Nacional dos Sete Montes: Após a visita ao convento, desça através da Mata Nacional dos Sete Montes. Este é o principal parque da cidade e, segundo a tradição, era o local de rituais iniciáticos dos Templários. É um passeio agradável e sombrio que o levará em direção ao centro histórico. \n\n\n13:30 - Almoço no Centro Histórico: Ao chegar à parte baixa da cidade, encontrará uma variedade de restaurantes onde poderá provar a gastronomia local. Pratos como a lampreia ou os doces conventuais, como as Fatias de Tomar, são especialidades da região.  \n\n15:00 - Praça da República: Esta é a praça central de Tomar, um espaço amplo e harmonioso. Aqui encontrará a estátua de Gualdim Pais, o fundador da cidade, os Paços do Concelho e a Igreja de São João Batista, com o seu portal manuelino. \n\n 15:45 - Rua Serpa Pinto (Corredoura): Siga pela principal rua comercial de Tomar, conhecida como Corredoura. É uma rua pedonal cheia de vida, com lojas tradicionais e cafés. \n\n 16:15 - Sinagoga de Tomar e Museu Luso-Hebraico Abraão Zacuto: Descubra a bem preservada sinagoga do século XV, um testemunho da importante comunidade judaica que aqui viveu. O museu adjacente oferece um vislumbre da sua história. \n\n 17:00 - Passeio junto ao Rio Nabão e Parque do Mouchão: Termine o seu dia com um passeio relaxante pelas margens do Rio Nabão. Atravesse a Ponte Velha e desfrute da tranquilidade do Parque do Mouchão, com a sua icónica roda de água. É o local perfeito para descansar e absorver a beleza da \"cidade templária\". No final do passeio regresso ao ponto de partida",
+    "en": "10:00 - Tomar Castle and Convent of Christ: Start your day at the city's most emblematic monument. Explore the walls of the castle, founded by Gualdim Pais in 1160, and immerse yourself in the grandeur of the Convent of Christ. Don't miss the Charola, the oriental-inspired Templar oratory, and the famous Janela do Capítulo, a masterpiece of Manueline style. Set aside at least two to three hours for this visit.\n\n12:30 - Floresta Nacional dos Sete Montes: After visiting the convent, head down through the Floresta Nacional dos Sete Montes. This is the city's main park and, according to tradition, was the site of the Templars' initiation rituals. It's a pleasant and shady walk that will take you towards the historic center.\n\n\n1:30 p.m. - Lunch in the Historic Center: When you arrive in the lower part of the city, you will find a variety of restaurants where you can sample local cuisine. Dishes such as lamprey or convent sweets, such as Fatias de Tomar, are specialties of the region.\n\n3:00 p.m. - Praça da República: This is the central square of Tomar, a large and harmonious space. Here you will find the statue of Gualdim Pais, the founder of the city, the City Hall and the Church of São João Batista, with its Manueline portal.\n\n3:45 p.m. - Rua Serpa Pinto (Corredoura): Follow the main shopping street of Botucatu, known as Corredoura. It is a lively pedestrian street with traditional shops and cafes.\n\n4:15 p.m. - Tomar Synagogue and Abraão Zacuto Luso-Hebraic Museum: Discover the well-preserved 15th-century synagogue, a testament to the important Jewish community that lived here. The adjacent museum offers a glimpse into its history.\n\n5:00 p.m. - Walk along the Nabão River and Mouchão Park: End your day with a relaxing stroll along the banks of the Nabão River. Cross the Old Bridge and enjoy the tranquility of Mouchão Park, with its iconic water wheel. It is the perfect place to rest and soak up the beauty of the \"Templar city\". At the end of the tour, return to the starting point",
+    "es": "10:00 - Castillo de Tomar y Convento de Cristo: Comienza el día en el monumento más emblemático de la ciudad. Explora las murallas del castillo, fundado por Gualdim Pais en 1160, y sumérgete en la grandeza del Convento de Cristo. No te pierdas la Charola, el oratorio templario de inspiración oriental, ni la famosa Janela do Capítulo, una obra maestra de estilo manuelino. Reserva al menos dos o tres horas para esta visita.\n\n12:30 - Floresta Nacional dos Sete Montes: Tras visitar el convento, desciende por la Floresta Nacional dos Sete Montes. Este es el parque principal de la ciudad y, según la tradición, fue el lugar de los rituales de iniciación de los Templarios. Es un agradable paseo a la sombra que te llevará al centro histórico.\n\n13:30 Almuerzo en el Centro Histórico: Al llegar a la zona baja de la ciudad, encontrará una variedad de restaurantes donde podrá degustar la gastronomía local. Platos como la lamprea o dulces conventuales, como las Fatias de Tomar, son especialidades de la región.\n\n15:00 - Praça da República: Esta es la plaza central de Tomar, un espacio amplio y armonioso. Aquí encontrará la estatua de Gualdim Pais, fundador de la ciudad, el Ayuntamiento y la Iglesia de São João Batista, con su portal manuelino.\n\n15:45 - Rua Serpa Pinto (Corredoura): Siga por la principal calle comercial de Botucatu, conocida como Corredoura. Es una animada calle peatonal con tiendas y cafeterías tradicionales.\n\n16:15 Sinagoga de Tomar y Museo Luso-Hebraico Abraão Zacuto: Descubra la sinagoga del siglo XV, bien conservada, testimonio de la importante comunidad judía que habitó aquí. El museo adyacente ofrece una visión de su historia.\n\n17:00 h - Paseo por el río Nabão y el Parque Mouchão: Termine el día con un relajante paseo por la orilla del río Nabão. Cruce el Puente Viejo y disfrute de la tranquilidad del Parque Mouchão, con su emblemática noria. Es el lugar perfecto para descansar y disfrutar de la belleza de la \"ciudad templaria\". Al finalizar el recorrido, regrese al punto de partida."
+  },
+  "includes": {
+    "pt": "Visitas Guiadas ao Convento de Cristo, Sinagoga e Museu. Wifi a bordo. Águas. Retorno ao ponto de partida.",
+    "en": "Guided tours of the Convent of Christ, Synagogue and Museum. Wifi on board. Water. Return to the starting point.",
+    "es": "Visitas guiadas al Convento de Cristo, la Sinagoga y el Museo. Wifi a bordo. Agua. Regreso al punto de partida."
+  },
+  "excludes": {
+    "pt": "Refeições. Gorjetas. Despesas pessoais. Alteração da rota.",
+    "en": "Meals. Tips. Personal expenses. Change of route.",
+    "es": "Comidas. Propinas. Gastos personales. Cambio de ruta."
+  },
+  "created_at": {
+    "$date": "2025-06-29T16:50:18.572Z"
+  },
+  "updated_at": {
+    "$date": "2025-06-30T18:42:22.870Z"
+  }
+}]

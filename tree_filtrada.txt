@@ -1,0 +1,79 @@
+Tree de C:\Users\paulo\Desktop\9-Rocks-Tours-Git (excluindo pastas comuns de ambiente)
+
+.gitconfig
+.gitignore
+README.md
+backend/
+    .env
+    config/
+        db.py
+    fixtures/
+        populate_tours.py
+        tours_fixtures.json
+    google-calendar-key.json
+    models/
+        tour.py
+    requirements.txt
+    routers/
+        seo_routes.py
+        tours.py
+    server.py
+    services/
+    utils/
+        google_calendar.py
+backend_test.py
+frontend/
+    .env
+    README.md
+    booking.html
+    package.json
+    postcss.config.js
+    public/
+        index.html
+    src/
+        App.css
+        App.js
+        components/
+            AdminTourManager.js
+            BookingCheckoutPage.jsx
+            BookingForm.js
+            CalendarDatePicker.js
+            Header.js
+            HeroImagesManager.js
+            LanguageSelector.js
+            PaymentComponent.js
+            SEO.js
+            SEOHead.js
+            TourFiltersManager.js
+            TourItinerary.js
+        config/
+            firebase.js
+        hooks/
+            useSEO.js
+        index.css
+        index.js
+        pages/
+            AdminPanel.js
+            HomePage.js
+            TourDetails.js
+            ToursPage.js
+        services/
+            heroImagesService.js
+            tourFiltersService.js
+        utils/
+            i18n.js
+            seoHelpers.js
+            useTranslation.js
+    tailwind.config.js
+    yarn.lock
+generate_tree_filtered.py
+migrateToursToFirestore.js
+ninerocks.tours.json
+package-lock.json
+package.json
+test.txt
+test_result.md
+tests/
+    __init__.py
+tree_filtrada.txt
+yarn.lock
