@@ -81,3 +81,11 @@ android-sdk/
 
 # No ficheiro backend/.gitignore
 google-calendar-key.json
+
+echo backend/.env >> .gitignore
+echo backend/google-calendar-key.json >> .gitignore
+echo node_modules/ >> .gitignore
+echo **/node_modules/ >> .gitignore
+echo **/.env >> .gitignore
+echo backend/venv/ >> .gitignore
+echo **/__pycache__/ >> .gitignore

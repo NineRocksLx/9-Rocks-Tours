@@ -2,6 +2,7 @@
 import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from 'react-helmet-async';
 import Header from "./components/Header";
 import HomePage from "./pages/HomePage";
 import TourDetails from "./pages/TourDetails";
@@ -9,36 +10,36 @@ import AdminPanel from "./pages/AdminPanel";
 import ToursPage from "./pages/ToursPage";
 import { useTranslation } from "./utils/useTranslation";
 
-
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          {/* Português (existente) */}
-          <Route path="/" element={<><Header /><HomePage lang="pt" /></>} />
-          <Route path="/tours" element={<><Header /><ToursPage lang="pt" /></>} />
-          <Route path="/tour/:id" element={<><Header /><TourDetails lang="pt" /></>} />
-          {/* English (novo) */}
-          <Route path="/en/" element={<><Header /><HomePage lang="en" /></>} />
-          <Route path="/en/tours" element={<><Header /><ToursPage lang="en" /></>} />
-          <Route path="/en/tour/:id" element={<><Header /><TourDetails lang="en" /></>} />
-          {/* Español (novo) */}
-          <Route path="/es/" element={<><Header /><HomePage lang="es" /></>} />
-          <Route path="/es/tours" element={<><Header /><ToursPage lang="es" /></>} />
-          <Route path="/es/tour/:id" element={<><Header /><TourDetails lang="es" /></>} />
-          <Route path="/about" element={<><Header /><AboutPage /></>} />
-          <Route path="/contact" element={<><Header /><ContactPage /></>} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/booking-success" element={<><Header /><BookingSuccess /></>} />
-          <Route path="/payment/success" element={<><Header /><PaymentSuccess /></>} />
-          <Route path="/payment/cancel" element={<><Header /><PaymentCancel /></>} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <HelmetProvider>
+      <div className="App">
+        <BrowserRouter>
+          <Routes>
+            {/* Português (existente) */}
+            <Route path="/" element={<><Header /><HomePage lang="pt" /></>} />
+            <Route path="/tours" element={<><Header /><ToursPage lang="pt" /></>} />
+            <Route path="/tour/:id" element={<><Header /><TourDetails lang="pt" /></>} />
+            {/* English (novo) */}
+            <Route path="/en/" element={<><Header /><HomePage lang="en" /></>} />
+            <Route path="/en/tours" element={<><Header /><ToursPage lang="en" /></>} />
+            <Route path="/en/tour/:id" element={<><Header /><TourDetails lang="en" /></>} />
+            {/* Español (novo) */}
+            <Route path="/es/" element={<><Header /><HomePage lang="es" /></>} />
+            <Route path="/es/tours" element={<><Header /><ToursPage lang="es" /></>} />
+            <Route path="/es/tour/:id" element={<><Header /><TourDetails lang="es" /></>} />
+            <Route path="/about" element={<><Header /><AboutPage /></>} />
+            <Route path="/contact" element={<><Header /><ContactPage /></>} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/booking-success" element={<><Header /><BookingSuccess /></>} />
+            <Route path="/payment/success" element={<><Header /><PaymentSuccess /></>} />
+            <Route path="/payment/cancel" element={<><Header /><PaymentCancel /></>} />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </HelmetProvider>
   );
 }
-
 
 // Componentes de página com traduções CORRIGIDAS
 const AboutPage = () => {
@@ -56,7 +57,6 @@ const AboutPage = () => {
   );
 };
 
-
 const ContactPage = () => {
   const { t } = useTranslation();
  
@@ -73,7 +73,6 @@ const ContactPage = () => {
     </div>
   );
 };
-
 
 const BookingSuccess = () => {
   const { t } = useTranslation();
@@ -98,7 +97,6 @@ const BookingSuccess = () => {
   );
 };
 
-
 const PaymentSuccess = () => {
   const { t } = useTranslation();
  
@@ -121,7 +119,6 @@ const PaymentSuccess = () => {
     </div>
   );
 };
-
 
 const PaymentCancel = () => {
   const { t } = useTranslation();
@@ -146,6 +143,4 @@ const PaymentCancel = () => {
   );
 };
 
-
 export default App;
-
