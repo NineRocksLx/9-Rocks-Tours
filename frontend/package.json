@@ -4,15 +4,20 @@
   "private": true,
   "dependencies": {
     "@paypal/react-paypal-js": "^8.8.3",
+    "@react-google-maps/api": "^2.20.7",
     "axios": "^1.10.0",
     "cra-template": "1.2.0",
     "firebase": "^11.9.1",
+    "framer-motion": "^12.23.0",
     "handlebars": "^4.7.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-helmet": "^6.1.0",
+    "react-helmet-async": "^2.0.5",
+    "react-intersection-observer": "^9.16.0",
     "react-router-dom": "^7.5.1",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "sitemap": "^8.0.0"
   },
   "scripts": {
     "start": "react-scripts start",

@@ -3,29 +3,41 @@ Tree de C:\Users\paulo\Desktop\9-Rocks-Tours-Git (excluindo pastas comuns de amb
 .gitconfig
 .gitignore
 README.md
+abre_repositorio.py
 backend/
     .env
     config/
         db.py
+        firestore_db.py
+    diagnostic.py
     fixtures/
         populate_tours.py
         tours_fixtures.json
     google-calendar-key.json
+    main.py
     models/
         tour.py
     requirements.txt
     routers/
         seo_routes.py
         tours.py
+        tours_fixed.py
     server.py
     services/
+    start_backend.py
+    test_firestore.py
+    test_permissions.py
     utils/
         google_calendar.py
 backend_test.py
+fecha_repositorio.py
+fix-frontend.ps1
 frontend/
     .env
     README.md
     booking.html
+    imports.js
+    package-lock.json
     package.json
     postcss.config.js
     public/
@@ -42,10 +54,19 @@ frontend/
             HeroImagesManager.js
             LanguageSelector.js
             PaymentComponent.js
+            SEO/
+                LanguageSwitcher.js
+                SEOBreadcrumbs.js
+                SEOHead.js
             SEO.js
             SEOHead.js
+            SimpleTest.js
+            TestFirebase.js
             TourFiltersManager.js
             TourItinerary.js
+            TourItineraryManager.js
+            hooks/
+                useSEO.js
         config/
             firebase.js
         hooks/
@@ -59,19 +80,25 @@ frontend/
             ToursPage.js
         services/
             heroImagesService.js
+            mockServices.js
             tourFiltersService.js
         utils/
             i18n.js
+            seoConfig.js
             seoHelpers.js
             useTranslation.js
+    start_frontend.py
     tailwind.config.js
     yarn.lock
 generate_tree_filtered.py
+git_check_changes.ps1
 migrateToursToFirestore.js
 ninerocks.tours.json
 package-lock.json
 package.json
-test.txt
+repo_visibility_log.txt
+start_all.py
+test_firestore.js
 test_result.md
 tests/
     __init__.py

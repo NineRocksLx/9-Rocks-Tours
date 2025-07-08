@@ -1,4 +1,4 @@
-// frontend/src/hooks/useSEO.js - HOOK SEO PERSONALIZADO 🎣
+// frontend/src/hooks/useSEO.js - VERSÃO CORRIGIDA E FINAL
 
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -31,87 +31,78 @@ export const useSEO = ({
   const currentUrl = `${baseUrl}${location.pathname}`;
 
   useEffect(() => {
-    // 🎯 GERAR DADOS SEO AUTOMATICAMENTE
-    const generateSEOData = () => {
-      const optimizedTitle = generatePageTitle(title, currentLang);
-      const optimizedDescription = generateMetaDescription(description, currentLang);
-      const ogImage = generateOGImageUrl(title, type);
-      
-      // 📊 STRUCTURED DATA
-      let structuredData = [];
-      
-      // Sempre incluir organização
-      structuredData.push(generateOrganizationSchema());
-      
-      // Se for tour, incluir schema do tour
-      if (tour) {
-        structuredData.push(generateTourSchema(tour, currentLang));
-      }
-      
-      // Se tiver breadcrumbs, incluir schema
-      if (breadcrumbs.length > 0) {
-        structuredData.push(generateBreadcrumbSchema(breadcrumbs, currentLang));
-      }
-      
-      const seoConfig = {
-        title: optimizedTitle,
-        description: optimizedDescription,
-        lang: currentLang,
-        ogImage,
-        keywords,
-        noindex,
-        structuredData,
-        url: currentUrl,
-        type
-      };
-      
-      setSeoData(seoConfig);
-      
-      // 📊 TRACK PAGE VIEW
-      trackPageView(currentUrl, optimizedTitle);
+    const optimizedTitle = generatePageTitle(title, currentLang);
+    const optimizedDescription = generateMetaDescription(description, currentLang);
+    const ogImage = generateOGImageUrl(title, type);
+    
+    let structuredData = [generateOrganizationSchema()];
+    
+    if (tour) {
+      structuredData.push(generateTourSchema(tour, currentLang));
+    }
+    if (breadcrumbs.length > 0) {
+      structuredData.push(generateBreadcrumbSchema(breadcrumbs, currentLang));
+    }
+    
+    const seoConfig = {
+      title: optimizedTitle,
+      description: optimizedDescription,
+      lang: currentLang,
+      ogImage,
+      keywords,
+      noindex,
+      structuredData,
+      url: currentUrl,
+      type
     };
+    
+    setSeoData(seoConfig);
+    
+    trackPageView(currentUrl, optimizedTitle);
 
-    generateSEOData();
-  }, [title, description, currentLang, location.pathname, tour, type]);
+  }, [title, description, currentLang, location.pathname, tour, type, breadcrumbs, keywords, noindex]);
 
   return seoData;
 };
 
-// 🎯 HOOK ESPECÍFICO PARA TOURS
+// 🎯 HOOK ESPECÍFICO PARA TOURS (COM A CORREÇÃO APLICADA)
 export const useTourSEO = (tour) => {
   const { getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
   
-  if (!tour) return null;
+  // ==================================================================
+  // A CORREÇÃO CRÍTICA ESTÁ AQUI:
+  // 1. A linha `if (!tour) return null;` foi REMOVIDA.
+  // 2. Definimos valores padrão para que o hook funcione mesmo que `tour` seja nulo no início.
+  // ==================================================================
   
-  const tourTitle = tour.name[currentLang] || tour.name.pt;
-  const tourDescription = tour.short_description[currentLang] || tour.short_description.pt;
+  const tourTitle = tour ? (tour.name[currentLang] || tour.name.pt) : 'A carregar Tour...';
+  const tourDescription = tour ? (tour.short_description[currentLang] || tour.short_description.pt) : '';
   
-  // 🍞 BREADCRUMBS PARA TOUR
-  const breadcrumbs = [
+  const breadcrumbs = tour ? [
     { name: 'Home', url: currentLang === 'pt' ? '/' : `/${currentLang}/` },
     { name: 'Tours', url: currentLang === 'pt' ? '/tours' : `/${currentLang}/tours` },
     { name: tourTitle, url: `/tour/${tour.id}` }
-  ];
+  ] : [];
   
-  // 🏷️ KEYWORDS ESPECÍFICAS PARA TOUR
-  const tourKeywords = {
+  const tourKeywords = tour ? {
     pt: `${tourTitle}, tour ${tour.location}, ${tour.tour_type} portugal, tours portugal`,
     en: `${tourTitle}, ${tour.location} tour, ${tour.tour_type} portugal, portugal tours`,
     es: `${tourTitle}, tour ${tour.location}, ${tour.tour_type} portugal, tours portugal`
-  };
+  } : {};
 
+  // O hook `useSEO` é agora chamado em todas as renderizações, resolvendo o erro.
   return useSEO({
     title: tourTitle,
     description: tourDescription,
     type: 'tour',
     tour,
     breadcrumbs,
-    keywords: tourKeywords[currentLang]
+    keywords: tourKeywords[currentLang] || ''
   });
 };
 
-// 🏠 HOOK ESPECÍFICO PARA HOMEPAGE
+// O resto dos hooks permanece igual
 export const useHomeSEO = () => {
   const { t, getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -135,7 +126,6 @@ export const useHomeSEO = () => {
   });
 };
 
-// 📋 HOOK PARA PÁGINA DE TOURS
 export const useToursPageSEO = () => {
   const { getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -165,7 +155,6 @@ export const useToursPageSEO = () => {
   });
 };
 
-// 📞 HOOK PARA PÁGINA DE CONTACTO
 export const useContactSEO = () => {
   const { getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();

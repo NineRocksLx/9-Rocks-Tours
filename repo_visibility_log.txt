@@ -1,0 +1,8 @@
+2025-07-07T15:56:28.688457 - FECHADO (privado)
+2025-07-07T15:57:55.880875 - ABERTO (público) - https://github.com/NineRocksLx/9-Rocks-Tours
+2025-07-07T17:51:43.516130 - FECHADO (privado)
+2025-07-07T17:56:08.862298 - ABERTO (público) - https://github.com/NineRocksLx/9-Rocks-Tours
+2025-07-07T19:08:37.538147 - FECHADO (privado)
+2025-07-08T09:51:29.652393 - ABERTO (público) - https://github.com/NineRocksLx/9-Rocks-Tours
+2025-07-08T10:25:47.786219 - FECHADO (privado)
+2025-07-08T15:38:28.696560 - ABERTO (público) - https://github.com/NineRocksLx/9-Rocks-Tours

@@ -2,8 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../utils/useTranslation';
 import SEOHead from '../components/SEOHead';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
 
-// 🔥 VERSÃO DEBUG COM FIREBASE - 9 ROCKS TOURS
+// Firebase configuration (example - replace with actual config)
+const firebaseConfig = {
+  apiKey: "AIzaSyD80GYkjPKfIbVW747zb3s7jXSuVfBJTe4",
+  authDomain: "tours-81516-acfbc.firebaseapp.com",
+  projectId: "tours-81516-acfbc",
+  storageBucket: "tours-81516-acfbc.firebasestorage.app",
+  messagingSenderId: "742946187892",
+  appId: "1:742946187892:web:2b0d2bcb974d4564327f21",
+  measurementId: "G-36FC6SS4WD"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 const HomePage = () => {
   const { t, getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -11,14 +27,8 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [debugInfo, setDebugInfo] = useState({
-    firebase: 'checking...',
-    heroImages: 'checking...',
-    tourFilters: 'checking...',
-    backend: 'checking...'
-  });
 
-  // 🔥 IMAGENS FALLBACK (caso Firebase falhe)
+  // Fallback hero images
   const fallbackHeroImages = [
     {
       id: 'fallback_1',
@@ -54,7 +64,7 @@ const HomePage = () => {
     }
   ];
 
-  // Estados para dados
+  // States for data
   const [heroImages, setHeroImages] = useState(fallbackHeroImages);
   const [tours, setTours] = useState([]);
   const [tourFilters, setTourFilters] = useState([
@@ -79,142 +89,89 @@ const HomePage = () => {
   ]);
   const [selectedType, setSelectedType] = useState('all');
 
-  // 🧪 TESTE FIREBASE CONFIGURATION
-  const testFirebaseConfig = async () => {
+  // Load hero images from Firestore
+  const loadHeroImages = async () => {
     try {
-      console.log('🔥 Testando configuração Firebase...');
-      
-      // Verificar se Firebase está importado
-      const { db } = await import('../config/firebase');
-      console.log('✅ Firebase config importado com sucesso');
-      
-      setDebugInfo(prev => ({ ...prev, firebase: 'config_ok' }));
-      return { success: true, db };
-    } catch (error) {
-      console.error('❌ Erro na configuração Firebase:', error);
-      setDebugInfo(prev => ({ ...prev, firebase: `error: ${error.message}` }));
-      return { success: false, error };
-    }
-  };
+      const querySnapshot = await getDocs(collection(db, 'heroImages'));
+      const images = querySnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          active: doc.data().active !== false
+        }))
+        .filter(image => image.active)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // 🖼️ TESTE HERO IMAGES FIRESTORE
-  const testHeroImages = async () => {
-    try {
-      console.log('🖼️ Testando Hero Images...');
-      
-      const { heroImagesService } = await import('../services/heroImagesService');
-      console.log('✅ Hero Images Service importado');
-      
-      const images = await heroImagesService.getActiveHeroImages();
-      console.log('✅ Hero Images carregadas:', images.length);
-      
       if (images.length > 0) {
         setHeroImages(images);
-        setDebugInfo(prev => ({ ...prev, heroImages: `success: ${images.length} images` }));
       } else {
-        console.log('⚠️ Nenhuma hero image encontrada, usando fallback');
-        setDebugInfo(prev => ({ ...prev, heroImages: 'empty_using_fallback' }));
+        setHeroImages(fallbackHeroImages);
       }
-      
       return { success: true, count: images.length };
     } catch (error) {
-      console.error('❌ Erro Hero Images:', error);
-      setDebugInfo(prev => ({ ...prev, heroImages: `error: ${error.message}` }));
+      setHeroImages(fallbackHeroImages);
       return { success: false, error };
     }
   };
 
-  // 🔍 TESTE TOUR FILTERS FIRESTORE
-  const testTourFilters = async () => {
+  // Load tour filters from Firestore
+  const loadTourFilters = async () => {
     try {
-      console.log('🔍 Testando Tour Filters...');
-      
-      const { tourFiltersService } = await import('../services/tourFiltersService');
-      console.log('✅ Tour Filters Service importado');
-      
-      const filters = await tourFiltersService.getActiveFilters();
-      console.log('✅ Tour Filters carregados:', filters.length);
-      
+      const querySnapshot = await getDocs(collection(db, 'tourFilters'));
+      const filters = querySnapshot.docs
+        .map(doc => ({
+          key: doc.id,
+          ...doc.data(),
+          active: doc.data().active !== false
+        }))
+        .filter(filter => filter.active)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
       if (filters.length > 0) {
         setTourFilters(filters);
-        setDebugInfo(prev => ({ ...prev, tourFilters: `success: ${filters.length} filters` }));
-      } else {
-        console.log('⚠️ Nenhum filtro encontrado, usando padrão');
-        setDebugInfo(prev => ({ ...prev, tourFilters: 'empty_using_default' }));
       }
-      
       return { success: true, count: filters.length };
     } catch (error) {
-      console.error('❌ Erro Tour Filters:', error);
-      setDebugInfo(prev => ({ ...prev, tourFilters: `error: ${error.message}` }));
       return { success: false, error };
     }
   };
 
-  // 🎯 TESTE TOURS BACKEND
- const testBackendTours = async () => {
+  // Load tours from backend
+  const loadBackendTours = async () => {
     try {
-        console.log('🎯 Fetching tours from backend...');
-        const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-        console.log('🔗 Backend URL:', BACKEND_URL);
-        if (!BACKEND_URL) {
-            throw new Error('REACT_APP_BACKEND_URL not defined');
-        }
-        const response = await fetch(`${BACKEND_URL}/api/tours?active_only=true`, {
-            timeout: 5000
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        const data = await response.json();
-        console.log('✅ Tours received:', JSON.stringify(data, null, 2));
-        setTours(data);
-        setDebugInfo(prev => ({ ...prev, backend: `success: ${data.length} tours` }));
-        return { success: true, count: data.length };
+      const response = await fetch('https://your-backend-api/tours'); // Replace with actual API endpoint
+      const data = await response.json();
+      setTours(data);
+      return { success: true, count: data.length };
     } catch (error) {
-        console.error('❌ Error fetching tours:', error);
-        setDebugInfo(prev => ({ ...prev, backend: `error: ${error.message}` }));
-        setTours([]); // Fallback to empty array
-        return { success: false, error };
+      return { success: false, error };
     }
-};
-  // 🚀 FUNÇÃO PRINCIPAL DE CARREGAMENTO
+  };
+
+  // Main data loading function
   const loadAllData = async () => {
-    console.log('🚀 HomePage: Iniciando carregamento de dados...');
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Testar configuração Firebase primeiro
-      const firebaseTest = await testFirebaseConfig();
-      
-      if (firebaseTest.success) {
-        // 2. Se Firebase OK, testar serviços Firestore
-        await Promise.allSettled([
-          testHeroImages(),
-          testTourFilters()
-        ]);
-      }
-      
-      // 3. Testar backend independentemente
-      await testBackendTours();
-      
-      console.log('✅ Carregamento concluído');
-      
+      await Promise.allSettled([
+        loadHeroImages(),
+        loadTourFilters(),
+        loadBackendTours()
+      ]);
     } catch (error) {
-      console.error('❌ Erro geral no carregamento:', error);
       setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔄 EFFECT PRINCIPAL
+  // Main effect for loading data
   useEffect(() => {
     loadAllData();
   }, []);
 
-  // 🎠 CAROUSEL AUTOMÁTICO
+  // Automatic carousel
   useEffect(() => {
     if (heroImages.length > 1) {
       const interval = setInterval(() => {
@@ -224,7 +181,7 @@ const HomePage = () => {
     }
   }, [heroImages.length]);
 
-  // 🔧 HELPER FUNCTIONS
+  // Helper functions
   const getLocalizedText = (textObj) => {
     if (!textObj) return '';
     return textObj[currentLang] || textObj.pt || textObj.en || '';
@@ -253,7 +210,7 @@ const HomePage = () => {
     ? tours 
     : tours.filter(tour => tour.tour_type === selectedType);
 
-  // 🔄 LOADING STATE com DEBUG INFO
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100">
@@ -261,40 +218,17 @@ const HomePage = () => {
           <div className="animate-spin rounded-full h-20 w-20 border-4 border-indigo-600 border-t-transparent mx-auto mb-6"></div>
           <h2 className="text-xl font-bold text-gray-900 mb-4">9 Rocks Tours</h2>
           <p className="text-lg text-gray-600 mb-6">{t('message_loading')}</p>
-          
-          {/* 🔍 DEBUG INFO */}
-          <div className="bg-white rounded-lg p-4 text-left text-sm">
-            <h3 className="font-bold mb-2">🔧 Status Debug:</h3>
-            <div className="space-y-1">
-              <div>🔥 Firebase: <span className="font-mono text-xs">{debugInfo.firebase}</span></div>
-              <div>🖼️ Hero Images: <span className="font-mono text-xs">{debugInfo.heroImages}</span></div>
-              <div>🔍 Tour Filters: <span className="font-mono text-xs">{debugInfo.tourFilters}</span></div>
-              <div>🎯 Backend: <span className="font-mono text-xs">{debugInfo.backend}</span></div>
-            </div>
-          </div>
         </div>
       </div>
     );
   }
 
-  // ❌ ERROR STATE
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-lg">
           <div className="text-red-600 text-xl mb-4">❌ Erro: {error}</div>
-          
-          {/* 🔍 DEBUG INFO COMPLETA */}
-          <div className="bg-gray-100 rounded-lg p-4 text-left text-sm mb-6">
-            <h3 className="font-bold mb-2">🔧 Diagnóstico Completo:</h3>
-            <div className="space-y-1 font-mono text-xs">
-              <div>🔥 Firebase: {debugInfo.firebase}</div>
-              <div>🖼️ Hero Images: {debugInfo.heroImages}</div>
-              <div>🔍 Tour Filters: {debugInfo.tourFilters}</div>
-              <div>🎯 Backend: {debugInfo.backend}</div>
-            </div>
-          </div>
-          
           <button 
             onClick={loadAllData}
             className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
@@ -306,8 +240,6 @@ const HomePage = () => {
     );
   }
 
-  console.log('🎨 HomePage: Renderizando interface...');
-
   return (
     <div className="min-h-screen bg-gray-50">
       <SEOHead 
@@ -316,7 +248,7 @@ const HomePage = () => {
         lang={currentLang}
       />
       
-      {/* 🏔️ HERO SECTION */}
+      {/* Hero section */}
       <div className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
           {heroImages.map((image, index) => (
@@ -332,8 +264,7 @@ const HomePage = () => {
                 className="w-full h-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
                 onError={(e) => {
-                  console.error('❌ Erro ao carregar imagem:', image.imageUrl);
-                  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080"><rect width="1920" height="1080" fill="%23e5e7eb"/><text x="960" y="540" text-anchor="middle" fill="%236b7280" font-size="48">Imagem não disponível</text></svg>';
+                  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="%23e5e7eb"/><text x="960" y="540" text-anchor="middle" fill="%236b7280" font-size="48">Imagem não disponível</text></svg>';
                 }}
               />
               <div className="absolute inset-0 bg-black bg-opacity-40"></div>
@@ -377,7 +308,7 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* 🔴 CAROUSEL INDICATORS */}
+        {/* Carousel indicators */}
         {heroImages.length > 1 && (
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
             {heroImages.map((_, index) => (
@@ -395,7 +326,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* 📊 CREDIBILIDADE */}
+      {/* Credibility section */}
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center opacity-60">
@@ -419,7 +350,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 🎯 TOURS SECTION */}
+      {/* Tours section */}
       <div id="tours" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -430,7 +361,7 @@ const HomePage = () => {
           </p>
         </div>
 
-        {/* 🔍 TOUR FILTERS */}
+        {/* Tour filters */}
         <div className="flex flex-wrap justify-center gap-4 mb-16">
           {tourFilters.map((filter) => (
             <button
@@ -447,15 +378,12 @@ const HomePage = () => {
           ))}
         </div>
 
-        {/* 🎴 TOURS GRID */}
+        {/* Tours grid */}
         {filteredTours.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-gray-500 text-xl">
               {t('message_no_tours')}
             </div>
-            <p className="text-sm text-gray-400 mt-2">
-              Debug: {tours.length} tours totais, filtro: {selectedType}
-            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -523,7 +451,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* 🌟 WHY CHOOSE US */}
+      {/* Why choose us */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -579,7 +507,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* 🎯 CTA FINAL */}
+      {/* Final CTA */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">

@@ -35,9 +35,6 @@ const AdminPanel = () => {
           // Verificar se o utilizador tem permissões de admin
           const token = await user.getIdToken();
           
-          // Aqui podes adicionar verificação adicional se necessário
-          // Por exemplo, verificar custom claims ou UID específico
-          
           setUser(user);
           setIsLoggedIn(true);
           localStorage.setItem('admin_token', token);
@@ -421,8 +418,6 @@ const AdminPanel = () => {
         {currentView === 'tours' && <AdminTourManager />}
         {currentView === 'hero_images' && <HeroImagesManager />}
         {currentView === 'tour_filters' && <TourFiltersManager />}
-
-        {/* Bookings View - COMPLETO */}
         {currentView === 'bookings' && !loading && (
           <div>
             <div className="flex justify-between items-center mb-6">
