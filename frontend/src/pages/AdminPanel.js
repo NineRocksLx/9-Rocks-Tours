@@ -5,8 +5,18 @@ import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebas
 import AdminTourManager from '../components/AdminTourManager';
 import HeroImagesManager from '../components/HeroImagesManager';
 import TourFiltersManager from '../components/TourFiltersManager';
+import { useJsApiLoader } from '@react-google-maps/api';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Configuração melhorada do Google Maps
+const MAPS_CONFIG = {
+  id: 'google-map-script',
+  googleMapsApiKey: process.env.REACT_APP_Maps_API_KEY,
+  libraries: ['places', 'geometry'],
+  language: 'pt',
+  region: 'PT'
+};
 
 const AdminPanel = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,12 +28,32 @@ const AdminPanel = () => {
   const [error, setError] = useState('');
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState(null);
-
-  // Login state
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
   });
+
+  // Carregamento do Google Maps com melhor configuração
+  const { isLoaded, loadError } = useJsApiLoader(MAPS_CONFIG);
+
+  // Debug da API do Google Maps
+  useEffect(() => {
+    console.log('🔧 Google Maps API Debug:', {
+      apiKey: process.env.REACT_APP_Maps_API_KEY ? 'Configurada ✅' : 'Não configurada ❌',
+      isLoaded,
+      loadError: loadError?.message || 'Nenhum erro',
+      hasWindow: typeof window !== 'undefined',
+      hasGoogle: !!window.google,
+      hasPlaces: !!window.google?.maps?.places,
+      hasGeocoding: !!window.google?.maps?.Geocoder,
+      config: MAPS_CONFIG
+    });
+
+    // Verificar se a chave API está definida
+    if (!process.env.REACT_APP_Maps_API_KEY) {
+      console.error('❌ REACT_APP_Maps_API_KEY não está definida no arquivo .env');
+    }
+  }, [isLoaded, loadError]);
 
   // Verificar estado de autenticação quando o componente monta
   useEffect(() => {
@@ -34,6 +64,9 @@ const AdminPanel = () => {
         try {
           // Verificar se o utilizador tem permissões de admin
           const token = await user.getIdToken();
+          
+          // Aqui podes adicionar verificação adicional se necessário
+          // Por exemplo, verificar custom claims ou UID específico
           
           setUser(user);
           setIsLoggedIn(true);
@@ -101,6 +134,9 @@ const AdminPanel = () => {
           break;
         case 'auth/too-many-requests':
           errorMessage = 'Muitas tentativas. Tente novamente mais tarde.';
+          break;
+        case 'auth/invalid-credential':
+          errorMessage = 'Credenciais inválidas';
           break;
         default:
           errorMessage = `Erro: ${error.message}`;
@@ -228,6 +264,20 @@ const AdminPanel = () => {
             <p className="text-sm text-indigo-600 mt-1">🔐 Autenticação Firebase</p>
           </div>
 
+          {/* Aviso sobre Google Maps API */}
+          {!process.env.REACT_APP_Maps_API_KEY && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
+              <div className="flex">
+                <svg className="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <div className="text-yellow-800 text-sm">
+                  <strong>Google Maps API não configurada.</strong> Configure REACT_APP_Maps_API_KEY no .env para usar mapas.
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
               <div className="flex">
@@ -310,7 +360,7 @@ const AdminPanel = () => {
   // =============================================
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header melhorado com info do utilizador */}
+      {/* Header melhorado com info do utilizador e status da API */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -319,9 +369,22 @@ const AdminPanel = () => {
                 9 Rocks Tours - Admin
               </h1>
               {user && (
-                <p className="text-sm text-gray-600 mt-1">
-                  🔐 Conectado como: {user.email}
-                </p>
+                <div className="flex items-center space-x-4 mt-1">
+                  <p className="text-sm text-gray-600">
+                    🔐 Conectado como: {user.email}
+                  </p>
+                  {/* Status da API Google Maps */}
+                  <div className="flex items-center space-x-1">
+                    <span className="text-xs text-gray-500">Maps API:</span>
+                    {loadError ? (
+                      <span className="text-xs text-red-600 font-medium">❌ Erro</span>
+                    ) : isLoaded ? (
+                      <span className="text-xs text-green-600 font-medium">✅ OK</span>
+                    ) : (
+                      <span className="text-xs text-yellow-600 font-medium">⏳ Carregando</span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
             <button
@@ -394,6 +457,21 @@ const AdminPanel = () => {
           </nav>
         </div>
 
+        {/* Aviso sobre problemas da API Google Maps */}
+        {loadError && currentView === 'tours' && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6">
+            <div className="flex">
+              <svg className="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <div className="text-yellow-800">
+                <strong>Google Maps com problemas.</strong> Os mapas podem não funcionar corretamente. 
+                Verifique a configuração da API no guia fornecido.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error display melhorado */}
         {error && currentView !== 'tours' && currentView !== 'hero_images' && currentView !== 'tour_filters' && (
           <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
@@ -414,10 +492,17 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* Content Views */}
-        {currentView === 'tours' && <AdminTourManager />}
+        {/* Content Views - Passando props do Google Maps para AdminTourManager */}
+        {currentView === 'tours' && (
+          <AdminTourManager 
+            isLoaded={isLoaded} 
+            loadError={loadError} 
+          />
+        )}
         {currentView === 'hero_images' && <HeroImagesManager />}
         {currentView === 'tour_filters' && <TourFiltersManager />}
+
+        {/* Bookings View - RESTAURADO COMPLETO */}
         {currentView === 'bookings' && !loading && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -547,7 +632,7 @@ const AdminPanel = () => {
           </div>
         )}
 
-        {/* Statistics View - COMPLETO */}
+        {/* Statistics View - RESTAURADO COMPLETO */}
         {currentView === 'stats' && !loading && stats && (
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-6">📊 Estatísticas de Performance</h2>

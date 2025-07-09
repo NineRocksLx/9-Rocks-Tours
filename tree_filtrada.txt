@@ -6,6 +6,7 @@ README.md
 abre_repositorio.py
 backend/
     .env
+    .gitignore
     config/
         db.py
         firestore_db.py
@@ -53,6 +54,7 @@ frontend/
             Header.js
             HeroImagesManager.js
             LanguageSelector.js
+            MapLocationPicker.js
             PaymentComponent.js
             SEO/
                 LanguageSwitcher.js

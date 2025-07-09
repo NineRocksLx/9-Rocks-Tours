@@ -1,363 +1,1076 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { uploadImageToStorage } from '../config/firebase';
-import CalendarDatePicker from './CalendarDatePicker';
+import MapLocationPicker from './MapLocationPicker';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-const AdminTourManager = () => {
-    // 1. CHAMADA DE TODOS OS HOOKS (useState, useEffect) NO TOPO
-    const [tours, setTours] = useState([]);
-    const [showModal, setShowModal] = useState(false);
-    const [editingTour, setEditingTour] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
-    const [uploadingGallery, setUploadingGallery] = useState(false);
-    const [isCreating, setIsCreating] = useState(false);
-    const [uploadErrors, setUploadErrors] = useState({});
-    const [manualDates, setManualDates] = useState([]);
-    const [newDate, setNewDate] = useState('');
+const AdminTourManager = ({ isLoaded, loadError }) => {
+  const [tours, setTours] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [editingTour, setEditingTour] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [formData, setFormData] = useState({
+    name: { pt: '', en: '' },
+    description: { pt: '', en: '' },
+    price: '',
+    duration: '',
+    max_participants: 4,
+    min_participants: 1,
+    category: '',
+    difficulty: 'easy',
+    includes: { pt: [], en: [] },
+    excludes: { pt: [], en: [] },
+    requirements: { pt: [], en: [] },
+    itinerary: { pt: [], en: [] },
+    map_locations: '',
+    active: true,
+    featured: false,
+    image_url: '',
+    gallery: []
+  });
 
-    const initialFormData = {
-        name: { pt: '', en: '', es: '' },
-        short_description: { pt: '', en: '', es: '' },
-        description: { pt: '', en: '', es: '' },
-        highlights: { pt: '', en: '', es: '' },
-        location: '',
-        duration_hours: 4,
-        price: 0,
-        max_participants: 1,
-        tour_type: 'cultural',
-        route_description: { pt: '', en: '', es: '' },
-        includes: { pt: '', en: '', es: '' },
-        excludes: { pt: '', en: '', es: '' },
-        active: true,
-        images: [],
-        thumbnail_image: '',
-        gallery_images: [],
+  useEffect(() => {
+    fetchTours();
+  }, []);
+
+  const fetchTours = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=false`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTours(response.data);
+    } catch (err) {
+      console.error('Erro ao carregar tours:', err);
+      setError('Erro ao carregar tours');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditTour = (tour) => {
+    setEditingTour(tour.id);
+    setFormData({
+      name: tour.name || { pt: '', en: '' },
+      description: tour.description || { pt: '', en: '' },
+      price: tour.price || '',
+      duration: tour.duration || '',
+      max_participants: tour.max_participants || 4,
+      min_participants: tour.min_participants || 1,
+      category: tour.category || '',
+      difficulty: tour.difficulty || 'easy',
+      includes: tour.includes || { pt: [], en: [] },
+      excludes: tour.excludes || { pt: [], en: [] },
+      requirements: tour.requirements || { pt: [], en: [] },
+      itinerary: tour.itinerary || { pt: [], en: [] },
+      map_locations: tour.map_locations || '',
+      active: tour.active !== undefined ? tour.active : true,
+      featured: tour.featured || false,
+      image_url: tour.image_url || '',
+      gallery: tour.gallery || []
+    });
+    setShowPreview(false);
+  };
+
+  const handleSaveTour = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('admin_token');
+      
+      // Validação básica
+      if (!formData.name.pt.trim()) {
+        setError('Nome em português é obrigatório');
+        return;
+      }
+      
+      if (editingTour) {
+        await axios.put(`${BACKEND_URL}/api/tours/${editingTour}`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        await axios.post(`${BACKEND_URL}/api/tours`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      
+      setEditingTour(null);
+      setFormData({
+        name: { pt: '', en: '' },
+        description: { pt: '', en: '' },
+        price: '',
+        duration: '',
+        max_participants: 4,
+        min_participants: 1,
+        category: '',
+        difficulty: 'easy',
+        includes: { pt: [], en: [] },
+        excludes: { pt: [], en: [] },
+        requirements: { pt: [], en: [] },
+        itinerary: { pt: [], en: [] },
         map_locations: '',
-        availability_schedule: {
-            monday: { active: false, start: '09:00', end: '18:00' },
-            tuesday: { active: false, start: '09:00', end: '18:00' },
-            wednesday: { active: false, start: '09:00', end: '18:00' },
-            thursday: { active: false, start: '09:00', end: '18:00' },
-            friday: { active: false, start: '09:00', end: '18:00' },
-            saturday: { active: false, start: '09:00', end: '18:00' },
-            sunday: { active: false, start: '09:00', end: '18:00' },
-        },
-    };
+        active: true,
+        featured: false,
+        image_url: '',
+        gallery: []
+      });
+      setShowPreview(false);
+      setError('');
+      fetchTours();
+    } catch (err) {
+      console.error('Erro ao salvar tour:', err);
+      setError('Erro ao salvar tour: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const [formData, setFormData] = useState(initialFormData);
+  const handleCancelEdit = () => {
+    setEditingTour(null);
+    setFormData({
+      name: { pt: '', en: '' },
+      description: { pt: '', en: '' },
+      price: '',
+      duration: '',
+      max_participants: 4,
+      min_participants: 1,
+      category: '',
+      difficulty: 'easy',
+      includes: { pt: [], en: [] },
+      excludes: { pt: [], en: [] },
+      requirements: { pt: [], en: [] },
+      itinerary: { pt: [], en: [] },
+      map_locations: '',
+      active: true,
+      featured: false,
+      image_url: '',
+      gallery: []
+    });
+    setShowPreview(false);
+    setError('');
+  };
 
-    useEffect(() => {
-        fetchTours();
-    }, []);
-
-    // 2. DECLARAÇÃO DE TODAS AS FUNÇÕES AUXILIARES DEPOIS DOS HOOKS
-    const fetchTours = async () => {
-        try {
-            const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=false`);
-            setTours(response.data);
-        } catch (error) {
-            console.error('Erro ao buscar tours:', error);
-        }
-    };
-
-    const parseItineraryPreview = (text) => {
-        if (!text) return [];
-        const timeRegex = /(\d{1,2}[:h]\d{2}|\d{1,2}h)/gi;
-        const lines = text.split('\n').filter(line => line.trim() !== '');
-        const timeBlocks = [];
-        let currentBlock = null;
-        lines.forEach((line) => {
-            const timeMatch = line.match(timeRegex);
-            if (timeMatch) {
-                if (currentBlock) timeBlocks.push(currentBlock);
-                const time = timeMatch[0].replace('h', ':');
-                const cleanText = line.replace(timeRegex, '').replace(':', '').trim();
-                currentBlock = { time, title: cleanText || `Atividade às ${time}` };
-            }
-        });
-        if (currentBlock) timeBlocks.push(currentBlock);
-        return timeBlocks;
-    };
-
-    const handleImageUpload = async (file, imageType) => {
-        if (!file) return;
-        const setUploading = imageType === 'thumbnail' ? setUploadingThumbnail : setUploadingGallery;
-        setUploading(true);
-        setUploadErrors(prev => ({ ...prev, [imageType]: null }));
-        try {
-            const timestamp = Date.now();
-            const randomId = Math.random().toString(36).substring(2, 8);
-            const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-            const fileName = `tours/${timestamp}_${randomId}_${cleanFileName}`;
-            const downloadURL = await uploadImageToStorage(file, fileName);
-            if (imageType === 'thumbnail') {
-                setFormData(prev => ({ ...prev, thumbnail_image: downloadURL }));
-            } else {
-                setFormData(prev => ({ ...prev, gallery_images: [...prev.gallery_images, downloadURL] }));
-            }
-        } catch (error) {
-            setUploadErrors(prev => ({ ...prev, [imageType]: error.message }));
-        } finally {
-            setUploading(false);
-        }
-    };
+  const handleDeleteTour = async (tourId) => {
+    if (!window.confirm('Tem certeza que deseja excluir este tour?')) {
+      return;
+    }
     
-    const handleScheduleChange = (day, field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            availability_schedule: {
-                ...prev.availability_schedule,
-                [day]: {
-                    ...prev.availability_schedule[day],
-                    [field]: value
-                }
-            }
-        }));
-    };
+    try {
+      const token = localStorage.getItem('admin_token');
+      await axios.delete(`${BACKEND_URL}/api/tours/${tourId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchTours();
+    } catch (err) {
+      setError('Erro ao excluir tour: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
-    const removeThumbnailImage = () => setFormData(prev => ({ ...prev, thumbnail_image: '' }));
-    const removeGalleryImage = (index) => setFormData(prev => ({ ...prev, gallery_images: prev.gallery_images.filter((_, i) => i !== index) }));
-    const addManualDate = () => {
-        if (newDate && !manualDates.includes(newDate)) {
-            setManualDates([...manualDates, newDate].sort());
-            setNewDate('');
-        }
-    };
-    const removeManualDate = (dateToRemove) => setManualDates(manualDates.filter(date => date !== dateToRemove));
+  const handleArrayChange = (field, lang, index, value) => {
+    const newArray = [...formData[field][lang]];
+    newArray[index] = value;
+    setFormData({
+      ...formData,
+      [field]: {
+        ...formData[field],
+        [lang]: newArray
+      }
+    });
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setIsCreating(true);
-        try {
-            const allImages = [formData.thumbnail_image, ...formData.gallery_images].filter(Boolean);
-            const tourData = { ...formData, images: allImages, availability_dates: manualDates };
-            if (editingTour) {
-                await axios.put(`${BACKEND_URL}/api/tours/${editingTour.id}`, tourData);
-            } else {
-                await axios.post(`${BACKEND_URL}/api/tours`, tourData);
-            }
-            resetForm();
-            setShowModal(false);
-            fetchTours();
-        } catch (error) {
-            alert(`Erro ao salvar tour: ${error.response?.data?.detail || error.message}`);
-        } finally {
-            setLoading(false);
-            setIsCreating(false);
-        }
-    };
+  const addArrayItem = (field, lang) => {
+    setFormData({
+      ...formData,
+      [field]: {
+        ...formData[field],
+        [lang]: [...formData[field][lang], '']
+      }
+    });
+  };
 
-    const handleEdit = (tour) => {
-        setEditingTour(tour);
-        setManualDates(tour.availability_dates || []);
-        setFormData({
-            ...initialFormData,
-            ...tour,
-            map_locations: tour.map_locations || '',
-            highlights: tour.highlights || { pt: '', en: '', es: '' },
-            thumbnail_image: tour.images?.[0] || '',
-            gallery_images: tour.images?.slice(1) || [],
-        });
-        setShowModal(true);
-    };
+  const removeArrayItem = (field, lang, index) => {
+    const newArray = formData[field][lang].filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      [field]: {
+        ...formData[field],
+        [lang]: newArray
+      }
+    });
+  };
 
-    const handleDelete = async (tourId) => {
-        if (window.confirm('Tem certeza que deseja eliminar este tour?')) {
-            try {
-                await axios.delete(`${BACKEND_URL}/api/tours/${tourId}`);
-                fetchTours();
-            } catch (error) {
-                alert('Erro ao eliminar tour.');
-            }
-        }
-    };
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(price);
+  };
 
-    const toggleTourStatus = async (tour) => {
-        try {
-            await axios.put(`${BACKEND_URL}/api/tours/${tour.id}`, { active: !tour.active });
-            fetchTours();
-        } catch (error) {
-            console.error('Erro ao alterar status:', error);
-        }
-    };
-    
-    const resetForm = () => {
-        setFormData(initialFormData);
-        setManualDates([]);
-        setNewDate('');
-        setEditingTour(null);
-        setUploadErrors({});
-    };
+  const renderTourPreview = () => {
+    if (!showPreview) return null;
 
-    const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    const weekDaysPT = { monday: 'Segunda', tuesday: 'Terça', wednesday: 'Quarta', thursday: 'Quinta', friday: 'Sexta', saturday: 'Sábado', sunday: 'Domingo' };
-    
-    // 3. O RETURN COM O JSX
     return (
-        <div className="p-6">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Gestão de Tours</h2>
-                <button
-                    onClick={() => { resetForm(); setShowModal(true); }}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                >
-                    + Adicionar Tour
-                </button>
+              <h2 className="text-2xl font-bold text-gray-900">👁️ Preview do Tour</h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
-            <div className="grid gap-4">
-                {tours.map((tour) => (
-                    <div key={tour.id} className="bg-white rounded-lg shadow p-6 flex items-start justify-between">
-                        <div className="flex items-center gap-4">
-                            <img src={tour.images?.[0] || '/placeholder.png'} alt={tour.name.pt} className="w-20 h-20 object-cover rounded"/>
-                            <div>
-                                <h3 className="text-lg font-semibold">{tour.name.pt}</h3>
-                                <p className="text-gray-600">{tour.location} • {tour.duration_hours}h • €{tour.price}</p>
-                                <span className={`inline-block px-2 py-1 text-xs rounded ${tour.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                    {tour.active ? 'Ativo' : 'Inativo'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex gap-2 flex-shrink-0">
-                            <button onClick={() => toggleTourStatus(tour)} className={`px-3 py-1 rounded text-sm ${tour.active ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-                                {tour.active ? 'Desativar' : 'Ativar'}
-                            </button>
-                            <button onClick={() => handleEdit(tour)} className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm">Editar</button>
-                            <button onClick={() => handleDelete(tour.id)} className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm">Eliminar</button>
-                        </div>
-                    </div>
-                ))}
-            </div>
+            {/* Preview Content */}
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="text-center">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{formData.name.pt}</h1>
+                {formData.name.en && (
+                  <p className="text-xl text-gray-600 mb-4">{formData.name.en}</p>
+                )}
+                {formData.price && (
+                  <div className="text-2xl font-bold text-indigo-600">
+                    {formatPrice(formData.price)} <span className="text-sm font-normal">por tour</span>
+                  </div>
+                )}
+              </div>
 
-            {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                            <h3 className="text-xl font-bold">{editingTour ? 'Editar Tour' : 'Adicionar Novo Tour'}</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Localização</label>
-                                    <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} required className="w-full border rounded px-3 py-2" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Duração (horas)</label>
-                                    <input type="number" value={formData.duration_hours} onChange={(e) => setFormData({ ...formData, duration_hours: parseFloat(e.target.value) || 0 })} min="1" step="0.5" required className="w-full border rounded px-3 py-2" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Preço Total (€)</label>
-                                    <input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })} min="0" step="0.01" required className="w-full border rounded px-3 py-2" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Máx. Participantes</label>
-                                    <input type="number" value={formData.max_participants} onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) || 1 })} min="1" max="4" required className="w-full border rounded px-3 py-2" />
-                                </div>
-                                <div className="lg:col-span-2">
-                                    <label className="block text-sm font-medium mb-1">Tipo de Tour</label>
-                                    <select value={formData.tour_type} onChange={(e) => setFormData({ ...formData, tour_type: e.target.value })} className="w-full border rounded px-3 py-2">
-                                        <option value="cultural">Cultural</option>
-                                        <option value="gastronomic">Gastronômico</option>
-                                        <option value="mixed">Misto</option>
-                                        <option value="custom">Personalizado</option>
-                                    </select>
-                                </div>
-                            </div>
-                            {['name', 'short_description', 'description', 'highlights', 'includes', 'excludes'].map(field => (
-                                <div key={field} className="space-y-2">
-                                     <label className="block text-sm font-medium capitalize">
-                                        {field.replace('_', ' ')}
-                                        {['highlights', 'includes', 'excludes'].includes(field) && " (um por linha)"}
-                                    </label>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        {['pt', 'en', 'es'].map(lang => (
-                                            <div key={lang}>
-                                                <label className="text-xs text-gray-500">{lang.toUpperCase()}</label>
-                                                <textarea
-                                                    value={formData[field]?.[lang] || ''}
-                                                    onChange={(e) => setFormData({ ...formData, [field]: { ...formData[field], [lang]: e.target.value } })}
-                                                    required={['name', 'short_description', 'description'].includes(field)}
-                                                    rows="4"
-                                                    className="w-full border rounded px-3 py-2"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium capitalize">Itinerário por Horários</label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs text-gray-500">PORTUGUÊS (PT)</label>
-                                        <textarea
-                                            value={formData.route_description.pt || ''}
-                                            onChange={(e) => setFormData({ ...formData, route_description: { ...formData.route_description, pt: e.target.value } })}
-                                            rows="8"
-                                            className="w-full border rounded px-3 py-2 font-mono text-sm"
-                                            placeholder="10:00 - Início do tour..."
-                                        />
-                                    </div>
-                                    <div className="bg-gray-50 p-3 rounded-lg border">
-                                        <h4 className="font-semibold text-sm mb-2 text-gray-800">Preview do Itinerário</h4>
-                                        <div className="text-sm space-y-2">
-                                            {parseItineraryPreview(formData.route_description.pt).length > 0 ? (
-                                                parseItineraryPreview(formData.route_description.pt).map((block, index) => (
-                                                    <div key={index} className="flex items-start">
-                                                        <span className="font-bold text-blue-600 mr-2 min-w-[50px]">{block.time}</span>
-                                                        <span className="text-gray-700">{block.title}</span>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <p className="text-gray-400 text-xs">O preview aparecerá aqui.</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                     <div>
-                                        <label className="text-xs text-gray-500">INGLÊS (EN)</label>
-                                        <textarea
-                                            value={formData.route_description.en || ''}
-                                            onChange={(e) => setFormData({ ...formData, route_description: { ...formData.route_description, en: e.target.value } })}
-                                            rows="8" className="w-full border rounded px-3 py-2 font-mono text-sm" />
-                                     </div>
-                                      <div>
-                                        <label className="text-xs text-gray-500">ESPANHOL (ES)</label>
-                                        <textarea
-                                            value={formData.route_description.es || ''}
-                                            onChange={(e) => setFormData({ ...formData, route_description: { ...formData.route_description, es: e.target.value } })}
-                                            rows="8" className="w-full border rounded px-3 py-2 font-mono text-sm" />
-                                     </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium">Localizações para o Mapa</label>
-                                <textarea
-                                    value={formData.map_locations}
-                                    onChange={(e) => setFormData({ ...formData, map_locations: e.target.value })}
-                                    rows="5"
-                                    className="w-full border rounded px-3 py-2 font-mono text-sm"
-                                    placeholder={`Exemplo:\nCastelo de Chambord, 47.6161, 1.5172\nCastelo de Chenonceau, 47.3249, 1.0703`}
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-4 pt-6 border-t">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded hover:bg-gray-100">Cancelar</button>
-                                <button type="submit" disabled={loading || uploadingThumbnail || uploadingGallery} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-                                    {loading ? 'A guardar...' : (editingTour ? 'Atualizar Tour' : 'Criar Tour')}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+              {/* Tour Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">⏱️ Duração</h4>
+                  <p className="text-gray-700">{formData.duration || 'A definir'}</p>
                 </div>
-            )}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">👥 Participantes</h4>
+                  <p className="text-gray-700">{formData.min_participants} - {formData.max_participants} pessoas</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">📊 Dificuldade</h4>
+                  <p className="text-gray-700 capitalize">{formData.difficulty}</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2">🏷️ Categoria</h4>
+                  <p className="text-gray-700">{formData.category || 'Não definida'}</p>
+                </div>
+              </div>
+
+              {/* Description */}
+              {formData.description.pt && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">📝 Descrição</h3>
+                  <p className="text-gray-700 mb-4">{formData.description.pt}</p>
+                  {formData.description.en && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">English Description</h4>
+                      <p className="text-gray-700">{formData.description.en}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Itinerary */}
+              {formData.itinerary.pt.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">🗺️ Itinerário</h3>
+                  <div className="space-y-3">
+                    {formData.itinerary.pt.map((item, index) => (
+                      <div key={index} className="flex items-start">
+                        <span className="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-800 rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                          {index + 1}
+                        </span>
+                        <div className="flex-1">
+                          <p className="text-gray-700">{item}</p>
+                          {formData.itinerary.en[index] && (
+                            <p className="text-gray-500 text-sm mt-1 italic">{formData.itinerary.en[index]}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Includes */}
+              {formData.includes.pt.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">✅ Incluído</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <ul className="space-y-2">
+                        {formData.includes.pt.map((item, index) => (
+                          <li key={index} className="flex items-center text-gray-700">
+                            <span className="text-green-500 mr-2">✓</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {formData.includes.en.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2">English</h4>
+                        <ul className="space-y-2">
+                          {formData.includes.en.map((item, index) => (
+                            <li key={index} className="flex items-center text-gray-700">
+                              <span className="text-green-500 mr-2">✓</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Excludes */}
+              {formData.excludes.pt.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">❌ Não Incluído</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <ul className="space-y-2">
+                        {formData.excludes.pt.map((item, index) => (
+                          <li key={index} className="flex items-center text-gray-700">
+                            <span className="text-red-500 mr-2">✗</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {formData.excludes.en.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2">English</h4>
+                        <ul className="space-y-2">
+                          {formData.excludes.en.map((item, index) => (
+                            <li key={index} className="flex items-center text-gray-700">
+                              <span className="text-red-500 mr-2">✗</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Requirements */}
+              {formData.requirements.pt.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">📋 Requisitos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <ul className="space-y-2">
+                        {formData.requirements.pt.map((item, index) => (
+                          <li key={index} className="flex items-center text-gray-700">
+                            <span className="text-blue-500 mr-2">•</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {formData.requirements.en.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2">English</h4>
+                        <ul className="space-y-2">
+                          {formData.requirements.en.map((item, index) => (
+                            <li key={index} className="flex items-center text-gray-700">
+                              <span className="text-blue-500 mr-2">•</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
     );
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">🗂️ Gestão de Tours</h2>
+        
+        {/* Status da API Google Maps */}
+        <div className="flex items-center space-x-2 text-sm">
+          <span className="text-gray-500">Google Maps:</span>
+          {loadError ? (
+            <span className="text-red-600 font-medium">❌ Erro na API</span>
+          ) : isLoaded ? (
+            <span className="text-green-600 font-medium">✅ Carregado</span>
+          ) : (
+            <span className="text-yellow-600 font-medium">⏳ Carregando</span>
+          )}
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="flex">
+            <svg className="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div className="text-red-800">{error}</div>
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">
+            {editingTour ? 'Salvando tour...' : 'A carregar tours...'}
+          </p>
+        </div>
+      )}
+
+      {!loading && !editingTour && (
+        <div>
+          <button
+            onClick={() => setEditingTour('new')}
+            className="mb-6 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200 flex items-center"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Criar Novo Tour
+          </button>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tours.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <div className="text-4xl mb-4">🗂️</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum tour encontrado</h3>
+                <p className="text-gray-500">Crie o primeiro tour para começar</p>
+              </div>
+            ) : (
+              tours.map((tour) => (
+                <div key={tour.id} className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900 flex-1">{tour.name.pt}</h3>
+                    <div className="flex items-center space-x-2 ml-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        tour.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {tour.active ? 'Ativo' : 'Inativo'}
+                      </span>
+                      {tour.featured && (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                          ⭐ Destaque
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                    {tour.description.pt || 'Sem descrição'}
+                  </p>
+                  
+                  <div className="text-xs text-gray-500 mb-4 space-y-1">
+                    {tour.price && (
+                      <div>💰 {formatPrice(tour.price)}</div>
+                    )}
+                    {tour.duration && (
+                      <div>⏱️ {tour.duration}</div>
+                    )}
+                    {tour.map_locations && (
+                      <div>📍 {tour.map_locations.split('\n').length} localização(ões)</div>
+                    )}
+                    {tour.itinerary && tour.itinerary.pt && tour.itinerary.pt.length > 0 && (
+                      <div>🗺️ {tour.itinerary.pt.length} pontos no itinerário</div>
+                    )}
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEditTour(tour)}
+                      className="flex-1 bg-blue-100 text-blue-800 px-3 py-2 rounded-md hover:bg-blue-200 transition-colors duration-200 text-sm flex items-center justify-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTour(tour.id)}
+                      className="flex-1 bg-red-100 text-red-800 px-3 py-2 rounded-md hover:bg-red-200 transition-colors duration-200 text-sm flex items-center justify-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {(editingTour || editingTour === 'new') && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-medium text-gray-900">
+              {editingTour === 'new' ? '➕ Criar Novo Tour' : '✏️ Editar Tour'}
+            </h3>
+            <button
+              onClick={() => setShowPreview(true)}
+              className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors duration-200 flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              👁️ Preview
+            </button>
+          </div>
+          
+          <div className="space-y-8">
+            {/* Informações Básicas */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">📝 Informações Básicas</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome (Português) *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name.pt}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      name: { ...formData.name, pt: e.target.value } 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Ex: Tour ao Vale do Douro"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome (Inglês)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name.en}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      name: { ...formData.name, en: e.target.value } 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Ex: Douro Valley Tour"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Preço (€)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Ex: 150"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Duração
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Ex: 8 horas"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoria
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Ex: Cultura, Natureza, Gastronomia"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dificuldade
+                  </label>
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="easy">Fácil</option>
+                    <option value="moderate">Moderada</option>
+                    <option value="hard">Difícil</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Participantes Mínimos
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.min_participants}
+                    onChange={(e) => setFormData({ ...formData, min_participants: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Participantes Máximos
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.max_participants}
+                    onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    min="1"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Descrição */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">📋 Descrição</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição (Português)
+                  </label>
+                  <textarea
+                    value={formData.description.pt}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      description: { ...formData.description, pt: e.target.value } 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    rows={4}
+                    placeholder="Descreva o tour em português..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição (Inglês)
+                  </label>
+                  <textarea
+                    value={formData.description.en}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      description: { ...formData.description, en: e.target.value } 
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    rows={4}
+                    placeholder="Describe the tour in English..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Itinerário */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">🗺️ Itinerário</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Itinerário (Português)
+                    </label>
+                    <button
+                      onClick={() => addArrayItem('itinerary', 'pt')}
+                      className="bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 text-sm"
+                    >
+                      + Adicionar
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {formData.itinerary.pt.map((item, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <span className="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-800 rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => handleArrayChange('itinerary', 'pt', index, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="Ex: Chegada ao Porto e check-in"
+                        />
+                        <button
+                          onClick={() => removeArrayItem('itinerary', 'pt', index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Itinerário (Inglês)
+                    </label>
+                    <button
+                      onClick={() => addArrayItem('itinerary', 'en')}
+                      className="bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 text-sm"
+                    >
+                      + Adicionar
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {formData.itinerary.en.map((item, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <span className="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-800 rounded-full flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => handleArrayChange('itinerary', 'en', index, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="Ex: Arrival in Porto and check-in"
+                        />
+                        <button
+                          onClick={() => removeArrayItem('itinerary', 'en', index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Incluído/Não Incluído */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Incluído */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-4">✅ Incluído</h4>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">Português</label>
+                      <button
+                        onClick={() => addArrayItem('includes', 'pt')}
+                        className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 text-sm"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {formData.includes.pt.map((item, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="text-green-500">✓</span>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayChange('includes', 'pt', index, e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="Ex: Transporte em veículo confortável"
+                          />
+                          <button
+                            onClick={() => removeArrayItem('includes', 'pt', index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">Inglês</label>
+                      <button
+                        onClick={() => addArrayItem('includes', 'en')}
+                        className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 text-sm"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {formData.includes.en.map((item, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="text-green-500">✓</span>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayChange('includes', 'en', index, e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="Ex: Transportation in comfortable vehicle"
+                          />
+                          <button
+                            onClick={() => removeArrayItem('includes', 'en', index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Não Incluído */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-4">❌ Não Incluído</h4>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">Português</label>
+                      <button
+                        onClick={() => addArrayItem('excludes', 'pt')}
+                        className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 text-sm"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {formData.excludes.pt.map((item, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="text-red-500">✗</span>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayChange('excludes', 'pt', index, e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                            placeholder="Ex: Refeições não mencionadas"
+                          />
+                          <button
+                            onClick={() => removeArrayItem('excludes', 'pt', index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">Inglês</label>
+                      <button
+                        onClick={() => addArrayItem('excludes', 'en')}
+                        className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 text-sm"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {formData.excludes.en.map((item, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <span className="text-red-500">✗</span>
+                          <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleArrayChange('excludes', 'en', index, e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                            placeholder="Ex: Meals not mentioned"
+                          />
+                          <button
+                            onClick={() => removeArrayItem('excludes', 'en', index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Requisitos */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">📋 Requisitos</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Português</label>
+                    <button
+                      onClick={() => addArrayItem('requirements', 'pt')}
+                      className="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      + Adicionar
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {formData.requirements.pt.map((item, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <span className="text-blue-500">•</span>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => handleArrayChange('requirements', 'pt', index, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Ex: Sapatos confortáveis"
+                        />
+                        <button
+                          onClick={() => removeArrayItem('requirements', 'pt', index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">Inglês</label>
+                    <button
+                      onClick={() => addArrayItem('requirements', 'en')}
+                      className="bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 text-sm"
+                    >
+                      + Adicionar
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {formData.requirements.en.map((item, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <span className="text-blue-500">•</span>
+                        <input
+                          type="text"
+                          value={item}
+                          onChange={(e) => handleArrayChange('requirements', 'en', index, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Ex: Comfortable shoes"
+                        />
+                        <button
+                          onClick={() => removeArrayItem('requirements', 'en', index)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Localizações no Mapa */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">📍 Localizações no Mapa</h4>
+              <p className="text-sm text-gray-500 mb-4">
+                Adicione pontos de interesse que serão exibidos no mapa do tour. 
+                {loadError && ' (Modo manual disponível devido a problemas com a API do Google Maps)'}
+              </p>
+              
+              <MapLocationPicker
+                value={formData.map_locations}
+                onChange={(value) => setFormData({ ...formData, map_locations: value })}
+                isLoaded={isLoaded}
+                loadError={loadError}
+              />
+            </div>
+
+            {/* Configurações */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">⚙️ Configurações</h4>
+              <div className="flex items-center space-x-6">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.active}
+                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Tour Ativo</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.featured}
+                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">⭐ Tour em Destaque</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="flex space-x-4 pt-6 border-t border-gray-200">
+              <button
+                onClick={handleSaveTour}
+                disabled={loading || !formData.name.pt.trim()}
+                className="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {editingTour === 'new' ? 'Criar Tour' : 'Salvar Alterações'}
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={handleCancelEdit}
+                disabled={loading}
+                className="bg-gray-200 text-gray-800 px-6 py-3 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-colors duration-200 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Preview */}
+      {renderTourPreview()}
+    </div>
+  );
 };
 
 export default AdminTourManager;
