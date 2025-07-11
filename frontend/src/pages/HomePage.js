@@ -4,6 +4,8 @@ import { useTranslation } from '../utils/useTranslation';
 import SEOHead from '../components/SEOHead';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
+import axios from 'axios';
+import { BACKEND_URL } from '../config/appConfig';
 
 // Firebase configuration (example - replace with actual config)
 const firebaseConfig = {
@@ -139,11 +141,14 @@ const HomePage = () => {
   // Load tours from backend
   const loadBackendTours = async () => {
     try {
-      const response = await fetch('https://your-backend-api/tours'); // Replace with actual API endpoint
-      const data = await response.json();
-      setTours(data);
-      return { success: true, count: data.length };
+      // Usar a URL correta e o endpoint para tours em destaque/ativos
+      const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=true&featured=true`);
+      setTours(response.data);
+      return { success: true, count: response.data.length };
     } catch (error) {
+      console.error('Error fetching featured tours for HomePage:', error);
+      // Em caso de erro, não definimos tours para que a secção mostre uma mensagem ou fique vazia
+      setTours([]);
       return { success: false, error };
     }
   };

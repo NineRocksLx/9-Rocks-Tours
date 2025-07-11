@@ -9,6 +9,7 @@ import TourDetails from "./pages/TourDetails";
 import AdminPanel from "./pages/AdminPanel";
 import ToursPage from "./pages/ToursPage";
 import { useTranslation } from "./utils/useTranslation";
+import BookingForm from "./components/BookingForm"; // <--- ADICIONAR ESTA LINHA
 
 function App() {
   return (
@@ -20,17 +21,20 @@ function App() {
             <Route path="/" element={<><Header /><HomePage lang="pt" /></>} />
             <Route path="/tours" element={<><Header /><ToursPage lang="pt" /></>} />
             <Route path="/tour/:id" element={<><Header /><TourDetails lang="pt" /></>} />
+             <Route path="/reservar" element={<><Header /><BookingForm lang="pt" /></>} />
+             <Route path="/admin" element={<AdminPanel />} />
             {/* English (novo) */}
             <Route path="/en/" element={<><Header /><HomePage lang="en" /></>} />
             <Route path="/en/tours" element={<><Header /><ToursPage lang="en" /></>} />
             <Route path="/en/tour/:id" element={<><Header /><TourDetails lang="en" /></>} />
+            <Route path="/en/reservar" element={<><Header /><BookingForm lang="en" /></>} /> 
             {/* Español (novo) */}
             <Route path="/es/" element={<><Header /><HomePage lang="es" /></>} />
             <Route path="/es/tours" element={<><Header /><ToursPage lang="es" /></>} />
             <Route path="/es/tour/:id" element={<><Header /><TourDetails lang="es" /></>} />
             <Route path="/about" element={<><Header /><AboutPage /></>} />
             <Route path="/contact" element={<><Header /><ContactPage /></>} />
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/es/reservar" element={<><Header /><BookingForm lang="es" /></>} />
             <Route path="/booking-success" element={<><Header /><BookingSuccess /></>} />
             <Route path="/payment/success" element={<><Header /><PaymentSuccess /></>} />
             <Route path="/payment/cancel" element={<><Header /><PaymentCancel /></>} />

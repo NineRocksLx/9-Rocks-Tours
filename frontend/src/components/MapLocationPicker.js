@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleMap, MarkerF } from '@react-google-maps/api';
 
 const mapContainerStyle = {
@@ -14,129 +14,298 @@ const mapOptions = {
   fullscreenControl: false,
   clickableIcons: false,
   zoomControl: true,
-  gestureHandling: 'cooperative'
+  gestureHandling: 'cooperative',
+  language: 'pt-PT',
+  region: 'PT'
 };
 
-// Coordenadas de Lisboa, Portugal
-const LISBOA_CENTER = { lat: 38.7223, lng: -9.1393 };
-const DEFAULT_ZOOM = 7; // Zoom adequado para mostrar Portugal
+const PORTUGAL_CENTER = { lat: 39.5, lng: -8.0 };
+const PORTUGAL_BOUNDS = {
+  north: 42.154,
+  south: 36.838,
+  east: -6.189,
+  west: -9.526
+};
 
-const MapLocationPicker = ({ value = '', onChange, isLoaded, loadError }) => {
+const PORTUGAL_CITIES = {
+  lisboa: { lat: 38.7223, lng: -9.1393, name: 'Lisboa' },
+  porto: { lat: 41.1579, lng: -8.6291, name: 'Porto' },
+  coimbra: { lat: 40.2033, lng: -8.4103, name: 'Coimbra' },
+  braga: { lat: 41.5518, lng: -8.4219, name: 'Braga' },
+  sintra: { lat: 38.8029, lng: -9.3817, name: 'Sintra' },
+  cascais: { lat: 38.6967, lng: -9.4206, name: 'Cascais' },
+  óbidos: { lat: 39.3605, lng: -9.1567, name: 'Óbidos' },
+  evora: { lat: 38.5664, lng: -7.9077, name: 'Évora' }
+};
+
+const MapLocationPicker = ({ value = '', onChange, isMapLoaded, mapLoadError }) => {
   const [locations, setLocations] = useState([]);
-  const [mapCenter, setMapCenter] = useState(LISBOA_CENTER);
-  const autocompleteRef = useRef(null);
+  const [searchError, setSearchError] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [mapsReady, setMapsReady] = useState(false);
+  
+  const geocoderRef = useRef(null);
+  const initTimeoutRef = useRef(null);
+  const mapRef = useRef(null);
+  const lastValueRef = useRef('');
+  const updateInProgress = useRef(false);
 
-  // Carrega localizações do valor inicial
-  useEffect(() => {
-    if (value) {
-      const parsedLocations = value.split('\n').map(line => {
-        const [name, lat, lng] = line.split(', ');
-        return {
-          id: `loc-${Math.random().toString(36).substr(2, 9)}`,
-          name,
-          lat: parseFloat(lat),
-          lng: parseFloat(lng)
-        };
-      }).filter(loc => !isNaN(loc.lat) && !isNaN(loc.lng));
+  const onMapLoad = useCallback((map) => {
+    mapRef.current = map;
+  }, []);
+
+  const onMapUnmount = useCallback(() => {
+    mapRef.current = null;
+  }, []);
+
+  const parseLocations = useCallback((valueStr) => {
+    if (!valueStr || !valueStr.trim()) return [];
+    
+    try {
+      const lines = valueStr.split('\n').filter(line => line.trim() !== '');
       
-      setLocations(parsedLocations);
-      
-      // Se existem localizações, centra no primeiro local, senão mantém Lisboa
-      if (parsedLocations.length > 0) {
-        setMapCenter({ lat: parsedLocations[0].lat, lng: parsedLocations[0].lng });
-      }
-    }
-  }, [value]);
-
-  // Atualiza o valor quando as localizações mudam
-  useEffect(() => {
-    const formattedValue = locations
-      .map(loc => `${loc.name}, ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`)
-      .join('\n');
-    onChange(formattedValue);
-  }, [locations, onChange]);
-
-  // Configura o autocomplete quando o mapa carrega
-  useEffect(() => {
-    if (isLoaded && !autocompleteRef.current) {
-      const input = document.getElementById('place-search-input');
-      if (input) {
-        const autocomplete = new window.google.maps.places.Autocomplete(input, {
-          fields: ['place_id', 'name', 'geometry'],
-          types: ['establishment', 'geocode'],
-          componentRestrictions: { country: 'pt' } // Restringir a Portugal
-        });
-
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (!place.geometry || !place.geometry.location) {
-            console.log('Local não encontrado');
-            return;
+      return lines.map((line, index) => {
+        const parts = line.split(',').map(item => item.trim());
+        
+        if (parts.length >= 3) {
+          const [name, lat, lng] = parts;
+          const latitude = parseFloat(lat);
+          const longitude = parseFloat(lng);
+          
+          if (!isNaN(latitude) && !isNaN(longitude) && 
+              latitude >= PORTUGAL_BOUNDS.south && latitude <= PORTUGAL_BOUNDS.north &&
+              longitude >= PORTUGAL_BOUNDS.west && longitude <= PORTUGAL_BOUNDS.east) {
+            return {
+              id: `loc-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              name,
+              lat: latitude,
+              lng: longitude
+            };
           }
-          
-          const lat = place.geometry.location.lat();
-          const lng = place.geometry.location.lng();
-          const newLocation = {
-            id: `loc-${Date.now()}`,
-            name: place.name || `Local ${locations.length + 1}`,
-            lat,
-            lng
-          };
-          
-          setLocations(prev => [...prev, newLocation]);
-          setMapCenter({ lat, lng });
-        });
-
-        autocompleteRef.current = autocomplete;
-      }
+        }
+        return null;
+      }).filter(loc => loc !== null);
+    } catch (error) {
+      return [];
     }
-  }, [isLoaded, locations.length]);
+  }, []);
 
-  // Adiciona marcador ao clicar no mapa
-  const handleMapClick = (event) => {
-    const lat = event.latLng.lat();
-    const lng = event.latLng.lng();
+  // Inicializar Google Maps Services - APENAS UMA VEZ
+  useEffect(() => {
+    if (!isMapLoaded || !window.google || mapsReady) return;
+
+    const initServices = () => {
+      try {
+        if (window.google.maps.Geocoder && !geocoderRef.current) {
+          geocoderRef.current = new window.google.maps.Geocoder();
+        }
+        setMapsReady(true);
+      } catch (error) {
+        setSearchError('Erro ao inicializar Google Maps');
+      }
+    };
+
+    initTimeoutRef.current = setTimeout(initServices, 200);
+
+    return () => {
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+      }
+    };
+  }, [isMapLoaded, mapsReady]);
+
+  // Processar valor inicial APENAS quando realmente muda
+  useEffect(() => {
+    if (updateInProgress.current || lastValueRef.current === value) return;
+    
+    lastValueRef.current = value;
+    const parsedLocations = parseLocations(value);
+    setLocations(parsedLocations);
+    
+    // Atualizar mapa apenas se necessário
+    if (mapRef.current && parsedLocations.length > 0) {
+      const avgLat = parsedLocations.reduce((sum, loc) => sum + loc.lat, 0) / parsedLocations.length;
+      const avgLng = parsedLocations.reduce((sum, loc) => sum + loc.lng, 0) / parsedLocations.length;
+      mapRef.current.panTo({ lat: avgLat, lng: avgLng });
+      mapRef.current.setZoom(parsedLocations.length === 1 ? 12 : 8);
+    }
+  }, [value, parseLocations]);
+
+  // Função para notificar mudanças - CONTROLADA
+  const notifyChange = useCallback((newLocations) => {
+    if (!onChange || updateInProgress.current) return;
+    
+    updateInProgress.current = true;
+    
+    const formattedValue = newLocations.map(loc => 
+      `${loc.name}, ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`
+    ).join('\n');
+
+    if (formattedValue !== lastValueRef.current) {
+      lastValueRef.current = formattedValue;
+      onChange(formattedValue);
+    }
+    
+    // Liberar o lock após um pequeno delay
+    setTimeout(() => {
+      updateInProgress.current = false;
+    }, 50);
+  }, [onChange]);
+
+  const addLocation = useCallback((name, lat, lng) => {
+    const existingLocation = locations.find(loc => 
+      Math.abs(loc.lat - lat) < 0.0001 && Math.abs(loc.lng - lng) < 0.0001
+    );
+
+    if (existingLocation) {
+      setSearchError('Este local já foi adicionado');
+      return;
+    }
+
     const newLocation = {
-      id: `loc-${Date.now()}`,
-      name: `Local ${locations.length + 1}`,
+      id: `loc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: name.trim(),
       lat,
       lng
     };
-    setLocations(prev => [...prev, newLocation]);
-  };
 
-  // Remove localização
-  const removeLocation = (locationId) => {
-    setLocations(prev => prev.filter(loc => loc.id !== locationId));
-  };
+    const newLocations = [...locations, newLocation];
+    setLocations(newLocations);
+    setSearchError('');
+    
+    // Notificar mudança de forma controlada
+    setTimeout(() => notifyChange(newLocations), 10);
+  }, [locations, notifyChange]);
 
-  // Edita nome da localização
-  const editLocationName = (locationId, newName) => {
-    setLocations(prev => prev.map(loc => 
-      loc.id === locationId ? { ...loc, name: newName } : loc
-    ));
-  };
+  const searchPlace = useCallback(async (query) => {
+    if (!query.trim() || !geocoderRef.current || !mapsReady) {
+      if (!mapsReady) {
+        setSearchError('Google Maps ainda não está pronto');
+      }
+      return;
+    }
 
-  if (loadError) {
+    setIsSearching(true);
+    setSearchError('');
+
+    try {
+      const request = {
+        address: query,
+        componentRestrictions: { country: 'PT' },
+        bounds: new window.google.maps.LatLngBounds(
+          new window.google.maps.LatLng(PORTUGAL_BOUNDS.south, PORTUGAL_BOUNDS.west),
+          new window.google.maps.LatLng(PORTUGAL_BOUNDS.north, PORTUGAL_BOUNDS.east)
+        )
+      };
+
+      geocoderRef.current.geocode(request, (results, status) => {
+        setIsSearching(false);
+        
+        if (status === 'OK' && results && results.length > 0) {
+          const result = results[0];
+          const location = result.geometry.location;
+          const lat = location.lat();
+          const lng = location.lng();
+          
+          if (lat >= PORTUGAL_BOUNDS.south && lat <= PORTUGAL_BOUNDS.north &&
+              lng >= PORTUGAL_BOUNDS.west && lng <= PORTUGAL_BOUNDS.east) {
+            
+            const placeName = result.formatted_address?.split(',')[0] || query;
+            addLocation(placeName, lat, lng);
+            setSearchInput('');
+          } else {
+            setSearchError('Local fora de Portugal');
+          }
+        } else {
+          setSearchError('Nenhum local encontrado');
+        }
+      });
+    } catch (error) {
+      setSearchError('Erro na pesquisa');
+      setIsSearching(false);
+    }
+  }, [mapsReady, addLocation]);
+
+  const handleMapClick = useCallback((event) => {
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+    
+    if (lat < PORTUGAL_BOUNDS.south || lat > PORTUGAL_BOUNDS.north ||
+        lng < PORTUGAL_BOUNDS.west || lng > PORTUGAL_BOUNDS.east) {
+      setSearchError('Clique dentro do território português');
+      return;
+    }
+    
+    addLocation(`Local ${locations.length + 1}`, lat, lng);
+  }, [locations.length, addLocation]);
+
+  const testLocation = useCallback((cityKey) => {
+    const coords = PORTUGAL_CITIES[cityKey];
+    if (coords) {
+      addLocation(coords.name, coords.lat, coords.lng);
+    }
+  }, [addLocation]);
+
+  const removeLocation = useCallback((locationId) => {
+    const newLocations = locations.filter(loc => loc.id !== locationId);
+    setLocations(newLocations);
+    setSearchError('');
+    
+    // Notificar mudança de forma controlada
+    setTimeout(() => notifyChange(newLocations), 10);
+  }, [locations, notifyChange]);
+
+  const editLocationName = useCallback((locationId, newName) => {
+    if (!newName.trim()) {
+      setSearchError('Nome não pode estar vazio');
+      return;
+    }
+    
+    const newLocations = locations.map(loc => 
+      loc.id === locationId ? { ...loc, name: newName.trim() } : loc
+    );
+    
+    setLocations(newLocations);
+    setSearchError('');
+    
+    // Notificar mudança de forma controlada
+    setTimeout(() => notifyChange(newLocations), 10);
+  }, [locations, notifyChange]);
+
+  const clearAllLocations = useCallback(() => {
+    if (window.confirm('Tem certeza que deseja remover todas as localizações?')) {
+      setLocations([]);
+      setSearchError('');
+      
+      // Notificar mudança de forma controlada
+      setTimeout(() => notifyChange([]), 10);
+    }
+  }, [notifyChange]);
+
+  const handleSearchSubmit = useCallback((e) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      searchPlace(searchInput.trim());
+    }
+  }, [searchInput, searchPlace]);
+
+  if (mapLoadError) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <h4 className="text-red-800 font-bold">❌ Erro ao carregar o Google Maps</h4>
-        <p className="text-red-600 text-sm mt-2">
-          Verifique a chave da API e as configurações no Google Cloud Console.
-        </p>
-        <p className="text-red-600 text-xs mt-1">
-          Detalhes: {loadError.message || JSON.stringify(loadError)}
-        </p>
+        <div className="text-red-800">
+          <strong>Erro ao carregar Google Maps:</strong> {mapLoadError.message}
+        </div>
       </div>
     );
   }
 
-  if (!isLoaded) {
+  if (!isMapLoaded) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-center">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-          <span className="text-blue-800">Carregando mapa...</span>
+          <span className="text-blue-800">Carregando Google Maps...</span>
         </div>
       </div>
     );
@@ -144,27 +313,76 @@ const MapLocationPicker = ({ value = '', onChange, isLoaded, loadError }) => {
 
   return (
     <div className="space-y-4">
-      {/* Campo de pesquisa */}
-      <div className="relative">
-        <input
-          id="place-search-input"
-          type="text"
-          placeholder="Pesquisar local em Portugal (ex: Castelo da Pena, Sintra)"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h4 className="text-green-800 font-semibold mb-2">Seletor de Localizações - Portugal</h4>
+        <ul className="text-green-700 text-sm space-y-1">
+          <li>• Pesquise locais específicos em Portugal</li>
+          <li>• Clique no mapa para adicionar pontos personalizados</li>
+          <li>• Use os botões de teste para cidades principais</li>
+        </ul>
       </div>
 
-      {/* Mapa */}
+      <form onSubmit={handleSearchSubmit}>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Ex: Mercado do Bolhão Porto, Palácio da Pena Sintra..."
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={isSearching || !mapsReady}
+          />
+          <button
+            type="submit"
+            disabled={!searchInput.trim() || isSearching || !mapsReady}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSearching ? 'Procurando...' : 'Procurar'}
+          </button>
+        </div>
+      </form>
+
+      <div className="flex flex-wrap gap-2">
+        <p className="text-sm text-gray-600 w-full">Teste rápido:</p>
+        {Object.entries(PORTUGAL_CITIES).map(([key, city]) => (
+          <button
+            key={key}
+            onClick={() => testLocation(key)}
+            disabled={!mapsReady}
+            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 disabled:opacity-50"
+          >
+            {city.name}
+          </button>
+        ))}
+      </div>
+
+      {locations.length > 0 && (
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">
+            {locations.length} localização{locations.length !== 1 ? 'ões' : ''} adicionada{locations.length !== 1 ? 's' : ''}
+          </span>
+          <button
+            onClick={clearAllLocations}
+            className="text-red-600 hover:text-red-800 text-sm"
+          >
+            Limpar Tudo
+          </button>
+        </div>
+      )}
+
+      {searchError && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <span className="text-yellow-800 text-sm">{searchError}</span>
+        </div>
+      )}
+
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
-        center={mapCenter}
-        zoom={DEFAULT_ZOOM}
+        center={PORTUGAL_CENTER}
+        zoom={7}
         options={mapOptions}
+        onLoad={onMapLoad}
+        onUnmount={onMapUnmount}
         onClick={handleMapClick}
       >
         {locations.map((location, index) => (
@@ -172,39 +390,45 @@ const MapLocationPicker = ({ value = '', onChange, isLoaded, loadError }) => {
             key={location.id}
             position={{ lat: location.lat, lng: location.lng }}
             title={location.name}
-            label={(index + 1).toString()}
+            label={{
+              text: (index + 1).toString(),
+              color: 'white',
+              fontWeight: 'bold'
+            }}
           />
         ))}
       </GoogleMap>
 
-      {/* Lista de localizações */}
       {locations.length > 0 && (
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="text-sm font-medium text-gray-700 mb-3">
-            Localizações Selecionadas ({locations.length})
+            Localizações ({locations.length})
           </h4>
-          <div className="space-y-2">
+          
+          <div className="space-y-2 max-h-60 overflow-y-auto">
             {locations.map((location, index) => (
-              <div key={location.id} className="flex items-center justify-between bg-white p-3 rounded-md">
-                <div className="flex items-center space-x-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-xs font-medium">
+              <div key={location.id} className="flex items-center justify-between bg-white p-3 rounded-md shadow-sm">
+                <div className="flex items-center space-x-3 flex-1">
+                  <div className="w-6 h-6 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-xs font-bold">
                     {index + 1}
-                  </span>
+                  </div>
                   <input
                     type="text"
                     value={location.name}
                     onChange={(e) => editLocationName(location.id, e.target.value)}
-                    className="flex-1 text-sm border-0 bg-transparent focus:ring-0 p-0"
+                    className="flex-1 text-sm border-0 bg-transparent focus:ring-0 p-0 font-medium text-gray-900"
+                    placeholder="Nome da localização"
                   />
                 </div>
+                
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 font-mono">
                     {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
                   </span>
                   <button
+                    type="button"
                     onClick={() => removeLocation(location.id)}
                     className="text-red-500 hover:text-red-700 p-1"
-                    title="Remover localização"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -214,9 +438,16 @@ const MapLocationPicker = ({ value = '', onChange, isLoaded, loadError }) => {
               </div>
             ))}
           </div>
-          <div className="mt-3 text-xs text-gray-500">
-            💡 Dica: Clique no mapa para adicionar mais localizações ou use a pesquisa acima
-          </div>
+        </div>
+      )}
+      
+      {locations.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <svg className="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <p className="text-sm">Nenhuma localização adicionada ainda</p>
         </div>
       )}
     </div>

@@ -5,38 +5,141 @@ import axios from 'axios';
 import { useTranslation } from '../utils/useTranslation';
 import TourItinerary from '../components/TourItinerary';
 import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
+import { BACKEND_URL } from '../config/appConfig';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const Maps_API_KEY = process.env.REACT_APP_Maps_API_KEY;
 
-// Componente do Mapa
+// 🔧 COMPONENTE DE DEBUG (REMOVER EM PRODUÇÃO)
+const DebugInfo = ({ currentLang, id, bookingUrl, tourData }) => {
+  if (process.env.NODE_ENV !== 'development') return null;
+  
+  return (
+    <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg text-xs max-w-sm z-50">
+      <strong>🐛 DEBUG INFO:</strong>
+      <div>Current Lang: {currentLang || 'undefined'}</div>
+      <div>Tour ID: {id || 'undefined'}</div>
+      <div>Booking URL: {bookingUrl || 'undefined'}</div>
+      <div>Tour Data: {tourData ? '✅ Loaded' : '❌ No data'}</div>
+      <div>Translation Function: {typeof getLocalizedText === 'function' ? '✅' : '❌'}</div>
+    </div>
+  );
+};
+
 const TourMap = ({ locationsStr }) => {
-    const { isLoaded } = useJsApiLoader({ id: 'google-map-script', googleMapsApiKey: Maps_API_KEY });
+    const { isLoaded } = useJsApiLoader({ 
+        id: 'google-map-script', 
+        googleMapsApiKey: Maps_API_KEY,
+        libraries: ['places']
+    });
+    
     const locations = React.useMemo(() => {
-        if (!locationsStr) return [];
-        return locationsStr.split('\n').map(line => {
-            const [name, lat, lng] = line.split(',').map(item => item.trim());
-            return { name, lat: parseFloat(lat), lng: parseFloat(lng) };
-        }).filter(loc => loc.name && !isNaN(loc.lat) && !isNaN(loc.lng));
+        if (!locationsStr || typeof locationsStr !== 'string') {
+            return [];
+        }
+        
+        const lines = locationsStr.split('\n').filter(line => line.trim() !== '');
+        
+        const parsedLocations = lines.map((line, index) => {
+            const parts = line.split(',').map(item => item.trim());
+            
+            if (parts.length >= 3) {
+                const [name, lat, lng] = parts;
+                const latitude = parseFloat(lat);
+                const longitude = parseFloat(lng);
+                
+                if (name && !isNaN(latitude) && !isNaN(longitude)) {
+                    const PORTUGAL_BOUNDS = {
+                        north: 42.154,
+                        south: 36.838,
+                        east: -6.189,
+                        west: -9.526
+                    };
+                    
+                    if (latitude >= PORTUGAL_BOUNDS.south && latitude <= PORTUGAL_BOUNDS.north &&
+                        longitude >= PORTUGAL_BOUNDS.west && longitude <= PORTUGAL_BOUNDS.east) {
+                        
+                        return { 
+                            name: name, 
+                            lat: latitude, 
+                            lng: longitude,
+                            id: `tour-loc-${index}`
+                        };
+                    }
+                }
+            }
+            return null;
+        }).filter(loc => loc !== null);
+        
+        return parsedLocations;
     }, [locationsStr]);
 
-    if (!isLoaded) return <div className="flex items-center justify-center h-full bg-gray-200 rounded-lg"><p>A carregar mapa...</p></div>;
+    const getMapCenter = () => {
+        if (locations.length > 0) {
+            const avgLat = locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length;
+            const avgLng = locations.reduce((sum, loc) => sum + loc.lng, 0) / locations.length;
+            return { lat: avgLat, lng: avgLng };
+        }
+        return { lat: 39.5, lng: -8.0 };
+    };
+
+    const getMapZoom = () => {
+        if (locations.length === 0) return 7;
+        if (locations.length === 1) return 12;
+        
+        const lats = locations.map(loc => loc.lat);
+        const lngs = locations.map(loc => loc.lng);
+        const latRange = Math.max(...lats) - Math.min(...lats);
+        const lngRange = Math.max(...lngs) - Math.min(...lngs);
+        const maxRange = Math.max(latRange, lngRange);
+        
+        if (maxRange > 2) return 6;
+        if (maxRange > 1) return 7;
+        if (maxRange > 0.5) return 8;
+        return 10;
+    };
+
+    if (!isLoaded) {
+        return (
+            <div className="flex items-center justify-center h-full bg-gray-200 rounded-lg">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-gray-600">A carregar mapa...</p>
+                </div>
+            </div>
+        );
+    }
+    
+    const mapCenter = getMapCenter();
+    const mapZoom = getMapZoom();
     
     return (
         <GoogleMap 
             mapContainerClassName="w-full h-full rounded-lg" 
-            center={{ lat: 47.3249, lng: 1.0703 }} 
-            zoom={8} 
-            options={{ streetViewControl: false, mapTypeControl: false }}
+            center={mapCenter}
+            zoom={mapZoom}
+            options={{ 
+                streetViewControl: false, 
+                mapTypeControl: false,
+                language: 'pt-PT',
+                region: 'PT'
+            }}
         >
-            {locations.map((loc, index) => 
-                <MarkerF key={index} position={{ lat: loc.lat, lng: loc.lng }} title={loc.name} />
-            )}
+            {locations.map((loc, index) => (
+                <MarkerF 
+                    key={loc.id || index} 
+                    position={{ lat: loc.lat, lng: loc.lng }} 
+                    title={loc.name}
+                    label={{
+                        text: (index + 1).toString(),
+                        color: 'white',
+                        fontWeight: 'bold'
+                    }}
+                />
+            ))}
         </GoogleMap>
     );
 };
 
-// Componente Breadcrumbs
 const Breadcrumbs = ({ tourName, currentLang }) => {
     const { t } = useTranslation();
     const getUrl = (page) => `/${currentLang !== 'pt' ? currentLang : ''}/${page === 'home' ? '' : page}`;
@@ -57,22 +160,66 @@ const Breadcrumbs = ({ tourName, currentLang }) => {
 };
 
 const TourDetails = () => {
-    // 1. Hooks são chamados no topo
     const { id } = useParams();
     const { t, getCurrentLanguage } = useTranslation();
-    const currentLang = getCurrentLanguage();
+    
+    // 🔧 MELHORIA: Verificação mais robusta do idioma
+    const [currentLang, setCurrentLang] = useState('pt');
     const [tourData, setTourData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [processedItinerary, setProcessedItinerary] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
 
-    // 2. Funções auxiliares dentro do componente
+    // 🔧 ATUALIZAÇÃO ROBUSTA DO IDIOMA
+    useEffect(() => {
+        try {
+            const lang = getCurrentLanguage();
+            console.log('🌍 Current language detected:', lang); // Debug
+            setCurrentLang(lang || 'pt');
+        } catch (error) {
+            console.error('❌ Error getting language:', error);
+            setCurrentLang('pt'); // Fallback
+        }
+    }, [getCurrentLanguage]);
+
+    // 🔧 MELHORIA: Função robusta para obter texto localizado
+    const getLocalizedText = (key) => {
+        try {
+            const translatedText = t(key);
+            // Se a tradução retornar a própria chave, significa que não encontrou
+            if (translatedText === key) {
+                // Fallbacks locais para chaves essenciais
+                const fallbacks = {
+                    'tour_book_now': { pt: 'Reservar Agora', en: 'Book Now', es: 'Reservar Ahora' },
+                    'tour_details.from': { pt: 'Preço total', en: 'Total price', es: 'Precio total' },
+                    'message_loading': { pt: 'A carregar...', en: 'Loading...', es: 'Cargando...' },
+                    'message.error': { pt: 'Erro ao carregar', en: 'Error loading', es: 'Error al cargar' },
+                    'try_again': { pt: 'Tentar Novamente', en: 'Try Again', es: 'Intentar de Nuevo' },
+                };
+                
+                const fallback = fallbacks[key];
+                if (fallback) {
+                    return fallback[currentLang] || fallback.pt || key;
+                }
+            }
+            return translatedText;
+        } catch (error) {
+            console.error(`❌ Translation error for key "${key}":`, error);
+            return key; // Retorna a chave se houver erro
+        }
+    };
+
     const formatPrice = (price) => {
-        return new Intl.NumberFormat('pt-PT', {
-            style: 'currency',
-            currency: 'EUR'
-        }).format(price);
+        try {
+            return new Intl.NumberFormat('pt-PT', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(price);
+        } catch (error) {
+            console.error('❌ Error formatting price:', error);
+            return `€${price}`;
+        }
     };
 
     const parseItineraryFromText = (textData) => {
@@ -98,163 +245,7 @@ const TourDetails = () => {
         return { [currentLang]: parsedStops };
     };
 
-    const getLocalizedText = (key) => {
-        const fallbackTexts = {
-            // Novos textos estilo GetYourGuide
-            'tour_details.instant_confirmation': {
-                pt: 'Confirmação Instantânea',
-                en: 'Instant Confirmation',
-                es: 'Confirmación Instantánea'
-            },
-            'tour_details.mobile_ticket': {
-                pt: 'Bilhete Móvel',
-                en: 'Mobile Ticket',
-                es: 'Billete Móvil'
-            },
-            'tour_details.small_groups': {
-                pt: 'Grupos Pequenos',
-                en: 'Small Groups',
-                es: 'Grupos Pequeños'
-            },
-            'tour_details.live_guide': {
-                pt: 'Guia ao Vivo',
-                en: 'Live Guide',
-                es: 'Guía en Vivo'
-            },
-            'tour_details.what_youll_do': {
-                pt: 'O que vais fazer',
-                en: 'What you\'ll do',
-                es: 'Lo que harás'
-            },
-            'tour_details.experience_highlights': {
-                pt: 'Destaques da Experiência',
-                en: 'Experience Highlights',
-                es: 'Aspectos Destacados de la Experiencia'
-            },
-            // Sobre a Atividade
-            'tour_details.about_activity': {
-                pt: 'Sobre Esta Experiência',
-                en: 'About This Experience',
-                es: 'Sobre Esta Experiencia'
-            },
-            // Cancelamento gratuito
-            'tour_details.free_cancellation_title': {
-                pt: 'Cancelamento Gratuito',
-                en: 'Free Cancellation',
-                es: 'Cancelación Gratuita'
-            },
-            'tour_details.free_cancellation_description': {
-                pt: 'Cancele até 24 horas antes sem custos',
-                en: 'Cancel up to 24 hours in advance at no cost',
-                es: 'Cancela hasta 24 horas antes sin costo'
-            },
-            // Destaques
-            'tour_details.highlights': {
-                pt: 'Pontos de Destaque',
-                en: 'Highlights',
-                es: 'Puntos Destacados'
-            },
-            // Duração do tour
-            'tour_duration': {
-                pt: 'Duração do Tour',
-                en: 'Tour Duration',
-                es: 'Duración del Tour'
-            },
-            // Guia profissional
-            'tour_professional_guide': {
-                pt: 'Guia Profissional',
-                en: 'Professional Guide',
-                es: 'Guía Profesional'
-            },
-            'tour_details.guide_languages': {
-                pt: 'Português, Inglês e Espanhol',
-                en: 'Portuguese, English and Spanish',
-                es: 'Portugués, Inglés y Español'
-            },
-            // Preço e reserva
-            'tour_details.from': {
-                pt: 'A partir de',
-                en: 'From',
-                es: 'Desde'
-            },
-            'tour_book_now': {
-                pt: 'Reservar Agora',
-                en: 'Book Now',
-                es: 'Reservar Ahora'
-            },
-            'tour_details.book_now_pay_later': {
-                pt: 'Reserve agora e pague depois - Sem taxas de reserva',
-                en: 'Book now and pay later - No booking fees',
-                es: 'Reserva ahora y paga después - Sin tasas de reserva'
-            },
-            // Outros textos comuns
-            'common.hours': {
-                pt: 'horas',
-                en: 'hours',
-                es: 'horas'
-            },
-            'tab_itinerary': {
-                pt: 'Itinerário',
-                en: 'Itinerary',
-                es: 'Itinerario'
-            },
-            'tour_includes': {
-                pt: 'O que está incluído',
-                en: 'What\'s included',
-                es: 'Qué está incluido'
-            },
-            'tour_excludes': {
-                pt: 'O que não está incluído',
-                en: 'What\'s not included',
-                es: 'Qué no está incluido'
-            },
-            'itinerary_tour_region': {
-                pt: 'Região do Tour',
-                en: 'Tour Region',
-                es: 'Región del Tour'
-            },
-            'tour_view_details': {
-                pt: 'Ver Detalhes',
-                en: 'View Details',
-                es: 'Ver Detalles'
-            },
-            'message_loading': {
-                pt: 'A carregar...',
-                en: 'Loading...',
-                es: 'Cargando...'
-            },
-            'message.error': {
-                pt: 'Erro ao carregar os dados',
-                en: 'Error loading data',
-                es: 'Error al cargar datos'
-            },
-            'message.no_tours': {
-                pt: 'Tour não encontrado',
-                en: 'Tour not found',
-                es: 'Tour no encontrado'
-            }
-        };
-
-        // Tenta buscar a tradução do sistema primeiro
-        const systemTranslation = t(key);
-        
-        // Se a tradução do sistema retornar a própria chave (não encontrou tradução)
-        if (systemTranslation === key || systemTranslation.startsWith('**')) {
-            // Usa o fallback
-            const fallback = fallbackTexts[key];
-            if (fallback && fallback[currentLang]) {
-                return fallback[currentLang];
-            }
-            // Se não tem fallback para o idioma atual, tenta português
-            if (fallback && fallback.pt) {
-                return fallback.pt;
-            }
-        }
-        
-        return systemTranslation;
-    };
-
-    // 3. useEffect para buscar os dados
+    // 🔧 FETCH DE DADOS COM MELHOR TRATAMENTO DE ERROS
     useEffect(() => {
         const fetchTourData = async () => {
             if (!id) { 
@@ -263,22 +254,25 @@ const TourDetails = () => {
                 return; 
             }
             
+            console.log('🔄 Fetching tour data for ID:', id); // Debug
             setLoading(true);
+            setError(null);
+            
             try {
                 const response = await axios.get(`${BACKEND_URL}/api/tours/${id}`);
+                console.log('✅ Tour data received:', response.data); // Debug
+                
                 if (!response.data) { 
                     throw new Error(getLocalizedText('message.no_tours')); 
                 }
                 
-                console.log('🔍 DEBUG - Tour Data completa:', response.data);
-                console.log('🔍 DEBUG - Highlights recebidos:', response.data.highlights);
                 setTourData(response.data);
                 
-                // Converte o `route_description` para o formato que o TourItinerary precisa
                 if (response.data.route_description) {
                     setProcessedItinerary(parseItineraryFromText(response.data.route_description));
                 }
             } catch (err) {
+                console.error('❌ Error fetching tour:', err); // Debug
                 setError(err.message || getLocalizedText('message.error'));
             } finally {
                 setLoading(false);
@@ -288,12 +282,51 @@ const TourDetails = () => {
         fetchTourData();
     }, [id, currentLang]);
 
-    // Re-processar itinerário quando o idioma muda
     useEffect(() => {
         if (tourData && tourData.route_description) {
             setProcessedItinerary(parseItineraryFromText(tourData.route_description));
         }
     }, [currentLang, tourData]);
+
+    // 🔧 GERAÇÃO SEGURA DO URL DE BOOKING
+    const bookingUrl = React.useMemo(() => {
+        try {
+            if (!id) return '#';
+            
+            const langPrefix = currentLang !== 'pt' ? `${currentLang}/` : '';
+            const url = `/${langPrefix}reservar?tour=${id}`;
+            
+            console.log('🔗 Generated booking URL:', url); // Debug
+            return url;
+        } catch (error) {
+            console.error('❌ Error generating booking URL:', error);
+            return '#'; // URL seguro como fallback
+        }
+    }, [currentLang, id]);
+
+    // 🎨 COMPONENTE DE BOTÃO MELHORADO
+    const BookingButton = () => {
+        const handleClick = (e) => {
+            console.log('🖱️ Booking button clicked!'); // Debug
+            console.log('🔗 Navigating to:', bookingUrl); // Debug
+            
+            if (bookingUrl === '#') {
+                e.preventDefault();
+                alert('Erro ao gerar URL de reserva. Tente novamente.');
+                return;
+            }
+        };
+
+        return (
+            <Link 
+                to={bookingUrl}
+                onClick={handleClick}
+                className="w-full block text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+                {getLocalizedText('tour_book_now')}
+            </Link>
+        );
+    };
 
     if (loading) { 
         return (
@@ -315,7 +348,7 @@ const TourDetails = () => {
                         onClick={() => window.location.reload()}
                         className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
                     >
-                        Tentar Novamente
+                        {getLocalizedText('try_again')}
                     </button>
                 </div>
             </div>
@@ -332,25 +365,17 @@ const TourDetails = () => {
         ); 
     }
 
-    // Extração de dados com DEBUG
     const tourName = tourData.name[currentLang] || tourData.name.pt;
     const shortDescription = tourData.short_description[currentLang] || tourData.short_description.pt;
     const fullDescription = tourData.description[currentLang] || tourData.description.pt;
-    
-    // DEBUG para highlights
-    console.log('🔍 DEBUG - tourData.highlights:', tourData.highlights);
-    console.log('🔍 DEBUG - currentLang:', currentLang);
-    console.log('🔍 DEBUG - tourData.highlights[currentLang]:', tourData.highlights?.[currentLang]);
     
     const highlights = tourData.highlights?.[currentLang]?.split('\n').filter(item => item.trim() !== '') || 
                       tourData.highlights?.pt?.split('\n').filter(item => item.trim() !== '') || 
                       [];
     
-    console.log('🔍 DEBUG - highlights processados:', highlights);
-    
     const includesText = tourData.includes?.[currentLang]?.split('\n').filter(item => item.trim() !== '') || [];
     const excludesText = tourData.excludes?.[currentLang]?.split('\n').filter(item => item.trim() !== '') || [];
-    const bookingUrl = `/${currentLang !== 'pt' ? currentLang + '/' : ''}reservar?tour=${id}`;
+
     const mainImage = tourData.images?.[0];
     const galleryImages = tourData.images?.slice(1) || [];
 
@@ -364,11 +389,18 @@ const TourDetails = () => {
                 <meta property="og:image" content={mainImage} />
             </Helmet>
             
+            {/* 🔧 COMPONENTE DE DEBUG */}
+            <DebugInfo 
+                currentLang={currentLang}
+                id={id}
+                bookingUrl={bookingUrl}
+                tourData={tourData}
+            />
+            
             <div className="bg-white">
                 <Breadcrumbs tourName={tourName} currentLang={currentLang} />
                 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-                    {/* Header Section - Estilo GetYourGuide */}
                     <section className="mb-8">
                         <div className="mb-4">
                             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
@@ -379,7 +411,6 @@ const TourDetails = () => {
                             </p>
                         </div>
 
-                        {/* Quick Info Pills - Estilo GetYourGuide */}
                         <div className="flex flex-wrap gap-3 mb-6">
                             <div className="flex items-center bg-green-50 text-green-700 px-3 py-2 rounded-full text-sm font-medium">
                                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -407,12 +438,10 @@ const TourDetails = () => {
                             </div>
                         </div>
 
-                        {/* Galeria de Imagens - Layout melhorado */}
                         {tourData.images && tourData.images.length > 0 && (
                             <div className="relative">
                                 {galleryImages.length > 0 ? (
                                     <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[400px] md:h-[500px] rounded-xl overflow-hidden">
-                                        {/* Imagem principal - ocupa 2x2 */}
                                         <div className="col-span-2 row-span-2">
                                             <img 
                                                 src={mainImage} 
@@ -420,7 +449,6 @@ const TourDetails = () => {
                                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
                                             />
                                         </div>
-                                        {/* Imagens secundárias */}
                                         {galleryImages.slice(0, 4).map((image, index) => (
                                             <div key={index} className="col-span-1 row-span-1">
                                                 <img 
@@ -441,10 +469,9 @@ const TourDetails = () => {
                                     </div>
                                 )}
                                 
-                                {/* Overlay com número de fotos */}
                                 {galleryImages.length > 4 && (
                                     <div className="absolute bottom-4 right-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                                        +{galleryImages.length - 4} fotos
+                                        +{galleryImages.length - 4} {getLocalizedText('total_photos')}
                                     </div>
                                 )}
                             </div>
@@ -453,7 +480,6 @@ const TourDetails = () => {
                     
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                         <div className="lg:col-span-2">
-                            {/* Quick Info Cards - Estilo GetYourGuide */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                                 <div className="bg-gray-50 p-6 rounded-xl text-center">
                                     <div className="text-3xl mb-2">🚫</div>
@@ -486,7 +512,6 @@ const TourDetails = () => {
                                 </div>
                             </div>
 
-                            {/* Navegação por Tabs */}
                             <div className="border-b border-gray-200 mb-8">
                                 <nav className="flex space-x-8">
                                     <button
@@ -497,7 +522,7 @@ const TourDetails = () => {
                                                 : 'border-transparent text-gray-500 hover:text-gray-700'
                                         }`}
                                     >
-                                        Visão Geral
+                                        {getLocalizedText('tab_overview')}
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('itinerary')}
@@ -517,7 +542,7 @@ const TourDetails = () => {
                                                 : 'border-transparent text-gray-500 hover:text-gray-700'
                                         }`}
                                     >
-                                        Incluído
+                                        {getLocalizedText('tab_included')}
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('map')}
@@ -527,16 +552,14 @@ const TourDetails = () => {
                                                 : 'border-transparent text-gray-500 hover:text-gray-700'
                                         }`}
                                     >
-                                        Mapa
+                                        {getLocalizedText('tab_map')}
                                     </button>
                                 </nav>
                             </div>
 
-                            {/* Conteúdo dos Tabs */}
                             <div className="tab-content">
                                 {activeTab === 'overview' && (
                                     <div className="space-y-8">
-                                        {/* Descrição completa */}
                                         {fullDescription && (
                                             <section>
                                                 <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -552,7 +575,6 @@ const TourDetails = () => {
                                             </section>
                                         )}
 
-                                        {/* Highlights - Seção melhorada */}
                                         {highlights.length > 0 && (
                                             <section>
                                                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
@@ -575,28 +597,6 @@ const TourDetails = () => {
                                                     </div>
                                                 </div>
                                             </section>
-                                        )}
-
-                                        {/* Debug info se não há highlights */}
-                                        {highlights.length === 0 && (
-                                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                                <p className="text-yellow-800 font-medium">
-                                                    ⚠️ DEBUG: Nenhum highlight encontrado
-                                                </p>
-                                                <details className="mt-2">
-                                                    <summary className="cursor-pointer text-sm text-yellow-700">
-                                                        Ver dados de debug
-                                                    </summary>
-                                                    <pre className="mt-2 text-xs bg-yellow-100 p-2 rounded">
-                                                        {JSON.stringify({
-                                                            highlightsRaw: tourData.highlights,
-                                                            currentLang: currentLang,
-                                                            highlightsForLang: tourData.highlights?.[currentLang],
-                                                            highlightsProcessed: highlights
-                                                        }, null, 2)}
-                                                    </pre>
-                                                </details>
-                                            </div>
                                         )}
                                     </div>
                                 )}
@@ -649,17 +649,40 @@ const TourDetails = () => {
                                         <h2 className="text-2xl font-bold text-gray-900 mb-6">
                                             {getLocalizedText('itinerary_tour_region')}
                                         </h2>
-                                        <TourMap locationsStr={tourData.map_locations} />
+                                        
+                                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden h-80">
+                                            <TourMap 
+                                                locationsStr={tourData.map_locations || ''} 
+                                            />
+                                        </div>
+                                        
+                                        {tourData.map_locations && (
+                                            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                                <h4 className="font-medium text-gray-800 mb-2">{getLocalizedText('tour_locations_title')}</h4>
+                                                <div className="space-y-1">
+                                                    {tourData.map_locations.split('\n').filter(line => line.trim()).map((line, index) => {
+                                                        const parts = line.split(',').map(item => item.trim());
+                                                        const [name] = parts;
+                                                        return (
+                                                            <div key={index} className="text-sm text-gray-600 flex items-center">
+                                                                <span className="w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs flex items-center justify-center mr-2 font-medium">
+                                                                    {index + 1}
+                                                                </span>
+                                                                <span className="font-medium">{name}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </section>
                                 )}
                             </div>
                         </div>
                         
-                        {/* Sidebar de Reserva - Melhorada */}
                         <div className="lg:col-span-1">
                             <div className="sticky top-8">
                                 <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-100">
-                                    {/* Preço */}
                                     <div className="text-center mb-6">
                                         <p className="text-gray-600 text-sm mb-1">
                                             {getLocalizedText('tour_details.from')}
@@ -667,42 +690,32 @@ const TourDetails = () => {
                                         <div className="text-4xl font-bold text-gray-900 mb-2">
                                             {formatPrice(tourData.price)}
                                         </div>
-                                        <p className="text-sm text-gray-500">
-                                            por pessoa
-                                        </p>
                                     </div>
 
-                                    {/* Botão de Reserva */}
-                                    <Link 
-                                        to={bookingUrl} 
-                                        className="w-full block text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                                    >
-                                        {getLocalizedText('tour_book_now')}
-                                    </Link>
+                                    <BookingButton />
                                     
                                     <p className="text-sm text-center mt-4 text-gray-600">
                                         {getLocalizedText('tour_details.book_now_pay_later')}
                                     </p>
 
-                                    {/* Informações adicionais */}
                                     <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
                                         <div className="flex items-center text-sm text-gray-600">
                                             <svg className="w-5 h-5 mr-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
-                                            Confirmação instantânea
+                                            {getLocalizedText('tour_instant_confirmation')}
                                         </div>
                                         <div className="flex items-center text-sm text-gray-600">
                                             <svg className="w-5 h-5 mr-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                                             </svg>
-                                            Bilhete móvel aceite
+                                            {getLocalizedText('tour_mobile_ticket_accepted')}
                                         </div>
                                         <div className="flex items-center text-sm text-gray-600">
                                             <svg className="w-5 h-5 mr-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
                                             </svg>
-                                            Máx. {tourData.max_participants} pessoas
+                                            {getLocalizedText('tour_max_participants')}
                                         </div>
                                     </div>
                                 </div>

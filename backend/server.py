@@ -1,8 +1,10 @@
+# backend/server.py - CÓDIGO COMPLETO E REESTRUTURADO
+
 # ================================
-# IMPORTS CORRIGIDOS
+# IMPORTS
 # ================================
-import sys  # ✅ ADICIONADO
-import firebase_admin  # ✅ ADICIONADO - estava faltando
+import sys
+import firebase_admin
 from firebase_admin import credentials, firestore
 from fastapi import FastAPI, APIRouter, HTTPException, Query, UploadFile, File, Depends
 from fastapi.responses import StreamingResponse
@@ -15,7 +17,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timedelta  # ✅ ADICIONADO timedelta
+from datetime import datetime, timedelta
 import json
 import io
 import csv
@@ -25,6 +27,9 @@ from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 import paypalrestsdk
 from enum import Enum
+
+# ✅ ALTERAÇÃO: Importar o router de tours que foi corrigido.
+from routers import tours_fixed as tours_router
 from routers.seo_routes import setup_seo_routes
 
 # Set up root directory and load environment variables
@@ -32,35 +37,24 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # ================================
-# FIREBASE INITIALIZATION CORRIGIDA
+# FIREBASE INITIALIZATION
 # ================================
-db_firestore = None  # ✅ Inicialização da variável
+db_firestore = None
 
 try:
-    # Verificar se já foi inicializado (evitar conflitos com seo_routes)
     try:
         firebase_admin.get_app()
         print("Firebase já inicializado anteriormente.")
     except ValueError:
-        # Se não foi inicializado, inicializar agora
         cred = credentials.Certificate("google-calendar-key.json")
-        firebase_admin.initialize_app(cred, {
-            'projectId': 'tours-81516-acfbc',
-        })
+        firebase_admin.initialize_app(cred, {'projectId': 'tours-81516-acfbc'})
         print("Firebase inicializado com sucesso no server.py")
     
-    # ✅ CRIAR CLIENTE FIRESTORE
     db_firestore = firestore.client()
     print("Cliente Firestore criado com sucesso.")
     
-except FileNotFoundError as e:
-    print(f"Erro: Arquivo de chave de conta de serviço não encontrado: {e}", file=sys.stderr)
-    sys.exit(1)
-except ValueError as e:
-    print(f"Erro: Falha ao inicializar Firebase: {e}", file=sys.stderr)
-    sys.exit(1)
 except Exception as e:
-    print(f"Erro inesperado durante inicialização do Firebase: {e}", file=sys.stderr)
+    print(f"Erro fatal durante inicialização do Firebase: {e}", file=sys.stderr)
     sys.exit(1)
 
 # ================================
@@ -72,7 +66,22 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Create a router with the /api prefix
+# ✅ RECOMENDAÇÃO: Configurar o CORS no início, logo após a criação da app.
+# Esta é a melhor prática para garantir que o middleware é aplicado a todas as rotas.
+origins = [
+    "http://localhost:3000",  # Frontend de desenvolvimento React
+    # "https://www.o-teu-site.com", # Adicionar o domínio de produção aqui mais tarde
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Create a router with the /api prefix for endpoints definidos NESTE ficheiro.
 api_router = APIRouter(prefix="/api")
 
 # Security scheme for Firebase JWT
@@ -85,7 +94,6 @@ PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID', 'MOCK_PAYPAL_CLIENT_ID')
 PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET', 'MOCK_PAYPAL_CLIENT_SECRET')
 PAYPAL_MODE = os.environ.get('PAYPAL_MODE', 'sandbox')
 
-# Configure PayPal SDK
 try:
     paypalrestsdk.configure({
         "mode": PAYPAL_MODE,
@@ -158,7 +166,7 @@ def get_calendar_availability(start_date: str, end_date: str) -> List[str]:
         while current <= end:
             if current.weekday() < 5:  # Weekdays only
                 available_dates.append(current.strftime("%Y-%m-%d"))
-            current += timedelta(days=1)  # ✅ Agora timedelta está importado
+            current += timedelta(days=1)
         return available_dates
     except Exception as e:
         print(f"Error getting calendar availability: {e}")
@@ -169,65 +177,6 @@ def get_calendar_availability(start_date: str, end_date: str) -> List[str]:
             if date.weekday() < 5:
                 available_dates.append(date.strftime("%Y-%m-%d"))
         return available_dates
-
-# ================================
-# TOUR MANAGEMENT MODELS
-# ================================
-class TourTranslation(BaseModel):
-    pt: str
-    en: str
-    es: str
-
-class TourCreate(BaseModel):
-    name: TourTranslation
-    description: TourTranslation
-    short_description: TourTranslation
-    location: str
-    duration_hours: float
-    price: float
-    max_participants: int
-    tour_type: str
-    images: List[str] = []
-    availability_dates: List[str] = []
-    active: bool = True
-    route_description: TourTranslation
-    includes: TourTranslation
-    excludes: TourTranslation
-
-class TourUpdate(BaseModel):
-    name: Optional[TourTranslation] = None
-    description: Optional[TourTranslation] = None
-    short_description: Optional[TourTranslation] = None
-    location: Optional[str] = None
-    duration_hours: Optional[float] = None
-    price: Optional[float] = None
-    max_participants: Optional[int] = None
-    tour_type: Optional[str] = None
-    images: Optional[List[str]] = None
-    availability_dates: Optional[List[str]] = None
-    active: Optional[bool] = None
-    route_description: Optional[TourTranslation] = None
-    includes: Optional[TourTranslation] = None
-    excludes: Optional[TourTranslation] = None
-
-class Tour(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: TourTranslation
-    description: TourTranslation
-    short_description: TourTranslation
-    location: str
-    duration_hours: float
-    price: float
-    max_participants: int
-    tour_type: str
-    images: List[str] = []
-    availability_dates: List[str] = []
-    active: bool = True
-    route_description: TourTranslation
-    includes: TourTranslation
-    excludes: TourTranslation
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 # ================================
 # BOOKING MODELS
@@ -466,101 +415,26 @@ class BookingStats(BaseModel):
     bookings_by_status: Dict[str, int]
 
 # ================================
-# TOURS API ENDPOINTS
-# ================================
-@api_router.post("/tours", response_model=Tour)
-async def create_tour(tour_data: TourCreate):
-    """Create a new tour (Admin only)"""
-    try:
-        tour = Tour(**tour_data.dict())
-        tour_dict = tour.dict()
-        tour_id = tour_dict['id']
-        db_firestore.collection('tours').document(tour_id).set(tour_dict)
-        return tour
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@api_router.get("/tours", response_model=List[Tour])
-async def get_tours(
-    active_only: bool = Query(True, description="Filter only active tours"),
-    tour_type: Optional[str] = Query(None, description="Filter by tour type"),
-    location: Optional[str] = Query(None, description="Filter by location")
-):
-    """Get all tours with optional filters"""
-    try:
-        query = db_firestore.collection('tours')
-        if active_only:
-            query = query.where('active', '==', True)
-        if tour_type:
-            query = query.where('tour_type', '==', tour_type)
-        if location:
-            query = query.where('location', '==', location)
-
-        docs = query.stream()
-        tours_list = []
-        for doc in docs:
-            tour_data = doc.to_dict()
-            tour_data['id'] = doc.id
-            tours_list.append(Tour(**tour_data))
-        return tours_list
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching tours: {str(e)}")
-
-@api_router.get("/tours/{tour_id}", response_model=Tour)
-async def get_tour(tour_id: str):
-    """Get a specific tour by ID"""
-    try:
-        doc = db_firestore.collection('tours').document(tour_id).get()
-        if not doc.exists:
-            raise HTTPException(status_code=404, detail="Tour not found")
-        tour_data = doc.to_dict()
-        tour_data['id'] = doc.id
-        return Tour(**tour_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.put("/tours/{tour_id}", response_model=Tour)
-async def update_tour(tour_id: str, tour_update: TourUpdate):
-    """Update a tour (Admin only)"""
-    try:
-        doc = db_firestore.collection('tours').document(tour_id).get()
-        if not doc.exists:
-            raise HTTPException(status_code=404, detail="Tour not found")
-        update_data = {k: v for k, v in tour_update.dict(exclude_unset=True).items() if v is not None}
-        update_data["updated_at"] = datetime.utcnow()
-        db_firestore.collection('tours').document(tour_id).update(update_data)
-        updated_doc = db_firestore.collection('tours').document(tour_id).get()
-        tour_data = updated_doc.to_dict()
-        tour_data['id'] = updated_doc.id
-        return Tour(**tour_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.delete("/tours/{tour_id}")
-async def delete_tour(tour_id: str):
-    """Delete a tour (Admin only)"""
-    try:
-        doc = db_firestore.collection('tours').document(tour_id).get()
-        if not doc.exists:
-            raise HTTPException(status_code=404, detail="Tour not found")
-        db_firestore.collection('tours').document(tour_id).delete()
-        return {"message": "Tour deleted successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ================================
 # BOOKING API ENDPOINTS
 # ================================
 @api_router.post("/bookings", response_model=Booking)
 async def create_booking(booking_data: BookingCreate):
     """Create a new booking"""
     try:
-        tour_doc = db_firestore.collection('tours').document(booking_data.tour_id).get()
+        tour_doc_ref = db_firestore.collection('tours').document(booking_data.tour_id)
+        tour_doc = tour_doc_ref.get()
         if not tour_doc.exists or not tour_doc.to_dict().get('active'):
             raise HTTPException(status_code=404, detail="Tour not found or inactive")
         tour = tour_doc.to_dict()
-        if booking_data.selected_date not in tour.get("availability_dates", []):
+        
+        # Simulação de disponibilidade se não houver
+        tour_availability = tour.get("availability_dates", [])
+        if not tour_availability:
+            tour_availability = [(datetime.now() + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(30)]
+
+        if booking_data.selected_date not in tour_availability:
             raise HTTPException(status_code=400, detail="Selected date is not available")
+            
         total_amount = tour["price"] * booking_data.participants
         booking = Booking(**booking_data.dict(), total_amount=total_amount)
         booking_dict = booking.dict()
@@ -891,7 +765,7 @@ async def update_tour_availability(
         updated_doc = db_firestore.collection('tours').document(tour_id).get()
         tour_data = updated_doc.to_dict()
         tour_data['id'] = updated_doc.id
-        return Tour(**tour_data)
+        return tour_data
     except Exception as e:
         logger.error(f"Error syncing calendar: {e}")
         raise HTTPException(status_code=500, detail=f"Calendar sync error: {str(e)}")
@@ -913,27 +787,22 @@ async def health_check():
     }
 
 # ================================
-# APP CONFIGURATION
+# APP CONFIGURATION FINAL
 # ================================
 
-# Include the router in the main app
+# ✅ ALTERAÇÃO: Incluir o router de TOURS do ficheiro corrigido.
+# Todas as chamadas para /api/tours serão agora geridas pelo 'tours_fixed.py'.
+app.include_router(tours_router.router, prefix="/api/tours", tags=["Tours"])
+
+# Inclui o router para os outros endpoints (bookings, payments, etc.) que permanecem neste ficheiro.
 app.include_router(api_router)
 
-# Initialize SEO routes DEPOIS de configurar tudo
+# Inicializa as rotas de SEO
 try:
     app = setup_seo_routes(app)
     print("SEO routes configuradas com sucesso")
 except Exception as e:
     print(f"Erro ao configurar SEO routes: {e}")
-
-# CORS Configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.get("/")
 async def read_root():

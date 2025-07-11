@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from '../utils/useTranslation';
 import { tourFiltersService } from '../services/tourFiltersService';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+import { BACKEND_URL } from '../config/appConfig';
 
 const ToursPage = () => {
   const { t, getCurrentLanguage } = useTranslation();

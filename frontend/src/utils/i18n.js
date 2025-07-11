@@ -7,6 +7,8 @@ const translations = {
     'tab_overview': 'Visão Geral',
     'tab_itinerary': 'Itinerário', 
     'tab_details': 'Detalhes',
+    'tab_included': 'Incluído',
+    'tab_map': 'Mapa',
 
     // Navigation & Header
     'nav_home': 'Início',
@@ -88,8 +90,6 @@ const translations = {
     'tour_select_date': 'Selecione uma data',
     'tour_person': 'pessoa',
     'tour_people': 'pessoas',
-    "nav_home": "Início",
-    "nav_tours": "Tours",
     "tour_details_highlights": "Destaques",
     "tour_details_full_description": "Descrição Completa",
     "tour_details_itinerary": "Itinerário",
@@ -100,6 +100,20 @@ const translations = {
     "tour_details_participants": "Participantes",
     "tour_details_book_now": "Reservar Agora",
     "tour_details_free_cancellation": "✓ Cancelamento gratuito",
+
+     // Tour Details Specific
+    'tour_details.instant_confirmation': 'Confirmação Instantânea',
+    'tour_details.mobile_ticket': 'Bilhete Móvel',
+    'tour_details.small_groups': 'Grupos Pequenos',
+    'tour_details.live_guide': 'Guia ao Vivo',
+    'tour_details.what_youll_do': 'O que vai fazer',
+    'tour_details.experience_highlights': 'Destaques da Experiência',
+    'tour_details.free_cancellation_title': 'Cancelamento Gratuito',
+    'tour_details.free_cancellation_description': 'Cancele até 24 horas antes sem custos',
+    'tour_details.guide_languages': 'Português, Inglês e Espanhol',
+    'tour_details.from': 'Preço total',
+    'tour_details.book_now_pay_later': 'Reserve agora e pague depois - Sem taxas de reserva',
+
 
     // Itinerário
     'itinerary_tour_schedule': 'Itinerário do Tour',
@@ -214,15 +228,15 @@ const translations = {
     'message.success': 'Sucesso!',
     'message.error': 'Erro ao carregar os dados. Por favor, tente novamente.',
     'message.loading': 'A carregar...',
-    'message.no_tours': 'Não há tours disponíveis.',
-    'message.book_success': 'Reserva realizada com sucesso!',
-  },
+    },
   
   en: {
     // Tabs e Navegação
     'tab_overview': 'Overview',
     'tab_itinerary': 'Itinerary',
     'tab_details': 'Details',
+    'tab_included': 'Included',
+    'tab_map': 'Map',
 
     // Navigation & Header
     'nav_home': 'Home',
@@ -275,12 +289,12 @@ const translations = {
     'tour_type_custom': 'Custom',
     
     // Tour Details
-    'tour_duration': 'Duration',
+    'tour_duration': 'Tour Duration',
     'tour_price': 'Price',
     'tour_participants': 'Participants',
     'tour_location': 'Location',
-    'tour_includes': 'Included',
-    'tour_excludes': 'Not included',
+    'tour_includes': 'What\'s included',
+    'tour_excludes': 'What\'s not included',
     'tour_route': 'Route',
     'tour_availability': 'Availability',
     'tour_book_now': 'Book Now',
@@ -294,28 +308,34 @@ const translations = {
     'tour_no_dates_available': 'No available dates at the moment',
     'tour_instant_confirmation': 'Instant confirmation',
     'tour_free_cancellation': 'Free cancellation up to 24h before',
-    'tour_professional_guide': 'Professional guide',
+    'tour_professional_guide': 'Professional Guide',
     'tour_reserve_now': 'Book Now',
     'tour_select_date': 'Select a date',
     'tour_person': 'person',
     'tour_people': 'people',
+    'tour_mobile_ticket_accepted': 'Mobile ticket accepted',
+    'tour_max_participants': 'Max. 4 people',
+    'tour_locations_title': 'Tour locations:',
     'tour_type_label': 'Type:',
     'tour_duration_label': 'Duration:',
     'tour_max_group': 'Max group:',
     'tour_deposit_info': 'Deposit (30%):',
     'tour_remaining_payment': 'Remaining on tour day:',
-    "nav_home": "Home",
-    "nav_tours": "Tours",
-    "tour_details_highlights": "Highlights",
-    "tour_details_full_description": "Full Description",
-    "tour_details_itinerary": "Itinerary",
-    "tour_details_includes": "What's Included",
-    "tour_details_excludes": "Not Included",
-    "tour_details_per_person": "per person",
-    "tour_details_select_date": "Select date",
-    "tour_details_participants": "Participants",
-    "tour_details_book_now": "Book Now",
-    "tour_details_free_cancellation": "✓ Free cancellation",
+
+     // Tour Details Specific
+    'tour_details.instant_confirmation': 'Instant Confirmation',
+    'tour_details.mobile_ticket': 'Mobile Ticket',
+    'tour_details.small_groups': 'Small Groups',
+    'tour_details.live_guide': 'Live Guide',
+    'tour_details.what_youll_do': 'What you\'ll do',
+    'tour_details.experience_highlights': 'Experience Highlights',
+    'tour_details.free_cancellation_title': 'Free Cancellation',
+    'tour_details.free_cancellation_description': 'Cancel up to 24 hours in advance at no cost',
+    'tour_details.guide_languages': 'Portuguese, English and Spanish',
+    'tour_details.from': 'Total price',
+    'tour_details.book_now_pay_later': 'Book now and pay later - No booking fees',
+
+
 
     // Itinerário
     'itinerary_tour_schedule': 'Tour Schedule',
@@ -379,6 +399,7 @@ const translations = {
     'common_person': 'person',
     'common_people': 'people',
     'common_up_to': 'Up to',
+    'try_again': 'Try Again',
     
     // Booking Form
     'booking_title': 'Book Tour',
@@ -439,6 +460,9 @@ const translations = {
     'tab_overview': 'Resumen',
     'tab_itinerary': 'Itinerario',
     'tab_details': 'Detalles',
+    'tab_included': 'Incluido',
+    'tab_map': 'Mapa',
+
 
     // Navigation & Header
     'nav_home': 'Inicio',
@@ -491,12 +515,12 @@ const translations = {
     'tour_type_custom': 'Personalizado',
     
     // Tour Details
-    'tour_duration': 'Duración',
+    'tour_duration': 'Duración del Tour',
     'tour_price': 'Precio',
     'tour_participants': 'Participantes',
     'tour_location': 'Ubicación',
-    'tour_includes': 'Incluido',
-    'tour_excludes': 'No incluido',
+    'tour_includes': 'Qué está incluido',
+    'tour_excludes': 'Qué no está incluido',
     'tour_route': 'Ruta',
     'tour_availability': 'Disponibilidad',
     'tour_book_now': 'Reservar Ahora',
@@ -508,11 +532,33 @@ const translations = {
     'tour_not_included': 'No Incluido',
     'tour_reserve_now': 'Reservar Ahora', 
     'tour_no_dates_available': 'No hay fechas disponibles en este momento',
+    'tour_instant_confirmation': 'Confirmación instantánea',
+    'tour_free_cancellation': 'Cancelación gratuita hasta 24h antes',
+    'tour_professional_guide': 'Guía Profesional',
+    'tour_select_date': 'Selecciona una fecha',
+    'tour_person': 'persona',
+    'tour_people': 'personas',
+    'tour_mobile_ticket_accepted': 'Billete móvil aceptado',
+    'tour_max_participants': 'Máx. 4 personas',
+    'tour_locations_title': 'Ubicaciones del tour:',
     'tour_type_label': 'Tipo:',
     'tour_duration_label': 'Duración:',
     'tour_max_group': 'Grupo máximo:',
     'tour_deposit_info': 'Depósito (30%):',
     'tour_remaining_payment': 'Restante el día del tour:',
+
+     // Tour Details Specific
+    'tour_details.instant_confirmation': 'Confirmación Instantánea',
+    'tour_details.mobile_ticket': 'Billete Móvil',
+    'tour_details.small_groups': 'Grupos Pequeños',
+    'tour_details.live_guide': 'Guía en Vivo',
+    'tour_details.what_youll_do': 'Lo que harás',
+    'tour_details.experience_highlights': 'Aspectos Destacados de la Experiencia',
+    'tour_details.free_cancellation_title': 'Cancelación Gratuita',
+    'tour_details.free_cancellation_description': 'Cancela hasta 24 horas antes sin costo',
+    'tour_details.guide_languages': 'Portugués, Inglés y Español',
+    'tour_details.from': 'Precio total',
+    'tour_details.book_now_pay_later': 'Reserva ahora y paga después - Sin tasas de reserva',
 
     // Itinerário
     'itinerary_tour_schedule': 'Horario del Tour',
@@ -576,6 +622,7 @@ const translations = {
     'common_person': 'persona',
     'common_people': 'personas',
     'common_up_to': 'Hasta',
+    'try_again': 'Intentar de Nuevo',
 
     // Booking Form
     'booking_title': 'Reservar Tour',
