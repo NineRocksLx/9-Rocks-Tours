@@ -35,6 +35,7 @@ def debug_map_locations(data, context=""):
         print(f"  - ❌ Campo map_locations não encontrado!")
 
 @router.get("/")
+@router.get("")
 async def get_all_tours(
     active_only: bool = Query(False, description="Filtrar apenas tours ativos"),
     tour_type: Optional[str] = Query(None, description="Filtrar por tipo de tour"),

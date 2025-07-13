@@ -1,26 +1,14 @@
+// Em frontend/src/pages/HomePage.js
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../utils/useTranslation';
 import SEOHead from '../components/SEOHead';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
+// As importações diretas do Firebase foram removidas
 import axios from 'axios';
 import { BACKEND_URL } from '../config/appConfig';
 
-// Firebase configuration (example - replace with actual config)
-const firebaseConfig = {
-  apiKey: "AIzaSyD80GYkjPKfIbVW747zb3s7jXSuVfBJTe4",
-  authDomain: "tours-81516-acfbc.firebaseapp.com",
-  projectId: "tours-81516-acfbc",
-  storageBucket: "tours-81516-acfbc.firebasestorage.app",
-  messagingSenderId: "742946187892",
-  appId: "1:742946187892:web:2b0d2bcb974d4564327f21",
-  measurementId: "G-36FC6SS4WD"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// A configuração e inicialização do Firebase foram removidas daqui
 
 const HomePage = () => {
   const { t, getCurrentLanguage } = useTranslation();
@@ -91,63 +79,51 @@ const HomePage = () => {
   ]);
   const [selectedType, setSelectedType] = useState('all');
 
-  // Load hero images from Firestore
+  // ✅ SUBSTITUÍDA a função loadHeroImages
   const loadHeroImages = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'heroImages'));
-      const images = querySnapshot.docs
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          active: doc.data().active !== false
-        }))
-        .filter(image => image.active)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      if (images.length > 0) {
-        setHeroImages(images);
+      const response = await axios.get(`${BACKEND_URL}/api/config/hero-images`);
+      if (response.data && response.data.length > 0) {
+        setHeroImages(response.data);
       } else {
-        setHeroImages(fallbackHeroImages);
+        setHeroImages(fallbackHeroImages); // Mantém o fallback
       }
-      return { success: true, count: images.length };
+      return { success: true };
     } catch (error) {
-      setHeroImages(fallbackHeroImages);
+      console.error('Erro ao carregar hero images do backend:', error);
+      setHeroImages(fallbackHeroImages); // Mantém o fallback
       return { success: false, error };
     }
   };
 
-  // Load tour filters from Firestore
+  // ✅ SUBSTITUÍDA a função loadTourFilters
   const loadTourFilters = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'tourFilters'));
-      const filters = querySnapshot.docs
-        .map(doc => ({
-          key: doc.id,
-          ...doc.data(),
-          active: doc.data().active !== false
-        }))
-        .filter(filter => filter.active)
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      if (filters.length > 0) {
-        setTourFilters(filters);
+      const response = await axios.get(`${BACKEND_URL}/api/config/tour-filters`);
+      if (response.data && response.data.length > 0) {
+        // Garante que o filtro "Todos" está presente
+        const hasAllFilter = response.data.some(f => f.key === 'all');
+        const allFilter = { key: 'all', labels: { pt: 'Todos os Tours', en: 'All Tours', es: 'Todos los Tours' }, order: -1 };
+        const finalFilters = hasAllFilter ? response.data : [allFilter, ...response.data];
+        finalFilters.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setTourFilters(finalFilters);
       }
-      return { success: true, count: filters.length };
+      return { success: true };
     } catch (error) {
+      console.error('Erro ao carregar filtros de tours do backend:', error);
+      // O estado inicial já serve como fallback
       return { success: false, error };
     }
   };
 
-  // Load tours from backend
+  // A função loadBackendTours já está correta, não precisa de ser alterada.
   const loadBackendTours = async () => {
     try {
-      // Usar a URL correta e o endpoint para tours em destaque/ativos
       const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=true&featured=true`);
       setTours(response.data);
       return { success: true, count: response.data.length };
     } catch (error) {
       console.error('Error fetching featured tours for HomePage:', error);
-      // Em caso de erro, não definimos tours para que a secção mostre uma mensagem ou fique vazia
       setTours([]);
       return { success: false, error };
     }

@@ -24,10 +24,17 @@ backend/
         tours.py
         tours_fixed.py
     server.py
+    server.py.backup.original
     services/
+        __init__.py
+        paypal_service.py
+        stripe_service.py
     start_backend.py
     test_firestore.py
+    test_map_locations_firestore.py
+    test_paypal.py
     test_permissions.py
+    test_stripe_setup_fixed.py
     utils/
         google_calendar.py
 backend_test.py
@@ -48,13 +55,17 @@ frontend/
         App.js
         components/
             AdminTourManager.js
+            AdminTourManager_old.js
+            BookingCalendarPicker.js
             BookingCheckoutPage.jsx
             BookingForm.js
             CalendarDatePicker.js
+            EmailTestComponent.js
             Header.js
             HeroImagesManager.js
             LanguageSelector.js
             MapLocationPicker.js
+            MapLocationsDiagnostic.js
             PaymentComponent.js
             SEO/
                 LanguageSwitcher.js
@@ -70,6 +81,8 @@ frontend/
             hooks/
                 useSEO.js
         config/
+            appConfig.js
+            emailConfig.js
             firebase.js
         hooks/
             useSEO.js
@@ -77,6 +90,8 @@ frontend/
         index.js
         pages/
             AdminPanel.js
+            AdminPanel_metade.js
+            AdminPanel_old.js
             HomePage.js
             TourDetails.js
             ToursPage.js

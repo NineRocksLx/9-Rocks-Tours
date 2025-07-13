@@ -1,14 +1,17 @@
-// frontend/src/services/tourFiltersService.js
+// frontend/src/services/tourFiltersService.js - VERSÃO CORRIGIDA
+
+// NOVAS IMPORTAÇÕES PARA FAZER PEDIDOS À API
+import axios from 'axios';
+import { BACKEND_URL } from '../config/appConfig';
+
+// Importações do Firebase mantidas para as funções de administração
 import { 
   collection, 
   getDocs, 
   addDoc, 
   updateDoc, 
   deleteDoc, 
-  doc, 
-  query, 
-  where, 
-  orderBy,
+  doc,
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -16,11 +19,12 @@ import { db } from '../config/firebase';
 class TourFiltersService {
   constructor() {
     this.collectionName = 'tourFilters';
+    // A cache será menos usada para o público, mas mantida para a estrutura
     this.cache = new Map();
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutos
   }
 
-  // Cache inteligente
+  // Funções de cache (mantidas para consistência)
   _getCacheKey(method, params = '') {
     return `${method}_${params}`;
   }
@@ -45,7 +49,8 @@ class TourFiltersService {
     return null;
   }
 
-  // Filtros padrão (fallback)
+  // ✅ FUNÇÃO DE FILTROS PADRÃO (MANTIDA)
+  // Usada como fallback caso a API falhe.
   getDefaultFilters() {
     return [
       {
@@ -99,54 +104,36 @@ class TourFiltersService {
     ];
   }
 
-  // Buscar filtros ativos (para homepage)
+  // ✅ FUNÇÃO getActiveFilters TOTALMENTE SUBSTITUÍDA
+  // Agora usa o backend em vez de aceder diretamente ao Firestore.
   async getActiveFilters() {
-    const cacheKey = this._getCacheKey('getActiveFilters');
-    const cached = this._getCache(cacheKey);
-    if (cached) {
-      console.log('Retornando filtros do cache');
-      return cached;
-    }
-
+    console.log("Buscando filtros do Backend...");
     try {
-      console.log('Buscando filtros do Firestore...');
-      
-      const q = query(
-        collection(db, this.collectionName),
-        where('active', '==', true)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const filters = [];
-      
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        filters.push({
-          id: doc.id,
-          ...data
-        });
-      });
+      // A chamada agora é para a nossa API segura
+      const response = await axios.get(`${BACKEND_URL}/api/config/tour-filters`);
 
-      // Se não há filtros no Firestore, usar padrão
-      if (filters.length === 0) {
-        console.log('Nenhum filtro encontrado, usando padrão');
-        const defaultFilters = this.getDefaultFilters();
-        this._setCache(cacheKey, defaultFilters);
-        return defaultFilters;
-      }
-
-      // Ordenar por ordem
-      filters.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      console.log(`${filters.length} filtros encontrados`);
-      this._setCache(cacheKey, filters);
+      // Adiciona o filtro "Todos os Tours" no início, se não vier da API
+      const hasAllFilter = response.data.some(f => f.key === 'all');
+      const allFilter = this.getDefaultFilters().find(f => f.key === 'all');
       
-      return filters;
+      const finalFilters = hasAllFilter ? response.data : [allFilter, ...response.data];
+
+      // Ordenar novamente para garantir que "Todos" fica em primeiro
+      finalFilters.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      return finalFilters;
+
     } catch (error) {
-      console.error('Erro ao buscar filtros, usando padrão:', error);
+      console.error('Erro ao buscar filtros do backend, usando padrão:', error);
+      // O fallback para os filtros padrão é mantido
       return this.getDefaultFilters();
     }
   }
+
+  // ===================================================================
+  // FUNÇÕES DE ADMINISTRAÇÃO (MANTIDAS COMO ESTAVAM)
+  // Estas funções continuarão a ser usadas pelo painel de administração.
+  // ===================================================================
 
   // Buscar todos os filtros (para admin)
   async getAllFilters() {
@@ -162,17 +149,15 @@ class TourFiltersService {
         });
       });
 
-      // Se não há filtros, criar padrão
       if (filters.length === 0) {
         console.log('Criando filtros padrão...');
         await this.createDefaultFilters();
         return this.getDefaultFilters();
       }
 
-      // Ordenar por ordem
       filters.sort((a, b) => (a.order || 0) - (b.order || 0));
-      
       return filters;
+
     } catch (error) {
       console.error('Erro ao buscar todos os filtros:', error);
       return this.getDefaultFilters();
@@ -185,12 +170,14 @@ class TourFiltersService {
       const defaultFilters = this.getDefaultFilters();
       
       for (const filter of defaultFilters) {
-        const { id, ...filterData } = filter;
-        await addDoc(collection(db, this.collectionName), {
-          ...filterData,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
+        if (filter.isDefault) { // Só cria os filtros padrão
+          const { id, ...filterData } = filter;
+          await addDoc(collection(db, this.collectionName), {
+            ...filterData,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+        }
       }
       
       console.log('Filtros padrão criados no Firestore');
@@ -246,19 +233,19 @@ class TourFiltersService {
     }
   }
 
-  // ADICIONA esta função ao final da classe TourFiltersService
-async testFirebaseConnection() {
-  try {
-    const querySnapshot = await getDocs(collection(db, this.collectionName));
-    return { success: true, documentsFound: querySnapshot.size };
-  } catch (error) {
-    return { 
-      success: false, 
-      error: error.message,
-      code: error.code || 'unknown'
-    };
+  // Testar conexão
+  async testFirebaseConnection() {
+    try {
+      const querySnapshot = await getDocs(collection(db, this.collectionName));
+      return { success: true, documentsFound: querySnapshot.size };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.message,
+        code: error.code || 'unknown'
+      };
+    }
   }
- }
 
   // Deletar filtro
   async deleteFilter(filterId) {

@@ -9,22 +9,6 @@ import { BACKEND_URL } from '../config/appConfig';
 
 const Maps_API_KEY = process.env.REACT_APP_Maps_API_KEY;
 
-// 🔧 COMPONENTE DE DEBUG (REMOVER EM PRODUÇÃO)
-const DebugInfo = ({ currentLang, id, bookingUrl, tourData }) => {
-  if (process.env.NODE_ENV !== 'development') return null;
-  
-  return (
-    <div className="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg text-xs max-w-sm z-50">
-      <strong>🐛 DEBUG INFO:</strong>
-      <div>Current Lang: {currentLang || 'undefined'}</div>
-      <div>Tour ID: {id || 'undefined'}</div>
-      <div>Booking URL: {bookingUrl || 'undefined'}</div>
-      <div>Tour Data: {tourData ? '✅ Loaded' : '❌ No data'}</div>
-      <div>Translation Function: {typeof getLocalizedText === 'function' ? '✅' : '❌'}</div>
-    </div>
-  );
-};
-
 const TourMap = ({ locationsStr }) => {
     const { isLoaded } = useJsApiLoader({ 
         id: 'google-map-script', 
@@ -163,7 +147,6 @@ const TourDetails = () => {
     const { id } = useParams();
     const { t, getCurrentLanguage } = useTranslation();
     
-    // 🔧 MELHORIA: Verificação mais robusta do idioma
     const [currentLang, setCurrentLang] = useState('pt');
     const [tourData, setTourData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -171,25 +154,20 @@ const TourDetails = () => {
     const [processedItinerary, setProcessedItinerary] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
 
-    // 🔧 ATUALIZAÇÃO ROBUSTA DO IDIOMA
     useEffect(() => {
         try {
             const lang = getCurrentLanguage();
-            console.log('🌍 Current language detected:', lang); // Debug
             setCurrentLang(lang || 'pt');
         } catch (error) {
-            console.error('❌ Error getting language:', error);
-            setCurrentLang('pt'); // Fallback
+            console.error('Error getting language:', error);
+            setCurrentLang('pt');
         }
     }, [getCurrentLanguage]);
 
-    // 🔧 MELHORIA: Função robusta para obter texto localizado
     const getLocalizedText = (key) => {
         try {
             const translatedText = t(key);
-            // Se a tradução retornar a própria chave, significa que não encontrou
             if (translatedText === key) {
-                // Fallbacks locais para chaves essenciais
                 const fallbacks = {
                     'tour_book_now': { pt: 'Reservar Agora', en: 'Book Now', es: 'Reservar Ahora' },
                     'tour_details.from': { pt: 'Preço total', en: 'Total price', es: 'Precio total' },
@@ -205,8 +183,8 @@ const TourDetails = () => {
             }
             return translatedText;
         } catch (error) {
-            console.error(`❌ Translation error for key "${key}":`, error);
-            return key; // Retorna a chave se houver erro
+            console.error(`Translation error for key "${key}":`, error);
+            return key;
         }
     };
 
@@ -217,7 +195,7 @@ const TourDetails = () => {
                 currency: 'EUR'
             }).format(price);
         } catch (error) {
-            console.error('❌ Error formatting price:', error);
+            console.error('Error formatting price:', error);
             return `€${price}`;
         }
     };
@@ -245,7 +223,6 @@ const TourDetails = () => {
         return { [currentLang]: parsedStops };
     };
 
-    // 🔧 FETCH DE DADOS COM MELHOR TRATAMENTO DE ERROS
     useEffect(() => {
         const fetchTourData = async () => {
             if (!id) { 
@@ -254,13 +231,11 @@ const TourDetails = () => {
                 return; 
             }
             
-            console.log('🔄 Fetching tour data for ID:', id); // Debug
             setLoading(true);
             setError(null);
             
             try {
                 const response = await axios.get(`${BACKEND_URL}/api/tours/${id}`);
-                console.log('✅ Tour data received:', response.data); // Debug
                 
                 if (!response.data) { 
                     throw new Error(getLocalizedText('message.no_tours')); 
@@ -272,7 +247,6 @@ const TourDetails = () => {
                     setProcessedItinerary(parseItineraryFromText(response.data.route_description));
                 }
             } catch (err) {
-                console.error('❌ Error fetching tour:', err); // Debug
                 setError(err.message || getLocalizedText('message.error'));
             } finally {
                 setLoading(false);
@@ -288,7 +262,6 @@ const TourDetails = () => {
         }
     }, [currentLang, tourData]);
 
-    // 🔧 GERAÇÃO SEGURA DO URL DE BOOKING
     const bookingUrl = React.useMemo(() => {
         try {
             if (!id) return '#';
@@ -296,20 +269,15 @@ const TourDetails = () => {
             const langPrefix = currentLang !== 'pt' ? `${currentLang}/` : '';
             const url = `/${langPrefix}reservar?tour=${id}`;
             
-            console.log('🔗 Generated booking URL:', url); // Debug
             return url;
         } catch (error) {
-            console.error('❌ Error generating booking URL:', error);
-            return '#'; // URL seguro como fallback
+            console.error('Error generating booking URL:', error);
+            return '#';
         }
     }, [currentLang, id]);
 
-    // 🎨 COMPONENTE DE BOTÃO MELHORADO
     const BookingButton = () => {
         const handleClick = (e) => {
-            console.log('🖱️ Booking button clicked!'); // Debug
-            console.log('🔗 Navigating to:', bookingUrl); // Debug
-            
             if (bookingUrl === '#') {
                 e.preventDefault();
                 alert('Erro ao gerar URL de reserva. Tente novamente.');
@@ -388,14 +356,6 @@ const TourDetails = () => {
                 <meta property="og:description" content={shortDescription} />
                 <meta property="og:image" content={mainImage} />
             </Helmet>
-            
-            {/* 🔧 COMPONENTE DE DEBUG */}
-            <DebugInfo 
-                currentLang={currentLang}
-                id={id}
-                bookingUrl={bookingUrl}
-                tourData={tourData}
-            />
             
             <div className="bg-white">
                 <Breadcrumbs tourName={tourName} currentLang={currentLang} />

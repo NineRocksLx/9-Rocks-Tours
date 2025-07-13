@@ -1,7 +1,8 @@
 import os
 from fastapi import FastAPI, Response, HTTPException, Query
+from fastapi.responses import PlainTextResponse
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 import xml.etree.ElementTree as ET
 import firebase_admin
@@ -17,8 +18,6 @@ except ValueError:
     })
     print("Firebase initialized in seo_routes.py")
 db_firestore = firestore.client()
-
-
 
 # 🎯 SEO Configuration
 class SEOConfig:
@@ -40,7 +39,7 @@ class SEOConfig:
 # 📊 Pydantic Models for SEO Data
 class TourData(BaseModel):
     slug: str
-    name: str
+    name: Dict[str, str]  # ✅ CORRIGIDO: agora é Dict[str, str] em vez de str
     description: Optional[str] = None
     price: Optional[float] = None
     rating: Optional[float] = None
@@ -98,7 +97,7 @@ async def get_all_tours() -> List[TourData]:
             seen_ids.add(doc_id)
             tour_data = {
                 "slug": tour_doc.get("id", "tour-" + doc_id),
-                "name": tour_doc.get("name", {}).get("pt", "Tour sem nome"),
+                "name": tour_doc.get("name", {"pt": "Tour sem nome", "en": "Unnamed Tour"}),  # ✅ CORRIGIDO: garantir que é objeto
                 "description": tour_doc.get("description", {}).get("pt", ""),
                 "price": tour_doc.get("price", 0.0),
                 "rating": tour_doc.get("rating", 4.5),
@@ -114,7 +113,7 @@ async def get_all_tours() -> List[TourData]:
         return [
             TourData(
                 slug="cascatas-secretas-sintra",
-                name="Cascatas Secretas de Sintra",
+                name={"pt": "Cascatas Secretas de Sintra", "en": "Secret Waterfalls of Sintra"},  # ✅ CORRIGIDO: agora é objeto
                 description="Descubra cascatas escondidas nas montanhas de Sintra",
                 price=65.0,
                 rating=4.9,
@@ -124,7 +123,7 @@ async def get_all_tours() -> List[TourData]:
             ),
             TourData(
                 slug="aventura-costa-vicentina",
-                name="Aventura na Costa Vicentina",
+                name={"pt": "Aventura na Costa Vicentina", "en": "Vicentine Coast Adventure"},  # ✅ CORRIGIDO: agora é objeto
                 description="Explore a costa selvagem do sudoeste português",
                 price=85.0,
                 rating=4.8,
@@ -144,7 +143,7 @@ async def get_featured_tours(language: str = "pt") -> List[TourData]:
             tour_doc = doc.to_dict()
             tour_data = {
                 "slug": tour_doc.get("id", "tour-" + str(doc.id)),
-                "name": tour_doc.get("name", {}).get(language, "Tour em destaque"),
+                "name": tour_doc.get("name", {"pt": "Tour em destaque", "en": "Featured Tour"}),  # ✅ CORRIGIDO: garantir que é objeto
                 "description": tour_doc.get("description", {}).get(language, ""),
                 "price": tour_doc.get("price", 0.0),
                 "rating": tour_doc.get("rating", 4.5),
@@ -168,7 +167,7 @@ async def get_tour_by_id(tour_id: str) -> Optional[TourData]:
         tour_doc = doc.to_dict()
         tour_data = {
             "slug": tour_doc.get("id", tour_id),
-            "name": tour_doc.get("name", {}).get("pt", "Tour"),
+            "name": tour_doc.get("name", {"pt": "Tour", "en": "Tour"}),  # ✅ CORRIGIDO: garantir que é objeto
             "description": tour_doc.get("description", {}).get("pt", ""),
             "price": tour_doc.get("price", 0.0),
             "rating": tour_doc.get("rating", 4.5),
@@ -386,7 +385,7 @@ Crawl-delay: 0"""
                 tour_schema = {
                     "@context": "https://schema.org",
                     "@type": "TouristTrip",
-                    "name": tour_data.name,
+                    "name": tour_data.name.get("pt", "Tour"),  # ✅ CORRIGIDO: acesso ao dicionário
                     "description": tour_data.description,
                     "image": tour_data.images,
                     "offers": {

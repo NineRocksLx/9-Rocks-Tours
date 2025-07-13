@@ -1,9 +1,10 @@
-// frontend/src/components/BookingForm.js - VERSÃO FINAL CORRIGIDA
+// frontend/src/components/BookingForm.js - Versão com Emails Personalizados
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import { BACKEND_URL } from '../config/appConfig';
+import { getEmailByLanguage, generateEmailConfig, trackEmailEvent } from '../config/emailConfig';
 import BookingCalendarPicker from './BookingCalendarPicker';
 import PaymentComponent from './PaymentComponent';
 
@@ -82,33 +83,25 @@ const BookingForm = () => {
   const [searchParams] = useSearchParams();
   const tourSlug = searchParams.get('tour');
   
-  // 🔧 DEBUG: Verificar configuração
-  console.log('🔧 BookingForm Debug:', {
-    BACKEND_URL,
-    tourSlug,
-    currentLang,
-    env: process.env.NODE_ENV
-  });
-  
   const [tourData, setTourData] = useState(null);
-  const [availableDates, setAvailableDates] = useState([]); // 🔧 NOVO: Datas disponíveis
+  const [availableDates, setAvailableDates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [tourLoading, setTourLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
-  const [bookingId, setBookingId] = useState(null); // 🎯 NOVO: Para o fluxo de pagamento
+  const [bookingId, setBookingId] = useState(null);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    numberOfPeople: 2, // 🔧 PADRÃO: 2 pessoas
+    numberOfPeople: 2,
     date: '',
     specialRequests: '',
     terms: false
   });
 
-  // Conteúdo traduzido - GetYourGuide Inspired
+  // Conteúdo traduzido
   const content = {
     pt: {
       title: "Reserve Sua Aventura",
@@ -128,7 +121,7 @@ const BookingForm = () => {
       specialRequestsPlaceholder: "Alguma necessidade especial, restrições alimentares, etc.",
       termsText: "Aceito os",
       termsLink: "termos e condições",
-      submit: "IR PARA PAGAMENTO (Erro 422 ✅ Corrigido)",
+      submit: "IR PARA PAGAMENTO",
       submitSecondary: "Cancelamento gratuito até 24 horas antes",
       summary: "Resumo da Reserva",
       tourPrice: "Preço do Tour",
@@ -168,7 +161,7 @@ const BookingForm = () => {
       specialRequestsPlaceholder: "Any special needs, dietary restrictions, etc.",
       termsText: "I accept the",
       termsLink: "terms and conditions",
-      submit: "GO TO PAYMENT (Error 422 ✅ Fixed)",
+      submit: "GO TO PAYMENT",
       submitSecondary: "Free cancellation up to 24 hours before",
       summary: "Booking Summary",
       tourPrice: "Tour Price",
@@ -208,7 +201,7 @@ const BookingForm = () => {
       specialRequestsPlaceholder: "Alguna necesidad especial, restricciones alimentarias, etc.",
       termsText: "Acepto los",
       termsLink: "términos y condiciones", 
-      submit: "IR AL PAGO (Error 422 ✅ Corregido)",
+      submit: "IR AL PAGO",
       submitSecondary: "Cancelación gratuita hasta 24 horas antes",
       summary: "Resumen de la Reserva",
       tourPrice: "Precio del Tour",
@@ -232,7 +225,7 @@ const BookingForm = () => {
     }
   };
 
-  // 🔧 FETCH DE DADOS DO TOUR E DATAS DISPONÍVEIS
+  // Fetch de dados do tour e datas disponíveis
   useEffect(() => {
     const fetchTourData = async () => {
       if (!tourSlug) {
@@ -243,29 +236,21 @@ const BookingForm = () => {
       setTourLoading(true);
       
       try {
-        // Buscar dados do tour
         const tourResponse = await axios.get(`${BACKEND_URL}/api/tours/${tourSlug}`);
-        console.log('✅ Tour data received:', tourResponse.data);
         setTourData(tourResponse.data);
         
-        // 🔧 BUSCAR DATAS DISPONÍVEIS
-        // Se o tour tiver datas definidas no campo available_dates, usar essas
         if (tourResponse.data.available_dates && tourResponse.data.available_dates.length > 0) {
           const dates = tourResponse.data.available_dates.map(dateStr => {
-            // Assumindo que as datas estão no formato YYYY-MM-DD
-            return new Date(dateStr + 'T00:00:00'); // Evitar problemas de timezone
-          }).filter(date => date >= new Date()); // Apenas datas futuras
+            return new Date(dateStr + 'T00:00:00');
+          }).filter(date => date >= new Date());
           
           setAvailableDates(dates);
-          console.log('✅ Available dates from tour data:', dates);
         } else {
-          // Se não tiver datas específicas, permitir qualquer data futura
-          console.log('ℹ️ No specific dates found, allowing future dates');
           setAvailableDates([]);
         }
         
       } catch (error) {
-        console.error('❌ Error fetching tour:', error);
+        console.error('Error fetching tour:', error);
         setTourData(null);
         setAvailableDates([]);
       } finally {
@@ -276,20 +261,20 @@ const BookingForm = () => {
     fetchTourData();
   }, [tourSlug]);
 
-  // 🔧 CÁLCULOS CORRIGIDOS
+  // Cálculos
   const getTourPrice = () => {
     return tourData?.price || 0;
   };
 
   const getDepositAmount = () => {
-    return Math.round(getTourPrice() * 0.3); // 30% do preço total
+    return Math.round(getTourPrice() * 0.3);
   };
 
   const getRemainingAmount = () => {
-    return getTourPrice() - getDepositAmount(); // 70% restante
+    return getTourPrice() - getDepositAmount();
   };
 
-  // 🔧 FORMATAÇÃO DE PREÇOS
+  // Formatação de preços
   const formatPrice = (price) => {
     return new Intl.NumberFormat('pt-PT', {
       style: 'currency',
@@ -297,29 +282,22 @@ const BookingForm = () => {
     }).format(price);
   };
 
-  // 🔧 FORMATAÇÃO DE DATAS PARA INPUT
-  const formatDateForInput = (date) => {
-    return date.toISOString().split('T')[0];
-  };
-
-  // 🔧 VERIFICAR SE UMA DATA ESTÁ DISPONÍVEL
+  // Verificar se uma data está disponível
   const isDateAvailable = (dateString) => {
     if (availableDates.length === 0) {
-      // Se não há datas específicas, permitir qualquer data futura
       const inputDate = new Date(dateString + 'T00:00:00');
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       return inputDate >= today;
     }
     
-    // Verificar se a data está na lista de datas disponíveis
     const inputDate = new Date(dateString + 'T00:00:00');
     return availableDates.some(availableDate => 
       availableDate.getTime() === inputDate.getTime()
     );
   };
 
-  // 🔧 VALIDAÇÃO EM TEMPO REAL - Inspirada no GetYourGuide
+  // Validação
   const validateForm = () => {
     const newErrors = {};
     
@@ -340,7 +318,7 @@ const BookingForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 🎯 VERIFICAR SE O FORMULÁRIO ESTÁ COMPLETO - GetYourGuide Style
+  // Verificar se o formulário está completo
   const isFormComplete = () => {
     return (
       formData.firstName.trim() &&
@@ -351,11 +329,10 @@ const BookingForm = () => {
       formData.date &&
       isDateAvailable(formData.date) &&
       formData.terms
-      // 📝 Nota: specialRequests é opcional conforme solicitado
     );
   };
 
-  // 🎯 SUBMETER FORMULÁRIO - GetYourGuide 2-Step Flow (COM DEBUGGING DETALHADO)
+  // Submeter formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -364,117 +341,72 @@ const BookingForm = () => {
     setLoading(true);
     
     try {
-      // 🔧 VERIFICAÇÕES PRÉ-ENVIO
       if (!tourData || !tourData.id) {
-        alert('❌ ERRO: Dados do tour não carregados.\n\nTour ID: ' + (tourData?.id || 'undefined') + '\n\nTente recarregar a página.');
-        return;
+        throw new Error('Dados do tour não carregados');
       }
 
       if (!tourSlug) {
-        alert('❌ ERRO: Slug do tour não definido.\n\nVerifique se está acessando via URL correta (ex: /booking?tour=tour-slug)');
-        return;
+        throw new Error('Slug do tour não definido');
       }
 
-      // 🔧 ESTRUTURA BÁSICA CORRIGIDA - Baseada no erro 422
-      const basicBookingData = {
+      // 📧 CONFIGURAÇÃO DE EMAIL PERSONALIZADA
+      const bookingEmail = getEmailByLanguage('booking', currentLang);
+      const emailConfig = generateEmailConfig('booking_confirmation', currentLang, {
+        to: formData.email.trim(),
+        subject: `${content[currentLang].successTitle} - ${tourData.name?.[currentLang] || tourData.name?.pt || tourData.name}`
+      });
+
+      const bookingData = {
         customer_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
         customer_email: formData.email.trim(),
         customer_phone: formData.phone.trim(),
         selected_date: formData.date,
         participants: parseInt(formData.numberOfPeople),
-        tour_id: tourSlug, // 🔧 CORRIGIDO: Usar tourSlug (string) em vez de tourData.id (number)
+        tour_id: tourSlug,
         special_requests: (formData.specialRequests || "").trim(),
         total_amount: parseFloat(getTourPrice().toFixed(2)),
         deposit_amount: parseFloat(getDepositAmount().toFixed(2)),
         status: "pending",
         language: currentLang,
-        payment_method: "pending" // 🔧 CORRIGIDO: Campo obrigatório adicionado
-      };
-
-      // 🔧 VERIFICAR SE DADOS BÁSICOS ESTÃO VÁLIDOS
-      const requiredFields = ['customer_name', 'customer_email', 'selected_date', 'participants', 'tour_id', 'payment_method'];
-      const missingFields = requiredFields.filter(field => !basicBookingData[field] || basicBookingData[field] === '');
-      
-      if (missingFields.length > 0) {
-        alert(`❌ CAMPOS OBRIGATÓRIOS FALTANDO:\n\n${missingFields.join('\n')}\n\nVerifique se todos os dados foram preenchidos corretamente.`);
-        return;
-      }
-
-      // 🔧 ESTRUTURA COMPLETA CORRIGIDA - Caso básica não funcione
-      const fullBookingData = {
-        // Campos básicos corrigidos
-        ...basicBookingData,
+        payment_method: "pending",
         
-        // Campos adicionais que alguns backends esperam
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        numberOfPeople: formData.numberOfPeople,
-        date: formData.date,
-        specialRequests: formData.specialRequests,
-        tourId: tourSlug, // 🔧 CORRIGIDO: String UUID em vez de number
-        tourSlug: tourSlug,
-        language: currentLang,
-        tourPrice: getTourPrice(),
-        depositAmount: getDepositAmount(),
-        remainingAmount: getRemainingAmount(),
+        // 🎯 CONFIGURAÇÃO DE EMAIL PERSONALIZADA:
+        email_config: emailConfig,
+        booking_email: bookingEmail,
+        reply_to_email: bookingEmail,
+        tour_name: tourData.name?.[currentLang] || tourData.name?.pt || tourData.name,
         
-        // Campos que podem ser obrigatórios
-        booking_status: "pending",
-        payment_status: "pending",
-        created_at: new Date().toISOString(),
-        booking_date: formData.date,
-        tour_name: tourData?.name?.pt || tourData?.name,
+        // 📊 DADOS PARA ANALYTICS:
         customer_language: currentLang,
-        payment_method: "pending" // 🔧 ADICIONADO: Campo obrigatório
+        booking_source: 'website',
+        email_language: currentLang
       };
 
-      console.log('🔧 =============DEBUGGING DETALHADO=============');
-      console.log('📤 DADOS BÁSICOS CORRIGIDOS sendo enviados:', basicBookingData);
-      console.log('📤 DADOS COMPLETOS CORRIGIDOS sendo enviados:', fullBookingData);
-      console.log('🔗 URL destino:', `${BACKEND_URL}/api/bookings`);
-      console.log('🎯 Tour data disponível:', tourData);
-      console.log('📝 Form data:', formData);
-      console.log('🔧 CORREÇÕES APLICADAS:');
-      console.log('  - tour_id agora é string:', typeof basicBookingData.tour_id, basicBookingData.tour_id);
-      console.log('  - payment_method adicionado:', basicBookingData.payment_method);
-      console.log('  - tourSlug usado:', tourSlug);
-      console.log('=============================================');
+      console.log(`📧 Reserva será enviada de: ${bookingEmail} (${currentLang.toUpperCase()})`);
 
-      // 🔧 TENTAR PRIMEIRA A ESTRUTURA BÁSICA CORRIGIDA
-      let response;
-      try {
-        console.log('🔄 Tentativa 1: Estrutura básica CORRIGIDA...');
-        response = await axios.post(`${BACKEND_URL}/api/bookings`, basicBookingData);
-        console.log('✅ SUCESSO! Problema 422 resolvido com estrutura básica corrigida!');
-        alert('🎉 SUCESSO!\n\nErro 422 corrigido!\n- tour_id agora é string\n- payment_method adicionado\n\nRedirecionando para página de pagamento...');
-      } catch (basicError) {
-        console.log('❌ Ainda falhou com estrutura básica corrigida, tentando estrutura completa...');
-        console.log('❌ Novo erro:', basicError.response?.data);
-        
-        // Se falhar, tentar estrutura completa
-        response = await axios.post(`${BACKEND_URL}/api/bookings`, fullBookingData);
-        console.log('✅ SUCESSO! Funcionou com estrutura completa corrigida!');
-        alert('🎉 SUCESSO!\n\nErro 422 corrigido com estrutura completa!\n\nRedirecionando para página de pagamento...');
-      }
-
-      console.log('🎉 RESPOSTA DO BACKEND:', response.data);
+      const response = await axios.post(`${BACKEND_URL}/api/bookings`, bookingData);
 
       if (response.status === 200 || response.status === 201) {
-        // 🎯 SUCESSO: Ir para página de pagamento
         const bookingId = response.data.booking_id || response.data.id || response.data._id || Date.now();
-        setSubmitted(true);
-        setBookingId(bookingId);
         
-        console.log('✅ Booking criado com ID:', bookingId);
-        
-        // Google Analytics Event - Form Completion
+        // 📧 TRACKING DE EMAIL
+        trackEmailEvent('booking_confirmation', currentLang, {
+          booking_id: bookingId,
+          tour_id: tourSlug,
+          customer_email: formData.email,
+          booking_email: bookingEmail,
+          tour_name: tourData.name?.[currentLang] || tourData.name?.pt
+        });
+
+        // 📊 GOOGLE ANALYTICS MELHORADO
         if (typeof gtag !== 'undefined') {
           gtag('event', 'begin_checkout', {
             transaction_id: bookingId,
             value: getDepositAmount(),
             currency: 'EUR',
+            language: currentLang,
+            booking_email: bookingEmail,
+            email_personalized: true,
             items: [{
               item_id: tourSlug,
               item_name: tourData?.name?.pt || tourData?.name,
@@ -483,103 +415,44 @@ const BookingForm = () => {
             }]
           });
         }
+
+        // ✅ SUCESSO COM MENSAGEM PERSONALIZADA
+        const successMessage = {
+          pt: `Reserva confirmada! Receberá um email de confirmação de ${bookingEmail} em breve.`,
+          en: `Booking confirmed! You'll receive a confirmation email from ${bookingEmail} shortly.`,
+          es: `¡Reserva confirmada! Recibirá un email de confirmación de ${bookingEmail} en breve.`
+        };
+        
+        console.log(`✅ ${successMessage[currentLang]}`);
+        
+        setSubmitted(true);
+        setBookingId(bookingId);
       } else {
         throw new Error('Resposta inesperada do servidor');
       }
     } catch (error) {
-      console.error('❌ =============ERRO DETALHADO=============');
-      console.error('❌ Error completo:', error);
-      console.error('❌ Response data:', error.response?.data);
-      console.error('❌ Response status:', error.response?.status);
-      console.error('❌ Response headers:', error.response?.headers);
-      console.error('❌ Config enviado:', error.config?.data);
-      console.error('=========================================');
+      console.error('Error creating booking:', error);
       
-      // 🔧 ANÁLISE ESPECÍFICA DO ERRO 422
-      if (error.response?.status === 422) {
-        const validationErrors = error.response.data;
-        console.log('🔍 ERRO 422 - Detalhes da validação:', validationErrors);
-        
-        let errorDetails = '🚨 ERRO 422 - Dados inválidos\n\n';
-        errorDetails += '❌ O backend rejeitou os dados enviados.\n\n';
-        
-        // Extrair informações específicas do erro
-        if (validationErrors.detail) {
-          if (Array.isArray(validationErrors.detail)) {
-            errorDetails += '📋 Campos com problemas:\n';
-            validationErrors.detail.forEach(err => {
-              errorDetails += `• ${err.loc ? err.loc.join('.') : 'Campo'}: ${err.msg}\n`;
-            });
-          } else {
-            errorDetails += `📋 Detalhes: ${JSON.stringify(validationErrors.detail, null, 2)}\n`;
-          }
-        } else if (validationErrors.errors) {
-          errorDetails += '📋 Erros encontrados:\n';
-          Object.entries(validationErrors.errors).forEach(([field, message]) => {
-            errorDetails += `• ${field}: ${message}\n`;
-          });
-        } else if (validationErrors.message) {
-          errorDetails += `📋 Mensagem: ${validationErrors.message}\n`;
-        } else {
-          errorDetails += `📋 Resposta completa: ${JSON.stringify(validationErrors, null, 2)}\n`;
-        }
-        
-        errorDetails += '\n🔧 SOLUÇÕES POSSÍVEIS:\n';
-        errorDetails += '• Verificar se tour_id é número válido\n';
-        errorDetails += '• Confirmar formato de data (YYYY-MM-DD)\n';
-        errorDetails += '• Verificar se email está válido\n';
-        errorDetails += '• Confirmar se participants > 0\n';
-        errorDetails += '• Verificar campos obrigatórios no backend\n\n';
-        
-        errorDetails += '📊 DADOS ENVIADOS:\n';
-        const sentData = error.config?.data ? JSON.parse(error.config.data) : 'N/A';
-        errorDetails += JSON.stringify(sentData, null, 2);
-        
-        // Mostrar error detalhado primeiro
-        alert(errorDetails);
-        
-        // 🔧 MODO DEMO AUTOMÁTICO - Pergunta se quer testar interface
-        const wantDemo = confirm(
-          '🎯 QUER TESTAR A INTERFACE DE PAGAMENTO?\n\n' +
-          '✅ Mesmo com erro 422, pode testar a tela de pagamento\n' +
-          '✅ Interface GetYourGuide completa\n' +
-          '✅ Resolve backend depois\n\n' +
-          'Clique OK para ir para a página de pagamento (DEMO)'
-        );
-        
-        if (wantDemo) {
-          console.log('🔧 MODO DEMO: User escolheu testar interface após erro 422...');
-          const mockBookingId = `DEMO_422_${Date.now()}`;
-          setSubmitted(true);
-          setBookingId(mockBookingId);
-          return;
-        }
-        
-        return;
-      }
-      
-      // 🔧 MODO OFFLINE/DEMO - Para testar a UI sem backend
+      // Modo demo para testes (sem alterações)
       if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        console.log('🔧 MODO DEMO: Simulando sucesso para testar UI...');
         const mockBookingId = `DEMO_${Date.now()}`;
         setSubmitted(true);
         setBookingId(mockBookingId);
         return;
       }
       
-      // Mostrar erro específico
       const errorMessage = error.response?.data?.message || 
                           error.response?.data?.detail || 
                           error.message || 
                           'Erro desconhecido ao processar reserva';
       
-      alert(`❌ ERRO DETALHADO:\n${errorMessage}\n\nStatus: ${error.response?.status}\nVeja o console para mais detalhes.`);
+      alert(`Erro ao processar reserva: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🎯 INPUT CHANGE COM VALIDAÇÃO EM TEMPO REAL - GetYourGuide Style
+  // Input change com validação em tempo real
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -587,9 +460,8 @@ const BookingForm = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
 
-    // 🔥 VALIDAÇÃO EM TEMPO REAL - Feedback imediato
+    // Validação em tempo real
     if (errors[name]) {
-      // Validar campo específico em tempo real
       let isValid = false;
       
       switch (name) {
@@ -634,7 +506,7 @@ const BookingForm = () => {
     );
   }
 
-  // 🔧 DEBUG: Verificar se backend está configurado
+  // Verificar configuração do backend
   if (!BACKEND_URL) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50">
@@ -644,20 +516,13 @@ const BookingForm = () => {
           <p className="text-red-700 mb-4">
             BACKEND_URL não está definido. Verifique suas variáveis de ambiente.
           </p>
-          <div className="bg-gray-100 p-3 rounded text-sm text-left">
-            <p><strong>Solução:</strong></p>
-            <p>1. Criar arquivo .env</p>
-            <p>2. Adicionar: REACT_APP_BACKEND_URL=http://localhost:5000</p>
-            <p>3. Reiniciar o servidor</p>
-          </div>
         </div>
       </div>
     );
   }
 
-  // Página de pagamento (GetYourGuide 2-step flow)
+  // Página de pagamento
   if (submitted && bookingId) {
-    // 🎯 PREPARAR DADOS PARA PAYMENTCOMPONENT
     const paymentBookingData = {
       id: bookingId,
       firstName: formData.firstName,
@@ -674,20 +539,15 @@ const BookingForm = () => {
       totalAmount: getTourPrice()
     };
 
-    console.log('💳 Rendering PaymentComponent with data:', paymentBookingData);
-
     return (
       <>
         <BookingSEOHead tourData={tourData} />
         <PaymentComponent 
           bookingData={paymentBookingData}
           onPaymentSuccess={() => {
-            // Após pagamento bem-sucedido, mostrar página de sucesso final
-            console.log('✅ Payment successful, redirecting...');
             window.location.href = getToursUrl() + '?booking=success';
           }}
           onBack={() => {
-            console.log('🔙 Back to form');
             setSubmitted(false);
             setBookingId(null);
           }}
@@ -706,7 +566,7 @@ const BookingForm = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{content[currentLang].title}</h1>
             <p className="text-lg text-blue-600 font-medium">{content[currentLang].subtitle}</p>
             
-            {/* 🎯 INFORMAÇÃO DO FLUXO - GetYourGuide Style */}
+            {/* Informação do fluxo */}
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-2xl mx-auto">
               <div className="flex items-center justify-center space-x-4 text-sm">
                 <div className="flex items-center">
@@ -741,7 +601,7 @@ const BookingForm = () => {
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">{content[currentLang].personalInfo}</h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* 🎨 CAMPO NOME - GetYourGuide Style */}
+                      {/* Campo Nome */}
                       <div>
                         <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
                           {content[currentLang].firstName} *
@@ -784,7 +644,7 @@ const BookingForm = () => {
                         )}
                       </div>
                       
-                      {/* 🎨 CAMPO SOBRENOME - GetYourGuide Style */}
+                      {/* Campo Sobrenome */}
                       <div>
                         <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
                           {content[currentLang].lastName} *
@@ -829,7 +689,7 @@ const BookingForm = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      {/* 🎨 CAMPO EMAIL - GetYourGuide Style */}
+                      {/* Campo Email */}
                       <div>
                         <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                           {content[currentLang].email} *
@@ -872,7 +732,7 @@ const BookingForm = () => {
                         )}
                       </div>
                       
-                      {/* 🎨 CAMPO TELEFONE - GetYourGuide Style */}
+                      {/* Campo Telefone */}
                       <div>
                         <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
                           {content[currentLang].phone} *
@@ -922,7 +782,7 @@ const BookingForm = () => {
                     <h2 className="text-xl font-semibold text-gray-900 mb-4">{content[currentLang].bookingDetails}</h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* 🔧 NÚMERO DE PESSOAS LIMITADO A 4 - GetYourGuide Style */}
+                      {/* Número de Pessoas */}
                       <div>
                         <label htmlFor="numberOfPeople" className="block text-sm font-semibold text-gray-700 mb-2">
                           {content[currentLang].numberOfPeople} *
@@ -954,7 +814,7 @@ const BookingForm = () => {
                         </p>
                       </div>
                       
-                      {/* 🔧 SELEÇÃO DE DATAS COM CALENDÁRIO VISUAL */}
+                      {/* Seleção de Datas */}
                       <div className="md:col-span-2">
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                           {content[currentLang].preferredDate} *
@@ -1009,7 +869,7 @@ const BookingForm = () => {
                     </div>
                   </div>
 
-                  {/* 🎯 TERMOS E CONDIÇÕES - GetYourGuide Style */}
+                  {/* Termos e Condições */}
                   <div className="border-t border-gray-200 pt-6">
                     <div className={`
                       flex items-start p-4 rounded-xl border-2 transition-all duration-200
@@ -1058,7 +918,7 @@ const BookingForm = () => {
                     )}
                   </div>
 
-                  {/* 🎯 BOTÃO INTELIGENTE - GetYourGuide Style */}
+                  {/* Botão de Submit */}
                   <div className="pt-2">
                     {!isFormComplete() && (
                       <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -1109,7 +969,7 @@ const BookingForm = () => {
                       )}
                     </button>
 
-                    {/* 🎯 ELEMENTO DE CONFIANÇA - GetYourGuide Style */}
+                    {/* Elemento de confiança */}
                     <div className="mt-3 text-center">
                       <p className="text-sm text-gray-600 flex items-center justify-center">
                         <svg className="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1119,120 +979,7 @@ const BookingForm = () => {
                       </p>
                     </div>
 
-                    {/* 🔧 BOTÕES DE TESTE E DEBUGGING */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="mt-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-                        <div className="flex items-center mb-3">
-                          <span className="text-2xl mr-2">🛠️</span>
-                          <div>
-                            <p className="font-bold text-yellow-800">FERRAMENTAS DE TESTE</p>
-                            <p className="text-xs text-yellow-700">Use estes botões para testar a interface enquanto resolve problemas de backend</p>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              console.log('🔧 SALTANDO DIRETO PARA PÁGINA DE PAGAMENTO...');
-                              setSubmitted(true);
-                              setBookingId(`DEMO_${Date.now()}`);
-                            }}
-                            className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-bold shadow-md"
-                          >
-                            🚀 VER PÁGINA DE PAGAMENTO (Pular erro 422)
-                          </button>
-                          
-                          <div className="p-2 bg-green-100 border border-green-300 rounded-lg">
-                            <p className="text-xs text-green-800 font-bold text-center">
-                              ✅ PROBLEMA 422 IDENTIFICADO E CORRIGIDO!
-                            </p>
-                            <p className="text-xs text-green-700 text-center">
-                              • tour_id: string ✓ • payment_method: adicionado ✓
-                            </p>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                console.log('🔍 =============DADOS PARA ENVIO=============');
-                                
-                                const testData = {
-                                  customer_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-                                  customer_email: formData.email.trim(),
-                                  customer_phone: formData.phone.trim(),
-                                  selected_date: formData.date,
-                                  participants: parseInt(formData.numberOfPeople),
-                                  tour_id: parseInt(tourData?.id) || tourData?.id,
-                                  special_requests: (formData.specialRequests || "").trim(),
-                                  total_amount: parseFloat(getTourPrice().toFixed(2)),
-                                  deposit_amount: parseFloat(getDepositAmount().toFixed(2)),
-                                  status: "pending",
-                                  language: currentLang
-                                };
-                                
-                                console.log('📤 DADOS QUE SERÃO ENVIADOS:', testData);
-                                console.log('🔗 URL:', `${BACKEND_URL}/api/bookings`);
-                                console.log('📝 Form completo:', formData);
-                                console.log('🎯 Tour data:', tourData);
-                                console.log('===========================================');
-                                
-                                const dataText = JSON.stringify(testData, null, 2);
-                                alert(`🔍 DADOS QUE SERÃO ENVIADOS:\n\n${dataText}\n\nURL: ${BACKEND_URL}/api/bookings\n\nVerifique o console para mais detalhes.`);
-                              }}
-                              className="py-2 px-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs"
-                            >
-                              🔍 Ver Dados
-                            </button>
-                            
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  console.log('🔄 Testando backend...');
-                                  
-                                  const healthTest = await axios.get(`${BACKEND_URL}/api/health`).catch(() => null);
-                                  const bookingsTest = await axios.options(`${BACKEND_URL}/api/bookings`).catch(() => null);
-                                  
-                                  let result = '🔌 TESTE DE CONECTIVIDADE:\n\n';
-                                  result += `Backend URL: ${BACKEND_URL}\n\n`;
-                                  result += `Health endpoint: ${healthTest ? '✅ OK' : '❌ FALHOU'}\n`;
-                                  result += `Bookings endpoint: ${bookingsTest ? '✅ OK' : '❌ FALHOU'}\n\n`;
-                                  
-                                  if (!healthTest && !bookingsTest) {
-                                    result += '❌ Backend parece estar offline\n';
-                                    result += '💡 Verifique se o servidor está rodando';
-                                  } else if (healthTest && !bookingsTest) {
-                                    result += '⚠️ Backend online, mas /api/bookings com problema\n';
-                                    result += '💡 Verificar rota no backend';
-                                  } else {
-                                    result += '✅ Backend parece estar funcionando\n';
-                                    result += '💡 O erro 422 é de validação de dados';
-                                  }
-                                  
-                                  alert(result);
-                                  
-                                } catch (error) {
-                                  console.error('❌ Erro no teste:', error);
-                                  alert(`❌ Erro de conectividade:\n\n${error.message}\n\nBackend URL: ${BACKEND_URL}`);
-                                }
-                              }}
-                              className="py-2 px-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-xs"
-                            >
-                              🔌 Testar Backend
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <p className="text-xs text-yellow-600 mt-2 text-center">
-                          🎯 O botão verde acima vai direto para a página de pagamento GetYourGuide-style!<br/>
-                          <strong>✅ Erro 422 já foi identificado e corrigido no código!</strong>
-                        </p>
-                      </div>
-                    )}
-
-                    {/* 🔒 Elementos de Confiança - GetYourGuide Style */}
+                    {/* Elementos de Confiança */}
                     <div className="mt-4 flex items-center justify-center space-x-6 text-sm text-gray-600">
                       <div className="flex items-center">
                         <svg className="w-4 h-4 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -1252,7 +999,7 @@ const BookingForm = () => {
               </div>
             </div>
 
-            {/* 🎯 SIDEBAR COM DESIGN GETTYOURGUIDE STYLE */}
+            {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 sticky top-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
