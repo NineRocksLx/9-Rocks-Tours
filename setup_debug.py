@@ -9,8 +9,13 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+
+
+
 class GooglePayDebugger:
     def __init__(self):
+        from dotenv import load_dotenv
+        load_dotenv('backend/.env')
         self.backend_url = "http://localhost:8000"
         self.issues_found = []
         self.solutions = []

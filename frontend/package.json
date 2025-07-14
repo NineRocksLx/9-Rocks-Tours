@@ -6,6 +6,8 @@
     "@google-pay/button-react": "^3.1.0",
     "@paypal/react-paypal-js": "^8.8.3",
     "@react-google-maps/api": "^2.20.7",
+    "@stripe/react-stripe-js": "^3.7.0",
+    "@stripe/stripe-js": "^7.4.0",
     "axios": "^1.10.0",
     "cra-template": "1.2.0",
     "firebase": "^11.9.1",

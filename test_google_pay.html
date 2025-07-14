@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Rápido Google Pay</title>
+    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
+</head>
+<body>
+    <h1>Teste Rápido Google Pay</h1>
+    <div id="status"></div>
+    <div id="google-pay-button"></div>
+    
+    <script>
+        async function testGooglePay() {
+            try {
+                const config = await fetch('http://localhost:8000/api/payments/stripe/config').then(r => r.json());
+                
+                if (!config.available) {
+                    document.getElementById('status').innerHTML = '❌ Stripe não disponível';
+                    return;
+                }
+                
+                const paymentsClient = new google.payments.api.PaymentsClient({
+                    environment: 'TEST'
+                });
+                
+                const isReadyToPay = await paymentsClient.isReadyToPay({
+                    apiVersion: 2,
+                    apiVersionMinor: 0,
+                    allowedPaymentMethods: [{
+                        type: 'CARD',
+                        parameters: {
+                            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+                            allowedCardNetworks: ['VISA', 'MASTERCARD']
+                        }
+                    }]
+                });
+                
+                if (isReadyToPay.result) {
+                    document.getElementById('status').innerHTML = '✅ Google Pay funcionando!';
+                } else {
+                    document.getElementById('status').innerHTML = '❌ Google Pay não suportado';
+                }
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = `❌ Erro: ${error.message}`;
+            }
+        }
+        
+        window.addEventListener('load', testGooglePay);
+    </script>
+</body>
+</html>

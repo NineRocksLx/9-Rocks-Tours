@@ -20,11 +20,13 @@ backend/
         tour.py
     requirements.txt
     routers/
+        __init__.py
         seo_routes.py
         tours.py
         tours_fixed.py
     server.py
     server.py.backup.original
+    server_test.py
     services/
         __init__.py
         paypal_service.py
@@ -37,7 +39,7 @@ backend/
     test_stripe_setup_fixed.py
     utils/
         google_calendar.py
-backend_test.py
+e --abort
 fecha_repositorio.py
 fix-frontend.ps1
 frontend/
@@ -74,6 +76,7 @@ frontend/
             SEO.js
             SEOHead.js
             SimpleTest.js
+            StripeCheckoutForm.js
             TestFirebase.js
             TourFiltersManager.js
             TourItinerary.js
@@ -85,6 +88,7 @@ frontend/
             emailConfig.js
             firebase.js
         hooks/
+            usePremiumEmbeddedPayment.js
             useSEO.js
         index.css
         index.js
@@ -95,6 +99,8 @@ frontend/
             HomePage.js
             TourDetails.js
             ToursPage.js
+        screens/
+            PremiumCheckoutScreen.js
         services/
             heroImagesService.js
             mockServices.js
@@ -114,8 +120,9 @@ ninerocks.tours.json
 package-lock.json
 package.json
 repo_visibility_log.txt
-start_all.py
+setup_debug.py
 test_firestore.js
+test_google_pay.html
 test_result.md
 tests/
     __init__.py

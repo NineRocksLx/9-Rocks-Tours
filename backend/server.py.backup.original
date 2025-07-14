@@ -1,29 +1,30 @@
-# backend/server.py - VERSÃO COMPLETA E CORRIGIDA
+# backend/server.py - VERSÃO FINAL E CORRIGIDA
 
 # ================================
 # IMPORTS
 # ================================
 import sys
-from fastapi import FastAPI, APIRouter, HTTPException, Query, UploadFile, File, Depends, Request
-from fastapi.responses import StreamingResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-import uuid
-from datetime import datetime, timedelta
 import json
 import io
 import csv
 import base64
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import List, Optional, Dict, Any
+import uuid
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, APIRouter, HTTPException, Query, UploadFile, File, Depends, Request
+from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field
+from starlette.middleware.cors import CORSMiddleware
 from googleapiclient.discovery import build
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import service_account
-from enum import Enum
 from firebase_admin import firestore
 
 # ✅ IMPORTAR SERVIÇOS DE PAGAMENTO
@@ -319,21 +320,16 @@ async def create_paypal_payment(payment_request: PaymentRequest):
         raise HTTPException(status_code=503, detail="PayPal não está disponível")
     
     try:
-        # Validar booking
         booking_doc = db_firestore.collection('bookings').document(payment_request.booking_id).get()
         if not booking_doc.exists:
             raise HTTPException(status_code=404, detail="Reserva não encontrada")
         
         booking_data = booking_doc.to_dict()
-        
-        # Validar tour
         tour_doc = db_firestore.collection('tours').document(payment_request.tour_id).get()
         if not tour_doc.exists:
             raise HTTPException(status_code=404, detail="Tour não encontrado")
         
         tour_data = tour_doc.to_dict()
-        
-        # Preparar dados PayPal
         paypal_data = {
             "amount": payment_request.amount,
             "tour_id": payment_request.tour_id,
@@ -344,10 +340,7 @@ async def create_paypal_payment(payment_request: PaymentRequest):
             "cancel_url": payment_request.cancel_url
         }
         
-        # Criar pagamento
         payment_result = paypal_service.create_payment(paypal_data)
-        
-        # Salvar transação
         transaction = PaymentTransaction(
             payment_id=payment_result["payment_id"],
             booking_id=payment_request.booking_id,
@@ -382,7 +375,6 @@ async def execute_paypal_payment(payment_id: str, execution: PaymentExecution):
         raise HTTPException(status_code=503, detail="PayPal não está disponível")
     
     try:
-        # Verificar transação
         transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_id).stream()
         transaction_doc = None
         for doc in transaction_docs:
@@ -393,14 +385,10 @@ async def execute_paypal_payment(payment_id: str, execution: PaymentExecution):
             raise HTTPException(status_code=404, detail="Transação não encontrada")
         
         transaction_data = transaction_doc.to_dict()
-        
         if transaction_data.get("status") == "completed":
             return {"message": "Pagamento já processado", "status": "completed"}
         
-        # Executar pagamento
         execution_result = paypal_service.execute_payment(payment_id, execution.payer_id)
-        
-        # Atualizar transação
         update_data = {
             "status": "completed",
             "transaction_id": execution_result.get("transaction_id"),
@@ -411,7 +399,6 @@ async def execute_paypal_payment(payment_id: str, execution: PaymentExecution):
         
         db_firestore.collection('payment_transactions').document(transaction_doc.id).update(update_data)
         
-        # Atualizar booking
         booking_id = transaction_data.get("booking_id")
         if booking_id:
             booking_update = {
@@ -437,8 +424,6 @@ async def get_paypal_payment_status(payment_id: str):
     
     try:
         payment_details = paypal_service.get_payment_details(payment_id)
-        
-        # Atualizar base de dados se necessário
         transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_id).stream()
         for doc in transaction_docs:
             current_data = doc.to_dict()
@@ -527,21 +512,16 @@ async def create_google_pay_intent(payment_request: PaymentRequest):
         raise HTTPException(status_code=503, detail="Stripe não está disponível")
     
     try:
-        # Validar booking
         booking_doc = db_firestore.collection('bookings').document(payment_request.booking_id).get()
         if not booking_doc.exists:
             raise HTTPException(status_code=404, detail="Reserva não encontrada")
         
         booking_data = booking_doc.to_dict()
-        
-        # Validar tour
         tour_doc = db_firestore.collection('tours').document(payment_request.tour_id).get()
         if not tour_doc.exists:
             raise HTTPException(status_code=404, detail="Tour não encontrado")
         
         tour_data = tour_doc.to_dict()
-        
-        # Preparar dados Stripe
         stripe_data = {
             "amount": payment_request.amount,
             "tour_id": payment_request.tour_id,
@@ -552,10 +532,10 @@ async def create_google_pay_intent(payment_request: PaymentRequest):
             "customer_name": payment_request.customer_name
         }
         
-        # Criar Payment Intent
         intent_result = stripe_service.create_payment_intent(stripe_data)
-        
-        # Salvar transação
+        if intent_result.get("status") != "created":
+            raise HTTPException(status_code=500, detail=intent_result.get("message", "Erro ao criar PaymentIntent no Stripe"))
+
         transaction = PaymentTransaction(
             payment_id=intent_result["payment_intent_id"],
             booking_id=payment_request.booking_id,
@@ -568,10 +548,10 @@ async def create_google_pay_intent(payment_request: PaymentRequest):
             status="created",
             client_secret=intent_result["client_secret"]
         )
-        
+
         transaction_dict = transaction.dict()
         db_firestore.collection('payment_transactions').document(transaction_dict['id']).set(transaction_dict)
-        
+
         return {
             "client_secret": intent_result["client_secret"],
             "payment_intent_id": intent_result["payment_intent_id"],
@@ -590,21 +570,16 @@ async def create_stripe_card_intent(payment_request: PaymentRequest):
         raise HTTPException(status_code=503, detail="Stripe não está disponível")
     
     try:
-        # Validar booking
         booking_doc = db_firestore.collection('bookings').document(payment_request.booking_id).get()
         if not booking_doc.exists:
             raise HTTPException(status_code=404, detail="Reserva não encontrada")
         
         booking_data = booking_doc.to_dict()
-        
-        # Validar tour
         tour_doc = db_firestore.collection('tours').document(payment_request.tour_id).get()
         if not tour_doc.exists:
             raise HTTPException(status_code=404, detail="Tour não encontrado")
         
         tour_data = tour_doc.to_dict()
-        
-        # Preparar dados Stripe
         stripe_data = {
             "amount": payment_request.amount,
             "tour_id": payment_request.tour_id,
@@ -615,10 +590,7 @@ async def create_stripe_card_intent(payment_request: PaymentRequest):
             "customer_name": payment_request.customer_name
         }
         
-        # Criar Payment Intent
         intent_result = stripe_service.create_payment_intent(stripe_data)
-        
-        # Salvar transação
         transaction = PaymentTransaction(
             payment_id=intent_result["payment_intent_id"],
             booking_id=payment_request.booking_id,
@@ -653,10 +625,7 @@ async def confirm_stripe_payment(payment_intent_id: str):
         raise HTTPException(status_code=503, detail="Stripe não está disponível")
     
     try:
-        # Confirmar no Stripe
         payment_result = stripe_service.confirm_payment(payment_intent_id)
-        
-        # Procurar transação
         transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_intent_id).stream()
         transaction_doc = None
         for doc in transaction_docs:
@@ -667,8 +636,6 @@ async def confirm_stripe_payment(payment_intent_id: str):
             raise HTTPException(status_code=404, detail="Transação não encontrada")
         
         transaction_data = transaction_doc.to_dict()
-        
-        # Atualizar transação
         update_data = {
             "status": payment_result["status"],
             "transaction_id": payment_result.get("transaction_id"),
@@ -680,7 +647,6 @@ async def confirm_stripe_payment(payment_intent_id: str):
         
         db_firestore.collection('payment_transactions').document(transaction_doc.id).update(update_data)
         
-        # Atualizar booking se sucesso
         if payment_result["status"] == "succeeded":
             booking_id = transaction_data.get("booking_id")
             if booking_id:
@@ -707,8 +673,6 @@ async def get_stripe_payment_status(payment_intent_id: str):
     
     try:
         payment_details = stripe_service.confirm_payment(payment_intent_id)
-        
-        # Atualizar base de dados se necessário
         transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_intent_id).stream()
         for doc in transaction_docs:
             current_data = doc.to_dict()
@@ -806,7 +770,6 @@ async def create_booking(booking_data: BookingCreate):
             raise HTTPException(status_code=404, detail="Tour not found or inactive")
         tour = tour_doc.to_dict()
         
-        # Verificar disponibilidade
         tour_availability = tour.get("availability_dates", [])
         if not tour_availability:
             tour_availability = [(datetime.now() + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(30)]
@@ -983,7 +946,6 @@ async def get_tour_filters_config():
     """Retorna os filtros de tours ativos do Firestore de forma segura."""
     try:
         filters_ref = db_firestore.collection('tourFilters')
-        # CORREÇÃO: A ordenação (.order_by) foi removida da query
         docs = filters_ref.where('active', '==', True).stream()
         
         filters_list = []
@@ -992,7 +954,6 @@ async def get_tour_filters_config():
             filter_data['key'] = doc.id
             filters_list.append(filter_data)
         
-        # CORREÇÃO: A ordenação é feita aqui, no código Python
         filters_list.sort(key=lambda x: x.get('order', 99))
             
         return filters_list
@@ -1005,7 +966,6 @@ async def get_hero_images_config():
     """Retorna as imagens de herói ativas do Firestore de forma segura."""
     try:
         images_ref = db_firestore.collection('heroImages')
-        # CORREÇÃO: A ordenação (.order_by) foi removida da query
         docs = images_ref.where('active', '==', True).stream()
         
         images_list = []
@@ -1014,7 +974,6 @@ async def get_hero_images_config():
             image_data['id'] = doc.id
             images_list.append(image_data)
         
-        # CORREÇÃO: A ordenação é feita aqui, no código Python
         images_list.sort(key=lambda x: x.get('order', 99))
             
         return images_list
@@ -1023,20 +982,41 @@ async def get_hero_images_config():
         raise HTTPException(status_code=500, detail=f"Erro ao buscar imagens: {str(e)}")
 
 
+# ===================================================================
+# ✅ ENDPOINT DE DEBUG (APENAS EM MODO DE DESENVOLVIMENTO)
+# ===================================================================
+if os.getenv("DEBUG", "False").lower() == "true":
+    @api_router.get("/debug/routes", include_in_schema=False)
+    async def list_routes_api():
+        """Lista todas as rotas registadas na aplicação (apenas para debug)."""
+        from fastapi.routing import APIRoute
+        routes = []
+        for route in app.routes:
+            if isinstance(route, APIRoute) and route.path.startswith("/api"):
+                routes.append({
+                    "path": route.path,
+                    "name": route.name,
+                    "methods": sorted(list(route.methods)),
+                })
+        return {"routes": sorted(routes, key=lambda x: x["path"])}
+
 # ================================
 # APP CONFIGURATION FINAL
 # ================================
-
-# ✅ CORREÇÃO: A forma como os routers são incluídos foi otimizada
-# para maior clareza e para resolver potenciais conflitos de rota.
-api_router.include_router(tours_router.router, prefix="/tours", tags=["Tours"])
+api_router.include_router(
+    tours_router.router,
+    prefix="/tours",
+    tags=["Tours"],
+    include_in_schema=True
+)
 app.include_router(api_router)
 
 # Configurar SEO routes
 try:
     app = setup_seo_routes(app)
-except Exception:
-    pass
+except Exception as e:
+    print(f"❌ Erro ao configurar rotas de SEO: {e}")
+
 
 @app.get("/")
 async def read_root():
