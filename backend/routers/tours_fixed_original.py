@@ -35,6 +35,7 @@ def debug_map_locations(data, context=""):
         print(f"  - ❌ Campo map_locations não encontrado!")
 
 @router.get("/")
+@router.get("")
 async def get_all_tours(
     active_only: bool = Query(False, description="Filtrar apenas tours ativos"),
     tour_type: Optional[str] = Query(None, description="Filtrar por tipo de tour"),
@@ -78,18 +79,7 @@ async def get_all_tours(
         print(f"❌ Erro ao buscar tours: {e}")
         raise HTTPException(status_code=500, detail=f"Erro ao buscar tours: {str(e)}")
 
-@router.get("/tours")
-async def get_tours_endpoint(
-    active_only: bool = Query(False, description="Filtrar apenas tours ativos"),
-    tour_type: Optional[str] = Query(None, description="Filtrar por tipo de tour"),
-    location: Optional[str] = Query(None, description="Filtrar por localização"),
-    featured: bool = Query(False, description="Apenas tours em destaque")
-):
-    """🎯 ENDPOINT /tours PARA O FRONTEND"""
-    # Reutilizar a mesma lógica do endpoint principal
-    return await get_all_tours(active_only, tour_type, location, featured)
-
-@router.get("/tours/{tour_id}")
+@router.get("/{tour_id}")
 async def get_tour_by_id(tour_id: str):
     """🎯 BUSCAR TOUR POR ID COM DEBUG MELHORADO"""
     try:

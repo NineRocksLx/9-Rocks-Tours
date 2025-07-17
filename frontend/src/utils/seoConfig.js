@@ -1,6 +1,6 @@
 export const SEO_CONFIG = {
   baseUrl: "https://9rocks.pt", // ✅ CORRIGIDO - igual ao backend
-  defaultLanguage: "pt",
+  defaultLanguage: "en",
   supportedLanguages: ["pt", "en", "es"],
   
   // 🔗 INTEGRAÇÃO COM BACKEND

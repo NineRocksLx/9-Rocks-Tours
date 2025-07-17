@@ -1,41 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { BACKEND_URL } from '../config/appConfig';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckoutForm from './StripeCheckoutForm';
 
-// ✅ SISTEMA DE DEBUG SIMPLES
-const DebugLogger = {
-  enabled: true, // Muda para false em produção
-  
-  log: (step, data, type = 'info') => {
-    if (!DebugLogger.enabled) return;
-    
-    const timestamp = new Date().toISOString();
-    const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '🔍';
-    
-    console.group(`${prefix} [${timestamp}] ${step}`);
-    if (data) {
-      console.log('Data:', data);
-    }
-    console.groupEnd();
-  },
-  
-  error: (step, error) => {
-    DebugLogger.log(step, {
-      message: error.message,
-      statusCode: error.statusCode,
-      name: error.name
-    }, 'error');
-  },
-  
-  success: (step, data) => {
-    DebugLogger.log(step, data, 'success');
-  }
-};
-
 const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
+  const navigate = useNavigate();
+  console.log("🔍 DEBUG: PaymentComponent inicializado");
+  console.log("🔍 DEBUG: navigate function:", typeof navigate);
   const [paymentMethod, setPaymentMethod] = useState('googlepay');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +24,7 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
   const [googlePayReady, setGooglePayReady] = useState(false);
   const [googlePayClient, setGooglePayClient] = useState(null);
 
-  // ✅ NOVOS ESTADOS PARA O STRIPE ELEMENTS
+  // Estados para o Stripe Elements
   const [stripePromise, setStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
 
@@ -81,25 +55,21 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
 
   const t = content[bookingData.language] || content.pt;
 
-  // ✅ INICIALIZAÇÃO
+  // Inicialização
   useEffect(() => {
-    DebugLogger.log('PaymentComponent iniciado', { language: bookingData.language });
     initializePaymentMethods();
     
     // Carregar a chave pública do Stripe para inicializar o Stripe.js
     axios.get(`${BACKEND_URL}/api/payments/stripe/config`).then(res => {
       if (res.data.publishable_key) {
         setStripePromise(loadStripe(res.data.publishable_key));
-        DebugLogger.success('Stripe.js Promise carregada');
-      } else {
-        DebugLogger.error('Chave publicável do Stripe não encontrada');
       }
+    }).catch(err => {
+      console.error('Erro ao carregar configuração Stripe:', err);
     });
   }, []);
 
   const initializePaymentMethods = async () => {
-    DebugLogger.log('Inicializando métodos de pagamento');
-    
     // Executar em paralelo
     await Promise.all([
       testPayPalConnection(),
@@ -107,64 +77,50 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
     ]);
   };
 
-  // ✅ TESTE PAYPAL
+  // Teste PayPal
   const testPayPalConnection = async () => {
     try {
-      DebugLogger.log('Testando conexão PayPal');
       const response = await axios.get(`${BACKEND_URL}/api/payments/test/paypal`);
       
-      if (response.data.status === 'success') {
+      if (response.data.status === 'success' || response.data.status === 'connected') {
         setPaypalStatus('available');
-        DebugLogger.success('PayPal conectado');
       } else {
         setPaypalStatus('unavailable');
-        DebugLogger.error('PayPal não conectado', response.data);
       }
     } catch (error) {
       setPaypalStatus('unavailable');
-      DebugLogger.error('Erro no teste PayPal', error);
     }
   };
 
-  // ✅ INICIALIZAÇÃO GOOGLE PAY
+  // Inicialização Google Pay
   const initializeGooglePay = async () => {
     try {
-      DebugLogger.log('Inicializando Google Pay');
-      
-      // 1. Buscar configuração do Stripe
       const configResponse = await axios.get(`${BACKEND_URL}/api/payments/stripe/config`);
-      DebugLogger.log('Configuração Stripe recebida');
       
       if (!configResponse.data.available || !configResponse.data.publishable_key) {
         setGooglePayStatus('unavailable');
-        DebugLogger.error('Stripe não disponível ou publishable key ausente');
         return;
       }
       
       setStripeConfig(configResponse.data);
       
-      // 2. Carregar Google Pay API se necessário
       if (!window.google || !window.google.payments) {
         await loadGooglePayAPI();
       }
       
       if (!window.google || !window.google.payments) {
         setGooglePayStatus('unavailable');
-        DebugLogger.error('Google Pay API não carregada');
         return;
       }
       
-      // 3. Criar cliente Google Pay
-      const paymentsClient = new google.payments.api.PaymentsClient({
-        environment: configResponse.data.mode === 'live' ? 'PRODUCTION' : 'TEST',
-        merchantInfo: {
-          merchantName: '9 Rocks Tours'
-        }
+      const environment = configResponse.data.environment || 'TEST';
+      
+      const paymentsClient = new window.google.payments.api.PaymentsClient({
+        environment: environment,
       });
       
       setGooglePayClient(paymentsClient);
       
-      // 4. Verificar se Google Pay é suportado
       const isReadyToPayRequest = {
         apiVersion: 2,
         apiVersionMinor: 0,
@@ -186,24 +142,20 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
       };
       
       const response = await paymentsClient.isReadyToPay(isReadyToPayRequest);
-      DebugLogger.log('Google Pay isReadyToPay', response);
       
       if (response.result) {
         setGooglePayReady(true);
         setGooglePayStatus('available');
-        DebugLogger.success('Google Pay disponível e pronto');
       } else {
         setGooglePayStatus('unavailable');
-        DebugLogger.error('Google Pay não suportado neste browser/dispositivo');
       }
       
     } catch (error) {
       setGooglePayStatus('unavailable');
-      DebugLogger.error('Erro na inicialização Google Pay', error);
     }
   };
 
-  // ✅ CARREGAR GOOGLE PAY API
+  // Carregar Google Pay API
   const loadGooglePayAPI = () => {
     return new Promise((resolve, reject) => {
       if (window.google && window.google.payments) {
@@ -211,28 +163,19 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
         return;
       }
       
-      DebugLogger.log('Carregando Google Pay API');
-      
       const script = document.createElement('script');
       script.src = 'https://pay.google.com/gp/p/js/pay.js';
-      script.onload = () => {
-        DebugLogger.success('Google Pay API carregada');
-        resolve();
-      };
-      script.onerror = () => {
-        DebugLogger.error('Falha ao carregar Google Pay API');
-        reject(new Error('Falha ao carregar Google Pay API'));
-      };
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Falha ao carregar Google Pay API'));
       
       document.head.appendChild(script);
     });
   };
 
-  // ✅ HANDLE GOOGLE PAY CLICK
+  // Handle Google Pay Click
   const handleGooglePayClick = async () => {
     try {
-      DebugLogger.log('Google Pay button clicado');
-      
       if (!googlePayClient || !googlePayReady || !stripeConfig) {
         throw new Error('Google Pay não está pronto');
       }
@@ -240,7 +183,10 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
       setLoading(true);
       setError('');
       
-      // Criar request de pagamento
+      if (!bookingData.depositAmount || bookingData.depositAmount <= 0) {
+        throw new Error('Valor do depósito inválido');
+      }
+      
       const paymentDataRequest = {
         apiVersion: 2,
         apiVersionMinor: 0,
@@ -267,28 +213,19 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
           countryCode: 'PT'
         },
         merchantInfo: {
-          merchantName: '9 Rocks Tours'
+          merchantName: '9 Rocks Tours',
+          merchantId: stripeConfig.merchant_id || '00000000000000000000000'
         }
       };
       
-      DebugLogger.log('Chamando loadPaymentData - janela deve abrir agora');
-      
-      // Abrir janela Google Pay
       const paymentData = await googlePayClient.loadPaymentData(paymentDataRequest);
-      
-      DebugLogger.success('Google Pay completou com sucesso', paymentData);
-      
-      // Processar o pagamento
       await processGooglePayPayment(paymentData);
       
     } catch (error) {
-      DebugLogger.error('Erro no Google Pay', error);
-      
       if (error.statusCode === 'CANCELED') {
-        DebugLogger.log('Utilizador cancelou o pagamento');
-        // Não mostrar erro para cancelamento
+        setError(''); // Não mostrar erro se o utilizador cancelou
       } else if (error.statusCode === 'DEVELOPER_ERROR') {
-        setError('Erro de configuração do Google Pay');
+        setError('Erro de configuração do Google Pay. Contacte o suporte.');
       } else {
         setError(error.message || 'Erro no Google Pay');
       }
@@ -297,15 +234,11 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
     }
   };
 
-  // ✅ PROCESSAR PAGAMENTO GOOGLE PAY
+  // Processar pagamento Google Pay
   const processGooglePayPayment = async (paymentData) => {
     try {
-      DebugLogger.log('Processando pagamento Google Pay');
-      
-      // 1. Criar booking se necessário
       const bookingId = await createBookingIfNeeded();
       
-      // 2. Criar Payment Intent
       const intentData = {
         amount: bookingData.depositAmount,
         currency: 'EUR',
@@ -313,45 +246,63 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
         booking_id: bookingId,
         customer_email: bookingData.email,
         customer_name: `${bookingData.firstName} ${bookingData.lastName}`,
+        tour_name: bookingData.tour.name?.[bookingData.language] || bookingData.tour.name?.pt || bookingData.tour.name,
+        participants: bookingData.numberOfPeople,
         payment_method: 'google_pay'
       };
       
-      const intentResponse = await axios.post(`${BACKEND_URL}/api/payments/google-pay/create-intent`, intentData);
+      const intentResponse = await axios.post(`${BACKEND_URL}/api/payments/create-intent`, intentData);
       
-      // 3. Confirmar pagamento
-      const confirmData = {
-        payment_method: {
-          card: {
-            token: paymentData.paymentMethodData.tokenizationData.token
-          }
+      if (!intentResponse.data.payment_intent_id) {
+        throw new Error('Payment Intent não criado pelo backend');
+      }
+      
+      const paymentMethodData = {
+        type: 'card',
+        card: {
+          token: paymentData.paymentMethodData.tokenizationData.token
         }
       };
       
-      const confirmResponse = await axios.post(`${BACKEND_URL}/api/payments/stripe/confirm/${intentResponse.data.payment_intent_id}`, confirmData);
+      const confirmResponse = await axios.post(
+        `${BACKEND_URL}/api/payments/stripe/confirm/${intentResponse.data.payment_intent_id}`, 
+        { payment_method_data: paymentMethodData }
+      );
       
       if (confirmResponse.data.status === 'succeeded') {
-        DebugLogger.success('Pagamento Google Pay bem-sucedido');
-        
+        const successData = {
+          method: 'google_pay',
+          transaction_id: confirmResponse.data.transaction_id,
+          booking_id: bookingId,
+          amount: confirmResponse.data.amount,
+          receipt_url: confirmResponse.data.receipt_url
+        };
+
+        // Chamar callback se fornecido
         if (onPaymentSuccess) {
-          onPaymentSuccess({
-            method: 'google_pay',
-            transaction_id: confirmResponse.data.transaction_id,
-            booking_id: bookingId
-          });
+          onPaymentSuccess(successData);
         }
+
+        // Navegar para página de sucesso
+        navigate('/payment/success', {
+          state: {
+            paymentSuccess: true,
+            ...successData
+          }
+        });
       } else {
-        throw new Error('Pagamento não confirmado');
+        throw new Error(`Pagamento não confirmado. Status: ${confirmResponse.data.status}`);
       }
       
     } catch (error) {
-      DebugLogger.error('Erro no processamento Google Pay', error);
-      setError('Erro ao processar pagamento: ' + error.message);
+      const errorMessage = error.response?.data?.detail || error.response?.data?.message || error.message;
+      setError('Erro ao processar pagamento: ' + errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ CRIAR BOOKING
+  // Criar booking
   const createBookingIfNeeded = async () => {
     try {
       if (bookingData.id && typeof bookingData.id === 'string' && bookingData.id.length > 5) {
@@ -366,18 +317,21 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
         selected_date: bookingData.date,
         participants: parseInt(bookingData.numberOfPeople),
         special_requests: bookingData.specialRequests || '',
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        language: bookingData.language || 'pt'
       };
 
       const response = await axios.post(`${BACKEND_URL}/api/bookings`, bookingPayload);
-      return response.data.id || response.data.booking_id || response.data._id;
+      const newBookingId = response.data.id || response.data.booking_id || response.data._id;
+      
+      return newBookingId;
       
     } catch (error) {
       throw new Error('Erro ao criar reserva: ' + (error.response?.data?.detail || error.message));
     }
   };
 
-  // ✅ CRIAR PAGAMENTO PAYPAL
+  // Criar pagamento PayPal
   const createPayPalPayment = async (bookingId) => {
     try {
       const paymentData = {
@@ -387,6 +341,8 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
         booking_id: bookingId,
         customer_email: bookingData.email,
         customer_name: `${bookingData.firstName} ${bookingData.lastName}`,
+        tour_name: bookingData.tour.name?.[bookingData.language] || bookingData.tour.name?.pt || bookingData.tour.name,
+        participants: bookingData.numberOfPeople,
         payment_method: 'paypal',
         return_url: `${window.location.origin}/payment/success?booking_id=${bookingId}`,
         cancel_url: `${window.location.origin}/payment/cancel?booking_id=${bookingId}`
@@ -405,44 +361,65 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
     }
   };
 
-  // ✅ FUNÇÃO PARA CRIAR O PAYMENT INTENT E MOSTRAR O FORMULÁRIO
+  // Setup Stripe Elements
   const setupStripeElements = async () => {
     setLoading(true);
     setError('');
     try {
+      const { depositAmount, tour, email, firstName, lastName } = bookingData;
+      if (!depositAmount || depositAmount <= 0) {
+        throw new Error("O valor do depósito é inválido.");
+      }
+      if (!tour || !tour.id) {
+        throw new Error("ID do Tour em falta. Volte ao passo anterior e tente novamente.");
+      }
+      if (!email || !firstName || !lastName) {
+        throw new Error("Dados do cliente (nome, apelido, email) estão em falta.");
+      }
+
+      const bookingId = await createBookingIfNeeded();
+
       const intentData = {
-        amount: bookingData.depositAmount,
+        amount: depositAmount,
         currency: 'EUR',
-        tour_id: bookingData.tour.id,
-        booking_id: bookingData.id || 'new_booking',
-        customer_email: bookingData.email,
-        customer_name: `${bookingData.firstName} ${bookingData.lastName}`
+        tour_id: tour.id,
+        booking_id: bookingId,
+        customer_email: email,
+        customer_name: `${firstName} ${lastName}`,
+        tour_name: tour.name?.[bookingData.language] || tour.name?.pt || tour.name,
+        participants: bookingData.numberOfPeople
       };
 
       const response = await axios.post(`${BACKEND_URL}/api/payments/create-intent`, intentData);
       
       if (response.data.client_secret) {
         setClientSecret(response.data.client_secret);
-        DebugLogger.success('Payment Intent criado', { client_secret: '...' });
       } else {
         throw new Error('Client Secret não recebido do backend.');
       }
 
     } catch (err) {
-      DebugLogger.error('Erro ao criar Payment Intent', err);
-      setError('Não foi possível iniciar o pagamento. Tente novamente.');
+      const backendError = err.response?.data?.detail || err.response?.data?.message || err.message;
+      let detailedMessage = 'Não foi possível iniciar o pagamento. Verifique os dados e tente novamente.';
+
+      if (typeof backendError === 'string') {
+        detailedMessage = backendError;
+      } else if (Array.isArray(backendError)) {
+        const firstError = backendError[0];
+        detailedMessage = `Erro nos dados: o campo '${firstError.loc?.join('.') || 'desconhecido'}' ${firstError.msg || 'é inválido'}.`;
+      }
+
+      setError(detailedMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ HANDLE PAYMENT PRINCIPAL
+  // Handle Payment Principal
   const handlePayment = async (method) => {
     try {
       setLoading(true);
       setError('');
-
-      DebugLogger.log(`Iniciando pagamento ${method.toUpperCase()}`);
 
       if (method === 'mbway' && !phoneNumber.trim()) {
         throw new Error('Número de telemóvel é obrigatório para MB WAY');
@@ -469,7 +446,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
           if (!clientSecret || !stripePromise) {
             throw new Error('Stripe Elements não está pronto');
           }
-          // O processamento do pagamento é tratado pelo StripeCheckoutForm
           break;
 
         default:
@@ -477,10 +453,11 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
       }
 
     } catch (error) {
-      DebugLogger.error(`Erro no pagamento ${method}`, error);
       setError(error.message);
     } finally {
-      setLoading(false);
+      if (method !== 'paypal') { // PayPal redireciona, não precisa parar loading
+        setLoading(false);
+      }
     }
   };
 
@@ -488,7 +465,7 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
     return new Intl.NumberFormat('pt-PT', {
       style: 'currency',
       currency: 'EUR'
-    }).format(price);
+    }).format(price || 0);
   };
 
   const handleEditClick = () => {
@@ -599,7 +576,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">{t.paymentMethodTitle}</h2>
                 
-                {/* Security Banner */}
                 <div className="flex items-center mb-6 p-3 bg-green-50 rounded-lg border border-green-200">
                   <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -607,7 +583,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                   <span className="text-sm font-medium text-green-800">{t.securityText}</span>
                 </div>
                 
-                {/* Payment Methods */}
                 <div className="space-y-3">
                   {/* Google Pay */}
                   <div className={`border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 ${
@@ -724,13 +699,41 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                             onProcessing={setLoading}
                             onError={setError}
                             onSuccess={(paymentIntent) => {
-                              DebugLogger.success("Pagamento Stripe Elements bem-sucedido!", paymentIntent);
-                              onPaymentSuccess({
-                                method: paymentIntent.payment_method_types[0],
-                                transaction_id: paymentIntent.id,
-                                booking_id: bookingData.id
-                              });
+                              console.log("✅ DEBUG PaymentComponent: onSuccess chamado", paymentIntent);
+                              
+                              try {
+                                const successData = {
+                                  method: paymentIntent.payment_method_types[0],
+                                  transaction_id: paymentIntent.id,
+                                  booking_id: bookingData.id,
+                                  amount: paymentIntent.amount / 100,
+                                  receipt_url: paymentIntent.charges?.data[0]?.receipt_url
+                                };
+
+                                console.log("🔍 DEBUG PaymentComponent: successData preparado", successData);
+
+                                // Chamar callback se fornecido
+                                if (onPaymentSuccess) {
+                                  console.log("🔍 DEBUG PaymentComponent: Chamando onPaymentSuccess callback");
+                                  onPaymentSuccess(successData);
+                                }
+
+                                // Navegar para página de sucesso
+                                console.log("🔍 DEBUG PaymentComponent: Tentando navegar para /payment/success");
+                                navigate('/payment/success', {
+                                  state: {
+                                    paymentSuccess: true,
+                                    ...successData
+                                  }
+                                });
+                                console.log("✅ DEBUG PaymentComponent: navigate() chamado");
+                              } catch (navError) {
+                                console.error("❌ DEBUG PaymentComponent: Erro na navegação:", navError);
+                                setError("Pagamento bem-sucedido, mas erro ao redirecionar: " + navError.message);
+                              }
                             }}
+                            amount={bookingData.depositAmount}
+                            bookingData={bookingData}
                           />
                         </Elements>
                       </div>
@@ -739,32 +742,36 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                 </div>
               </div>
 
-              {/* Payment Button */}
-              <div className="space-y-4">
-                <button
-                  onClick={() => handlePayment(paymentMethod)}
-                  disabled={loading || !isPaymentMethodAvailable(paymentMethod)}
-                  className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform ${
-                    loading || !isPaymentMethodAvailable(paymentMethod)
-                      ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                      : 'bg-blue-600 hover:bg-blue-700 hover:scale-[1.02] cursor-pointer text-white shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent mr-3"></div>
-                      {t.processing}
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                      {`${t.payButton} ${paymentMethod.toUpperCase()} ${formatPrice(bookingData.depositAmount)}`}
-                    </div>
-                  )}
-                </button>
+              {/* Botões de pagamento */}
+              <div className="space-y-4 mt-6">
+                {/* Botão de pagamento principal, condicional */}
+                {paymentMethod !== 'stripe_elements' && (
+                    <button
+                      onClick={() => handlePayment(paymentMethod)}
+                      disabled={loading || !isPaymentMethodAvailable(paymentMethod)}
+                      className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform ${
+                        loading || !isPaymentMethodAvailable(paymentMethod)
+                          ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                          : 'bg-blue-600 hover:bg-blue-700 hover:scale-[1.02] cursor-pointer text-white shadow-lg hover:shadow-xl'
+                      }`}
+                    >
+                      {loading ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent mr-3"></div>
+                          {t.processing}
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center">
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          {`${t.payButton} ${paymentMethod.toUpperCase()} ${formatPrice(bookingData.depositAmount)}`}
+                        </div>
+                      )}
+                    </button>
+                )}
 
+                {/* Botão de voltar, sempre visível */}
                 <button
                   onClick={onBack}
                   disabled={loading}
@@ -774,7 +781,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                 </button>
               </div>
 
-              {/* Trust Elements */}
               <div className="mt-6 flex items-center justify-center space-x-6 text-sm text-gray-600">
                 <div className="flex items-center">
                   <svg className="w-4 h-4 mr-1 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -797,7 +803,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 sticky top-8">
               <h3 className="text-xl font-bold text-gray-900 mb-6">{t.summary}</h3>
               
-              {/* Tour Card */}
               <div className="flex items-start space-x-4 mb-6 p-4 bg-gray-50 rounded-xl">
                 {bookingData.tour.images && bookingData.tour.images[0] && (
                   <img 
@@ -823,7 +828,7 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                     </p>
                     <p className="flex items-center">
                       <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       {bookingData.numberOfPeople} {t.participants}
                     </p>
@@ -837,7 +842,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                 </div>
               </div>
 
-              {/* Price Breakdown */}
               <div className="space-y-4">
                 <div className="bg-blue-50 p-4 rounded-xl border-2 border-blue-200">
                   <div className="flex justify-between items-center mb-2">
@@ -851,7 +855,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                 </div>
               </div>
 
-              {/* Customer Info */}
               <div className="mt-6 p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div>
@@ -868,7 +871,6 @@ const PaymentComponent = ({ bookingData, onPaymentSuccess, onBack }) => {
                 </div>
               </div>
 
-              {/* Trust Elements Sidebar */}
               <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-200">
                 <div className="space-y-2 text-sm text-green-700">
                   <p className="flex items-center">

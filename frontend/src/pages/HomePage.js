@@ -1,15 +1,14 @@
 // Em frontend/src/pages/HomePage.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // ✅ ALTERAÇÃO 1: Adicionado 'useCallback'
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../utils/useTranslation';
 import SEOHead from '../components/SEOHead';
-// As importações diretas do Firebase foram removidas
 import axios from 'axios';
 import { BACKEND_URL } from '../config/appConfig';
+import PremiumPaymentComponent from '../components/PremiumPaymentComponent';
 
-// A configuração e inicialização do Firebase foram removidas daqui
-
+// O seu código original, sem alterações
 const HomePage = () => {
   const { t, getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -17,142 +16,88 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showPaymentTest, setShowPaymentTest] = useState(false);
 
-  // Fallback hero images
   const fallbackHeroImages = [
     {
       id: 'fallback_1',
-      title: { 
-        pt: 'Sintra Mágica', 
-        en: 'Magical Sintra', 
-        es: 'Sintra Mágica' 
-      },
-      subtitle: { 
-        pt: 'Descubra palácios encantados', 
-        en: 'Discover enchanted palaces', 
-        es: 'Descubre palacios encantados' 
-      },
+      title: { pt: 'Sintra Mágica', en: 'Magical Sintra', es: 'Sintra Mágica' },
+      subtitle: { pt: 'Descubra palácios encantados', en: 'Discover enchanted palaces', es: 'Descubre palacios encantados' },
       imageUrl: 'https://media.timeout.com/images/105732838/1920/1080/image.webp',
-      order: 1,
-      active: true
     },
     {
       id: 'fallback_2',
-      title: { 
-        pt: 'Porto Autêntico', 
-        en: 'Authentic Porto', 
-        es: 'Oporto Auténtico' 
-      },
-      subtitle: { 
-        pt: 'Sabores e tradições do Norte', 
-        en: 'Northern flavors and traditions', 
-        es: 'Sabores y tradiciones del Norte' 
-      },
+      title: { pt: 'Porto Autêntico', en: 'Authentic Porto', es: 'Oporto Auténtico' },
+      subtitle: { pt: 'Sabores e tradições do Norte', en: 'Northern flavors and traditions', es: 'Sabores y tradiciones del Norte' },
       imageUrl: 'https://images.unsplash.com/photo-1555881400-69e38bb0c85f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
-      order: 2,
-      active: true
     }
   ];
 
-  // States for data
+  const defaultTourFilters = [
+    { key: 'all', labels: { pt: 'Todos os Tours', en: 'All Tours', es: 'Todos los Tours' }, order: 0 },
+    { key: 'cultural', labels: { pt: 'Cultural', en: 'Cultural', es: 'Cultural' }, order: 1 },
+    { key: 'gastronomic', labels: { pt: 'Gastronómico', en: 'Gastronomic', es: 'Gastronómico' }, order: 2 }
+  ];
+
   const [heroImages, setHeroImages] = useState(fallbackHeroImages);
   const [tours, setTours] = useState([]);
-  const [tourFilters, setTourFilters] = useState([
-    {
-      key: 'all',
-      labels: { pt: 'Todos os Tours', en: 'All Tours', es: 'Todos los Tours' },
-      order: 0,
-      active: true
-    },
-    {
-      key: 'cultural',
-      labels: { pt: 'Cultural', en: 'Cultural', es: 'Cultural' },
-      order: 1,
-      active: true
-    },
-    {
-      key: 'gastronomic', 
-      labels: { pt: 'Gastronómico', en: 'Gastronomic', es: 'Gastronómico' },
-      order: 2,
-      active: true
-    }
-  ]);
+  const [tourFilters, setTourFilters] = useState(defaultTourFilters);
   const [selectedType, setSelectedType] = useState('all');
 
-  // ✅ SUBSTITUÍDA a função loadHeroImages
-  const loadHeroImages = async () => {
-    try {
-      const response = await axios.get(`${BACKEND_URL}/api/config/hero-images`);
-      if (response.data && response.data.length > 0) {
-        setHeroImages(response.data);
-      } else {
-        setHeroImages(fallbackHeroImages); // Mantém o fallback
-      }
-      return { success: true };
-    } catch (error) {
-      console.error('Erro ao carregar hero images do backend:', error);
-      setHeroImages(fallbackHeroImages); // Mantém o fallback
-      return { success: false, error };
-    }
-  };
-
-  // ✅ SUBSTITUÍDA a função loadTourFilters
-  const loadTourFilters = async () => {
-    try {
-      const response = await axios.get(`${BACKEND_URL}/api/config/tour-filters`);
-      if (response.data && response.data.length > 0) {
-        // Garante que o filtro "Todos" está presente
-        const hasAllFilter = response.data.some(f => f.key === 'all');
-        const allFilter = { key: 'all', labels: { pt: 'Todos os Tours', en: 'All Tours', es: 'Todos los Tours' }, order: -1 };
-        const finalFilters = hasAllFilter ? response.data : [allFilter, ...response.data];
-        finalFilters.sort((a, b) => (a.order || 0) - (b.order || 0));
-        setTourFilters(finalFilters);
-      }
-      return { success: true };
-    } catch (error) {
-      console.error('Erro ao carregar filtros de tours do backend:', error);
-      // O estado inicial já serve como fallback
-      return { success: false, error };
-    }
-  };
-
-  // A função loadBackendTours já está correta, não precisa de ser alterada.
-  const loadBackendTours = async () => {
-    try {
-      const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=true&featured=true`);
-      setTours(response.data);
-      return { success: true, count: response.data.length };
-    } catch (error) {
-      console.error('Error fetching featured tours for HomePage:', error);
-      setTours([]);
-      return { success: false, error };
-    }
-  };
-
-  // Main data loading function
-  const loadAllData = async () => {
+  // ✅ ALTERAÇÃO 2: A sua função original, agora envolvida em useCallback
+  const loadAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      await Promise.allSettled([
-        loadHeroImages(),
-        loadTourFilters(),
-        loadBackendTours()
+      const [heroImagesResponse, tourFiltersResponse, toursResponse] = await Promise.all([
+        axios.get(`${BACKEND_URL}/api/config/hero-images`),
+        axios.get(`${BACKEND_URL}/api/config/tour-filters`),
+        axios.get(`${BACKEND_URL}/api/tours?active_only=true&featured=true`)
       ]);
-    } catch (error) {
-      setError(error.message);
+
+      if (Array.isArray(heroImagesResponse.data) && heroImagesResponse.data.length > 0) {
+        setHeroImages(heroImagesResponse.data);
+      } else {
+        console.warn("Hero images from backend is empty, using fallback.");
+        setHeroImages(fallbackHeroImages);
+      }
+
+      if (Array.isArray(tourFiltersResponse.data) && tourFiltersResponse.data.length > 0) {
+        const hasAllFilter = tourFiltersResponse.data.some(f => f.key === 'all');
+        const allFilter = { key: 'all', labels: { pt: 'Todos os Tours', en: 'All Tours', es: 'Todos los Tours' }, order: -1 };
+        const finalFilters = hasAllFilter ? tourFiltersResponse.data : [allFilter, ...tourFiltersResponse.data];
+        finalFilters.sort((a, b) => (a.order || 0) - (b.order || 0));
+        setTourFilters(finalFilters);
+      } else {
+        console.warn("Tour filters from backend is empty, using defaults.");
+        setTourFilters(defaultTourFilters);
+      }
+
+      if (Array.isArray(toursResponse.data)) {
+        setTours(toursResponse.data);
+      } else {
+        console.error("Tours data from backend is not an array.");
+        setTours([]);
+      }
+
+    } catch (err) {
+      console.error("❌ Failed to load page data:", err);
+      setError(t('message_error'));
+      setHeroImages(fallbackHeroImages);
+      setTourFilters(defaultTourFilters);
+      setTours([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]); // A dependência [t] é segura com o hook de tradução otimizado
 
-  // Main effect for loading data
+  // ✅ ALTERAÇÃO 3: O useEffect agora depende da função estável 'loadAllData'
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [loadAllData]);
 
-  // Automatic carousel
+
   useEffect(() => {
     if (heroImages.length > 1) {
       const interval = setInterval(() => {
@@ -162,21 +107,20 @@ const HomePage = () => {
     }
   }, [heroImages.length]);
 
-  // Helper functions
   const getLocalizedText = (textObj) => {
     if (!textObj) return '';
-    return textObj[currentLang] || textObj.pt || textObj.en || '';
+    return textObj[currentLang] || textObj.en || textObj.pt || '';
   };
 
   const getFilterLabel = (filter) => {
     if (filter.labels && filter.labels[currentLang]) {
       return filter.labels[currentLang];
     }
-    return filter.labels?.pt || filter.key || 'Filtro';
+    return filter.labels?.en || filter.labels?.pt || filter.key || 'Filter';
   };
 
   const getURL = (path) => {
-    const langPrefix = currentLang === 'pt' ? '' : `/${currentLang}`;
+    const langPrefix = currentLang === 'en' ? '' : `/${currentLang}`;
     return `${langPrefix}${path}`;
   };
 
@@ -191,7 +135,76 @@ const HomePage = () => {
     ? tours 
     : tours.filter(tour => tour.tour_type === selectedType);
 
-  // Loading state
+  const TestPaymentSection = () => {
+    const testData = {
+      tour: { id: 'test-homepage', name: 'Tour de Teste - HomePage' },
+      firstName: 'João', lastName: 'Silva',
+      email: 'joao@teste.com', phone: '+351912345678',
+      date: '2025-08-15', numberOfPeople: 1,
+      depositAmount: 5.0, remainingAmount: 20.0,
+      specialRequests: 'Teste via HomePage'
+    };
+
+    if (!showPaymentTest) {
+      return (
+        <div className="max-w-2xl mx-auto text-center py-8">
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+            <h3 className="text-xl font-bold text-red-800 mb-3">
+              🧪 Modo de Desenvolvimento
+            </h3>
+            <p className="text-red-700 mb-4">
+              Testar novo sistema de pagamento (Cartões + MB WAY)
+            </p>
+            <button 
+              onClick={() => setShowPaymentTest(true)}
+              className="bg-red-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-600 transition-colors"
+            >
+              🧪 TESTAR PAGAMENTO PREMIUM
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-w-4xl mx-auto py-8">
+        <div className="text-center mb-6">
+          <h2 className="text-3xl font-bold mb-4">🧪 Teste de Pagamento Premium</h2>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <h3 className="font-bold text-yellow-800 mb-2">🔧 Cartões de Teste:</h3>
+            <div className="text-sm text-yellow-700 space-y-1">
+              <p>• <strong>✅ Sucesso:</strong> 4242424242424242</p>
+              <p>• <strong>❌ Falha:</strong> 4000000000000002</p>
+              <p>• <strong>CVC:</strong> 123 | <strong>Data:</strong> 12/25</p>
+              <p>• <strong>📱 MB WAY:</strong> +351912345678</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowPaymentTest(false)}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+          >
+            ← Voltar à HomePage
+          </button>
+        </div>
+        
+        <PremiumPaymentComponent 
+          bookingData={testData}
+          onPaymentSuccess={(result) => {
+            console.log('✅ Teste bem-sucedido:', result);
+            alert('✅ TESTE BEM-SUCEDIDO!\n\n' + 
+              'Método: ' + result.method + '\n' +
+              'ID Transação: ' + result.transaction_id + '\n' +
+              'Booking ID: ' + result.booking_id + '\n' +
+              'Valor: €' + result.amount
+            );
+            setShowPaymentTest(false);
+          }}
+          onBack={() => setShowPaymentTest(false)}
+        />
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100">
@@ -204,14 +217,15 @@ const HomePage = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-lg">
-          <div className="text-red-600 text-xl mb-4">❌ Erro: {error}</div>
+      <div className="min-h-screen flex items-center justify-center bg-red-50">
+        <div className="text-center max-w-lg bg-white p-8 rounded-lg shadow-lg border border-red-200">
+          <div className="text-5xl mb-4">😢</div>
+          <h2 className="text-2xl font-bold text-red-800 mb-3">Ocorreu um Erro</h2>
+          <p className="text-red-700 mb-6">{error}</p>
           <button 
-            onClick={loadAllData}
+            onClick={() => window.location.reload()}
             className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             🔄 Tentar Novamente
@@ -224,12 +238,11 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <SEOHead 
-        title="9 Rocks Tours - Aventuras Épicas em Portugal"
-        description="Descubra paraísos escondidos com tours exclusivos"
+        title="9 Rocks Tours - Epic Adventures in Portugal"
+        description="Discover hidden paradises with exclusive tours"
         lang={currentLang}
       />
       
-      {/* Hero section */}
       <div className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
           {heroImages.map((image, index) => (
@@ -245,7 +258,7 @@ const HomePage = () => {
                 className="w-full h-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
                 onError={(e) => {
-                  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="%23e5e7eb"/><text x="960" y="540" text-anchor="middle" fill="%236b7280" font-size="48">Imagem não disponível</text></svg>';
+                  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="%23e5e7eb"/><text x="960" y="540" text-anchor="middle" fill="%236b7280" font-size="48">Image not available</text></svg>';
                 }}
               />
               <div className="absolute inset-0 bg-black bg-opacity-40"></div>
@@ -289,7 +302,6 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Carousel indicators */}
         {heroImages.length > 1 && (
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
             {heroImages.map((_, index) => (
@@ -307,7 +319,14 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Credibility section */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-red-50 py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <TestPaymentSection />
+          </div>
+        </div>
+      )}
+
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center opacity-60">
@@ -331,7 +350,6 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Tours section */}
       <div id="tours" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -342,7 +360,6 @@ const HomePage = () => {
           </p>
         </div>
 
-        {/* Tour filters */}
         <div className="flex flex-wrap justify-center gap-4 mb-16">
           {tourFilters.map((filter) => (
             <button
@@ -359,7 +376,6 @@ const HomePage = () => {
           ))}
         </div>
 
-        {/* Tours grid */}
         {filteredTours.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-gray-500 text-xl">
@@ -377,7 +393,7 @@ const HomePage = () => {
                   {tour.images && tour.images.length > 0 ? (
                     <img
                       src={tour.images[0]}
-                      alt={tour.name[currentLang] || tour.name.pt}
+                      alt={getLocalizedText(tour.name)}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       loading="lazy"
                     />
@@ -399,10 +415,10 @@ const HomePage = () => {
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-indigo-600 transition-colors">
-                    {tour.name[currentLang] || tour.name.pt}
+                    {getLocalizedText(tour.name)}
                   </h3>
                   <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-2">
-                    {tour.short_description[currentLang] || tour.short_description.pt}
+                    {getLocalizedText(tour.short_description)}
                   </p>
                   <div className="space-y-2 mb-6">
                     <div className="flex items-center text-sm text-gray-500">
@@ -432,7 +448,6 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* Why choose us */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -488,7 +503,6 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Final CTA */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">

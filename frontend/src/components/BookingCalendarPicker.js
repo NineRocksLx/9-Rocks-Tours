@@ -1,88 +1,86 @@
-// frontend/src/components/BookingCalendarPicker.js - NOVO COMPONENTE
+// frontend/src/components/BookingCalendarPicker.js - CORREÇÃO DEFINITIVA
 import React, { useState, useEffect } from 'react';
 
 const BookingCalendarPicker = ({ 
   availableDates, 
+  occupiedDates = [], 
   selectedDate, 
   onDateSelect, 
-  language = 'pt',
-  className = '' 
+  language = 'pt', 
+  className = '',
+  isDateAvailable 
 }) => {
-  const [currentStartMonth, setCurrentStartMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // Conteúdo traduzido
+  const monthNames = {
+    pt: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'],
+    en: ['January', 'February', 'March', 'April', 'May', 'June',
+         'July', 'August', 'September', 'October', 'November', 'December'],
+    es: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+  };
+
+  const weekDays = {
+    pt: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+    en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    es: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+  };
+
   const content = {
     pt: {
-      selectDate: "Escolha a data perfeita para sua aventura",
-      monthNames: [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ],
-      weekDays: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
-      available: "Disponível",
-      selected: "Selecionado",
-      unavailable: "Indisponível",
-      noAvailableDates: "✨ Sem datas específicas definidas",
-      noAvailableDatesSubtext: "Este tour aceita reservas para qualquer data futura",
-      prevMonths: "Meses anteriores",
-      nextMonths: "Próximos meses"
+      selectDate: 'Selecione uma data disponível',
+      noAvailableDates: 'Sem datas disponíveis para este tour',
+      weekendsNotAvailable: 'Fins de semana não disponíveis',
+      dateOccupied: 'Data já reservada',
+      datePassed: 'Data já passou',
+      nextMonth: 'Próximo mês',
+      prevMonth: 'Mês anterior',
+      selected: 'Selecionado',
+      available: 'Disponível',
+      booked: 'Já reservado',
+      weekend: 'Fim de semana'
     },
     en: {
-      selectDate: "Choose the perfect date for your adventure",
-      monthNames: [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ],
-      weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-      available: "Available",
-      selected: "Selected",
-      unavailable: "Unavailable",
-      noAvailableDates: "✨ No specific dates defined",
-      noAvailableDatesSubtext: "This tour accepts bookings for any future date",
-      prevMonths: "Previous months",
-      nextMonths: "Next months"
+      selectDate: 'Select an available date',
+      noAvailableDates: 'No available dates for this tour',
+      weekendsNotAvailable: 'Weekends not available',
+      dateOccupied: 'Date already booked',
+      datePassed: 'Date has passed',
+      nextMonth: 'Next month',
+      prevMonth: 'Previous month',
+      selected: 'Selected',
+      available: 'Available',
+      booked: 'Already booked',
+      weekend: 'Weekend'
     },
     es: {
-      selectDate: "Elige la fecha perfecta para tu aventura",
-      monthNames: [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-      ],
-      weekDays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-      available: "Disponible",
-      selected: "Seleccionado",
-      unavailable: "No disponible",
-      noAvailableDates: "✨ Sin fechas específicas definidas",
-      noAvailableDatesSubtext: "Este tour acepta reservas para cualquier fecha futura",
-      prevMonths: "Meses anteriores",
-      nextMonths: "Próximos meses"
+      selectDate: 'Selecciona una fecha disponible',
+      noAvailableDates: 'Sin fechas disponibles para este tour',
+      weekendsNotAvailable: 'Fines de semana no disponibles',
+      dateOccupied: 'Fecha ya reservada',
+      datePassed: 'Fecha ya pasó',
+      nextMonth: 'Mes siguiente',
+      prevMonth: 'Mes anterior',
+      selected: 'Seleccionado',
+      available: 'Disponible',
+      booked: 'Ya reservado',
+      weekend: 'Fin de semana'
     }
   };
 
-  const t = content[language];
+  const t = content[language] || content.pt;
 
-  // Gerar 3 meses consecutivos
-  const generateThreeMonths = () => {
-    const months = [];
-    const start = new Date(currentStartMonth);
-    
-    for (let i = 0; i < 3; i++) {
-      const monthDate = new Date(start.getFullYear(), start.getMonth() + i, 1);
-      months.push(monthDate);
-    }
-    
-    return months;
+  // ===================================================================
+  // 🎯 FUNÇÃO CORRIGIDA - SEM PROBLEMAS DE TIMEZONE
+  // ===================================================================
+  const formatDateString = (year, month, day) => {
+    // CORREÇÃO: Gera string YYYY-MM-DD diretamente, SEM conversões UTC
+    const yearStr = year.toString();
+    const monthStr = (month + 1).toString().padStart(2, '0'); // month é 0-based
+    const dayStr = day.toString().padStart(2, '0');
+    return `${yearStr}-${monthStr}-${dayStr}`;
   };
-
-  const threeMonths = generateThreeMonths();
-
-  // Converter datas disponíveis para Set para busca rápida
-  const availableDateStrings = new Set(
-    availableDates.map(date => {
-      if (typeof date === 'string') return date;
-      return date.toISOString().split('T')[0];
-    })
-  );
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -90,11 +88,11 @@ const BookingCalendarPicker = ({
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+    const startingDayOfWeek = firstDay.getDay();
 
     const days = [];
     
-    // Adicionar dias vazios para alinhar com o primeiro dia da semana
+    // Adicionar dias vazios para começar no domingo
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(null);
     }
@@ -102,196 +100,168 @@ const BookingCalendarPicker = ({
     // Adicionar dias do mês
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month, day);
-      const dateString = currentDate.toISOString().split('T')[0];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      
+      // 🎯 CORREÇÃO CRÍTICA: Usa função que não depende de timezone
+      const dateString = formatDateString(year, month, day);
+      
+      const dayOfWeek = currentDate.getDay();
+      
+      console.log(`📅 Gerando dia ${day}: dateString=${dateString}`);
       
       days.push({
         date: day,
         fullDate: currentDate,
-        dateString: dateString,
-        isPast: currentDate < today,
+        dateString,
+        isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+        isPast: currentDate < new Date().setHours(0, 0, 0, 0),
         isToday: currentDate.toDateString() === new Date().toDateString(),
-        isAvailable: availableDates.length === 0 || availableDateStrings.has(dateString),
-        isSelected: selectedDate === dateString
+        isOccupied: occupiedDates.includes(dateString),
+        isAvailable: isDateAvailable ? isDateAvailable(dateString) : !occupiedDates.includes(dateString)
       });
     }
     
     return days;
   };
 
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
   const handleDateClick = (day) => {
-    if (day.isPast || !day.isAvailable) return;
+    if (!day.isAvailable) return;
+    
+    console.log(`🗓️ Calendário clicado: ${day.dateString} (dia ${day.date})`);
     onDateSelect(day.dateString);
   };
 
-  const goToPreviousMonths = () => {
-    const newStart = new Date(currentStartMonth);
-    newStart.setMonth(newStart.getMonth() - 3);
-    setCurrentStartMonth(newStart);
+  const getDateButtonClass = (day) => {
+    if (!day.isAvailable) {
+      if (day.isWeekend) {
+        return 'bg-red-50 text-red-300 cursor-not-allowed border border-red-100';
+      }
+      if (day.isOccupied) {
+        return 'bg-red-600 text-white cursor-not-allowed border border-red-700 font-bold line-through';
+      }
+      if (day.isPast) {
+        return 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100';
+      }
+      return 'bg-gray-400 text-white cursor-not-allowed border border-gray-500 font-bold';
+    }
+
+    if (selectedDate === day.dateString) {
+      return 'bg-blue-600 text-white font-bold border-2 border-blue-700 shadow-lg';
+    }
+
+    return 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 hover:border-blue-300 cursor-pointer';
   };
 
-  const goToNextMonths = () => {
-    const newStart = new Date(currentStartMonth);
-    newStart.setMonth(newStart.getMonth() + 3);
-    setCurrentStartMonth(newStart);
+  const getDateTooltip = (day) => {
+    if (day.isWeekend) return t.weekendsNotAvailable;
+    if (day.isOccupied) return t.dateOccupied;
+    if (day.isPast) return t.datePassed;
+    if (selectedDate === day.dateString) return t.selected;
+    return day.isAvailable ? 'Clique para selecionar' : 'Data não disponível';
   };
 
-  // Se não há datas disponíveis específicas, mostrar input de data livre
-  if (availableDates.length === 0) {
-    return (
-      <div className={`bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-dashed border-blue-200 rounded-xl p-6 text-center ${className}`}>
-        <div className="text-4xl mb-3">🗓️</div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.noAvailableDates}</h3>
-        <p className="text-gray-600 text-sm mb-4">{t.noAvailableDatesSubtext}</p>
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => onDateSelect(e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
-          className="w-full max-w-xs mx-auto px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center font-medium"
-        />
-      </div>
-    );
-  }
+  const days = getDaysInMonth(currentMonth);
+  const monthYear = `${monthNames[language][currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-xl p-6 ${className}`}>
-      {/* Header */}
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{t.selectDate}</h3>
-        <div className="flex items-center justify-center space-x-4">
-          <div className="flex items-center text-sm">
-            <div className="w-4 h-4 bg-blue-600 rounded-full mr-2"></div>
-            <span className="text-gray-600">{t.selected}</span>
+    <div className={`bg-white border border-gray-200 rounded-lg p-4 ${className}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">{t.selectDate}</h3>
+        <div className="flex space-x-2">
+          <button
+            type="button"
+            onClick={prevMonth}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title={t.prevMonth}
+          >
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="flex items-center px-4 py-2 bg-gray-50 rounded-lg">
+            <span className="font-medium text-gray-900">{monthYear}</span>
           </div>
-          <div className="flex items-center text-sm">
-            <div className="w-4 h-4 bg-green-100 border-2 border-green-500 rounded-full mr-2"></div>
-            <span className="text-gray-600">{t.available}</span>
-          </div>
-          <div className="flex items-center text-sm">
-            <div className="w-4 h-4 bg-gray-200 rounded-full mr-2"></div>
-            <span className="text-gray-600">{t.unavailable}</span>
-          </div>
+          <button
+            type="button"
+            onClick={nextMonth}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title={t.nextMonth}
+          >
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Navegação */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          type="button"
-          onClick={goToPreviousMonths}
-          className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          title={t.prevMonths}
-        >
-          <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-          </svg>
-          <span className="text-sm font-medium">Anterior</span>
-        </button>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-500">
-            {t.monthNames[threeMonths[0].getMonth()]} - {t.monthNames[threeMonths[2].getMonth()]} {threeMonths[0].getFullYear()}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={goToNextMonths}
-          className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          title={t.nextMonths}
-        >
-          <span className="text-sm font-medium">Próximo</span>
-          <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+      {/* Header dos dias da semana */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {weekDays[language].map(day => (
+          <div key={day} className="text-sm font-medium text-gray-500 text-center p-2">
+            {day}
+          </div>
+        ))}
       </div>
 
-      {/* Calendários */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {threeMonths.map((month, monthIndex) => {
-          const days = getDaysInMonth(month);
-          const monthYear = `${t.monthNames[month.getMonth()]} ${month.getFullYear()}`;
-          
+      {/* Calendário */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, index) => {
+          if (!day) {
+            return <div key={index} className="h-10"></div>;
+          }
+
           return (
-            <div key={monthIndex} className="bg-gray-50 rounded-lg p-4">
-              {/* Header do mês */}
-              <div className="text-center mb-4">
-                <h4 className="font-bold text-gray-900 text-lg">{t.monthNames[month.getMonth()]}</h4>
-                <p className="text-sm text-gray-500">{month.getFullYear()}</p>
-              </div>
-
-              {/* Header dos dias da semana */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {t.weekDays.map(day => (
-                  <div key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Grade do calendário */}
-              <div className="grid grid-cols-7 gap-1">
-                {days.map((day, dayIndex) => {
-                  if (!day) {
-                    return <div key={dayIndex} className="h-10"></div>;
-                  }
-
-                  const isClickable = !day.isPast && day.isAvailable;
-
-                  return (
-                    <button
-                      key={dayIndex}
-                      type="button"
-                      onClick={() => handleDateClick(day)}
-                      disabled={!isClickable}
-                      className={`
-                        h-10 w-10 text-sm rounded-lg flex items-center justify-center font-medium transition-all duration-200 relative
-                        ${day.isToday ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}
-                        ${day.isSelected ? 
-                          'bg-blue-600 text-white shadow-lg transform scale-105' :
-                          day.isAvailable && !day.isPast ? 
-                            'bg-green-50 text-green-800 border-2 border-green-200 hover:bg-green-100 hover:border-green-300 cursor-pointer hover:shadow-md hover:scale-105' :
-                            'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        }
-                      `}
-                      title={
-                        day.isPast ? 'Data já passou' :
-                        !day.isAvailable ? 'Data não disponível' :
-                        day.isSelected ? 'Data selecionada' : 'Clique para selecionar'
-                      }
-                    >
-                      {day.date}
-                      {day.isSelected && (
-                        <div className="absolute -top-1 -right-1">
-                          <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <button
+              key={index}
+              type="button"
+              onClick={() => handleDateClick(day)}
+              disabled={!day.isAvailable}
+              className={`
+                h-10 w-full text-sm rounded-lg flex items-center justify-center transition-all duration-200
+                ${getDateButtonClass(day)}
+                ${day.isToday ? 'ring-2 ring-blue-400' : ''}
+              `}
+              title={getDateTooltip(day)}
+            >
+              {day.date}
+            </button>
           );
         })}
       </div>
 
-      {/* Informação adicional */}
-      {selectedDate && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-blue-800 font-medium">
-              Data selecionada: {new Date(selectedDate + 'T00:00:00').toLocaleDateString(
-                language === 'pt' ? 'pt-PT' : language === 'es' ? 'es-ES' : 'en-GB',
-                { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-              )}
-            </span>
-          </div>
+      {/* Legenda - CORRIGIDA COM IDIOMAS */}
+      <div className="mt-4 flex flex-wrap gap-3 text-sm">
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-blue-600 rounded mr-2"></div>
+          <span className="text-gray-600">{t.selected}</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-white border border-gray-200 rounded mr-2"></div>
+          <span className="text-gray-600">{t.available}</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-orange-50 border border-orange-200 rounded mr-2"></div>
+          <span className="text-gray-600">{t.booked}</span>
+        </div>
+        <div className="flex items-center">
+          <div className="w-4 h-4 bg-red-50 border border-red-100 rounded mr-2"></div>
+          <span className="text-gray-600">{t.weekend}</span>
+        </div>
+      </div>
+
+      {/* Mensagem se não há datas disponíveis */}
+      {availableDates.length === 0 && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-800 text-sm text-center">
+            {t.noAvailableDates}
+          </p>
         </div>
       )}
     </div>

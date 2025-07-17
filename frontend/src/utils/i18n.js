@@ -114,7 +114,6 @@ const translations = {
     'tour_details.from': 'Preço total',
     'tour_details.book_now_pay_later': 'Reserve agora e pague depois - Sem taxas de reserva',
 
-
     // Itinerário
     'itinerary_tour_schedule': 'Itinerário do Tour',
     'itinerary_detailed_schedule': 'Itinerário Detalhado',
@@ -219,6 +218,43 @@ const translations = {
     'admin_active': 'Ativo',
     'admin_inactive': 'Inativo',
     
+    // ✅ TERMOS E CONDIÇÕES - ADICIONADO
+    'terms_and_conditions_title': 'Termos e Condições de Reserva',
+    'terms_and_conditions_short': 'termos e condições',
+    'terms_and_conditions_accept': 'Aceito os',
+    'terms_and_conditions_content': `TERMOS E CONDIÇÕES - 9 ROCKS TOURS
+
+1. RESERVAS E PAGAMENTOS
+• Depósito de 30% obrigatório para confirmar reserva
+• Restante pagamento no dia do tour
+• Pagamentos aceites: Cartão, MB Way, PayPal
+• Reservas sujeitas a disponibilidade
+
+2. CANCELAMENTOS
+• Cancelamento gratuito até 24 horas antes do tour
+• Cancelamentos com menos de 24h: sem reembolso
+• Condições meteorológicas extremas: reagendamento gratuito
+• Em caso de doença: apresentar atestado médico
+
+3. POLÍTICAS DO TOUR
+• Máximo 4 pessoas por tour (grupos maiores sob consulta)
+• Chegada 15 minutos antes da hora marcada
+• Tours em português, inglês e espanhol
+• Não incluído: refeições principais, transporte para ponto encontro
+
+4. RESPONSABILIDADES
+• Participantes responsáveis pelos seus pertences
+• Seguro de acidentes pessoais recomendado
+• Atividade não recomendada para mobilidade reduzida
+• Menores acompanhados por adulto responsável
+
+5. PROTEÇÃO DE DADOS
+• Dados pessoais protegidos conforme RGPD
+• Informações usadas apenas para contacto do tour
+• Direito de acesso, retificação e eliminação de dados
+
+Ao reservar, aceita estes termos integralmente.`,
+
     // Messages
     'message_success': 'Sucesso!',
     'message_error': 'Erro ao carregar os dados. Por favor, tente novamente.',
@@ -335,8 +371,6 @@ const translations = {
     'tour_details.from': 'Total price',
     'tour_details.book_now_pay_later': 'Book now and pay later - No booking fees',
 
-
-
     // Itinerário
     'itinerary_tour_schedule': 'Tour Schedule',
     'itinerary_detailed_schedule': 'Detailed Itinerary',
@@ -442,6 +476,43 @@ const translations = {
     'admin_active': 'Active',
     'admin_inactive': 'Inactive',
 
+    // ✅ TERMOS E CONDIÇÕES - ADICIONADO
+    'terms_and_conditions_title': 'Booking Terms and Conditions',
+    'terms_and_conditions_short': 'terms and conditions',
+    'terms_and_conditions_accept': 'I accept the',
+    'terms_and_conditions_content': `TERMS AND CONDITIONS - 9 ROCKS TOURS
+
+1. BOOKINGS AND PAYMENTS
+• 30% deposit required to confirm booking
+• Remaining payment on tour day
+• Accepted payments: Card, MB Way, PayPal
+• Bookings subject to availability
+
+2. CANCELLATIONS
+• Free cancellation up to 24 hours before tour
+• Cancellations less than 24h: no refund
+• Extreme weather conditions: free rescheduling
+• In case of illness: medical certificate required
+
+3. TOUR POLICIES
+• Maximum 4 people per tour (larger groups on request)
+• Arrival 15 minutes before scheduled time
+• Tours in Portuguese, English and Spanish
+• Not included: main meals, transport to meeting point
+
+4. RESPONSIBILITIES
+• Participants responsible for their belongings
+• Personal accident insurance recommended
+• Activity not recommended for reduced mobility
+• Minors accompanied by responsible adult
+
+5. DATA PROTECTION
+• Personal data protected according to GDPR
+• Information used only for tour contact
+• Right of access, rectification and data deletion
+
+By booking, you accept these terms in full.`,
+
     // Messages
     'message.success': 'Success!',
     'message.error': 'Error loading data. Please try again.',
@@ -462,7 +533,6 @@ const translations = {
     'tab_details': 'Detalles',
     'tab_included': 'Incluido',
     'tab_map': 'Mapa',
-
 
     // Navigation & Header
     'nav_home': 'Inicio',
@@ -665,6 +735,43 @@ const translations = {
     'admin_active': 'Activo',
     'admin_inactive': 'Inactivo',
     
+    // ✅ TERMOS E CONDIÇÕES - ADICIONADO
+    'terms_and_conditions_title': 'Términos y Condiciones de Reserva',
+    'terms_and_conditions_short': 'términos y condiciones',
+    'terms_and_conditions_accept': 'Acepto los',
+    'terms_and_conditions_content': `TÉRMINOS Y CONDICIONES - 9 ROCKS TOURS
+
+1. RESERVAS Y PAGOS
+• Depósito del 30% obligatorio para confirmar reserva
+• Pago restante el día del tour
+• Pagos aceptados: Tarjeta, MB Way, PayPal
+• Reservas sujetas a disponibilidad
+
+2. CANCELACIONES
+• Cancelación gratuita hasta 24 horas antes del tour
+• Cancelaciones con menos de 24h: sin reembolso
+• Condiciones meteorológicas extremas: reprogramación gratuita
+• En caso de enfermedad: presentar certificado médico
+
+3. POLÍTICAS DEL TOUR
+• Máximo 4 personas por tour (grupos mayores bajo consulta)
+• Llegada 15 minutos antes de la hora programada
+• Tours en portugués, inglés y español
+• No incluido: comidas principales, transporte al punto de encuentro
+
+4. RESPONSABILIDADES
+• Participantes responsables de sus pertenencias
+• Seguro de accidentes personales recomendado
+• Actividad no recomendada para movilidad reducida
+• Menores acompañados por adulto responsable
+
+5. PROTECCIÓN DE DATOS
+• Datos personales protegidos según RGPD
+• Información utilizada solo para contacto del tour
+• Derecho de acceso, rectificación y eliminación de datos
+
+Al reservar, acepta estos términos íntegramente.`,
+
     // Messages
     'message_success': '¡Éxito!',
     'message_error': 'Error al cargar los datos. Por favor, inténtalo de nuevo.',

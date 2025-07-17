@@ -1,7 +1,7 @@
 // frontend/src/utils/seoHelpers.js - HELPERS SEO COMPLETOS 🎯
 
 // 📊 SCHEMA.ORG GENERATORS
-export const generateTourSchema = (tour, lang = 'pt') => {
+export const generateTourSchema = (tour, lang = 'en') => {
   const baseUrl = process.env.REACT_APP_BASE_URL || "https://9rockstours.com";
   
   return {
@@ -9,7 +9,7 @@ export const generateTourSchema = (tour, lang = 'pt') => {
     "@type": "TouristTrip",
     "name": tour.name[lang] || tour.name.pt,
     "description": tour.description[lang] || tour.description.pt,
-    "url": `${baseUrl}/${lang === 'pt' ? '' : lang + '/'}tour/${tour.id}`,
+    "url": `${baseUrl}/${lang === 'en' ? '' : lang + '/'}tour/${tour.id}`,
     "image": tour.images?.[0] ? `${baseUrl}${tour.images[0]}` : `${baseUrl}/images/9rocks-tours-og.jpg`,
     "offers": {
       "@type": "Offer",
@@ -106,8 +106,8 @@ export const generateOrganizationSchema = () => {
 };
 
 // 🍞 BREADCRUMB SCHEMA
-export const generateBreadcrumbSchema = (breadcrumbs, lang = 'pt') => {
-  const baseUrl = process.env.REACT_APP_BASE_URL || "https://9rockstours.com";
+export const generateBreadcrumbSchema = (breadcrumbs, lang = 'en') => {
+  const baseUrl = process.env.REACT_APP_BASE_URL || "https://9rocks.pt";
   
   return {
     "@context": "https://schema.org",
@@ -122,7 +122,7 @@ export const generateBreadcrumbSchema = (breadcrumbs, lang = 'pt') => {
 };
 
 // 🎯 META TAGS GENERATORS
-export const generatePageTitle = (pageTitle, lang = 'pt') => {
+export const generatePageTitle = (pageTitle, lang = 'en') => {
   const siteName = "9 Rocks Tours";
   const brandSuffix = {
     pt: " | Tours Autênticos em Portugal",

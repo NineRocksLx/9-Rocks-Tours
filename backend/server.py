@@ -1,8 +1,12 @@
 import os
 from dotenv import load_dotenv
 
-# ✅ CARREGAR .ENV LOGO NO INÍCIO
+# ✅ PASSO 1: CARREGAR .ENV LOGO NO INÍCIO (Mantido)
 load_dotenv()
+
+print("DEBUG: PAYPAL_MODE =", os.getenv("PAYPAL_MODE"))
+print("DEBUG: PAYPAL_CLIENT_ID =", os.getenv("PAYPAL_CLIENT_ID"))
+print("DEBUG: PAYPAL_CLIENT_SECRET =", os.getenv("PAYPAL_CLIENT_SECRET"))
 
 import sys
 import logging
@@ -28,6 +32,7 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import service_account
 from firebase_admin import firestore
 
+
 print("✅ STRIPE_SECRET_KEY carregada:", "SET" if os.getenv('STRIPE_SECRET_KEY') else "NOT SET")
 print("✅ STRIPE_PUBLISHABLE_KEY carregada:", "SET" if os.getenv('STRIPE_PUBLISHABLE_KEY') else "NOT SET")
 
@@ -46,9 +51,11 @@ except ImportError:
     STRIPE_AVAILABLE = False
     stripe_service = None
 
-# ✅ IMPORTAR ROUTERS
-from routers import tours_fixed as tours_router
+# ✅ CORREÇÃO: IMPORTAR OS MÓDULOS DOS ROUTERS
+from routers import tours_fixed as tours
+from routers import booking_routes
 from routers.seo_routes import setup_seo_routes
+
 
 # Set up root directory and load environment variables
 ROOT_DIR = Path(__file__).parent
@@ -71,7 +78,7 @@ except ImportError as e:
 app = FastAPI(
     title="9 Rocks Tours API",
     description="API completa para gestão de tours em Portugal",
-    version="2.0.0"
+    version="2.1.1" # Versão atualizada com a correção
 )
 
 # ✅ CONFIGURAR O CORS
@@ -89,8 +96,79 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create a router with the /api prefix
+# ================================
+# ✅ ORGANIZAÇÃO CENTRALIZADA DOS ROUTERS
+# ================================
+
+# Criar um router principal para todas as APIs com prefixo /api
 api_router = APIRouter(prefix="/api")
+
+# ✅ CORREÇÃO: Incluir o objeto 'router' de dentro do módulo 'tours'
+# Isto resolve o AttributeError
+api_router.include_router(tours.router, tags=["Tours"])
+# ================================
+# 📸 ENDPOINTS DE CONFIGURAÇÃO - ADICIONAR APÓS APROXIMADAMENTE ALINHA 97
+# ================================
+
+@api_router.get("/config/tour-filters")
+async def get_tour_filters():
+    """
+    Retorna lista de filtros de tipos de tour para o frontend.
+    """
+    return [
+        {
+            "key": "all",
+            "labels": {"pt": "Todos os Tours", "en": "All Tours", "es": "Todos los Tours"},
+            "order": 0
+        },
+        {
+            "key": "cultural",
+            "labels": {"pt": "Cultural", "en": "Cultural", "es": "Cultural"},
+            "order": 1
+        },
+        {
+            "key": "gastronomic",
+            "labels": {"pt": "Gastronómico", "en": "Gastronomic", "es": "Gastronómico"},
+            "order": 2
+        },
+        {
+            "key": "adventure",
+            "labels": {"pt": "Aventura", "en": "Adventure", "es": "Aventura"},
+            "order": 3
+        },
+        {
+            "key": "nature",
+            "labels": {"pt": "Natureza", "en": "Nature", "es": "Naturaleza"},
+            "order": 4
+        }
+    ]
+
+@api_router.get("/config/hero-images")
+async def get_hero_images():
+    """
+    Retorna imagens de destaque para o frontend.
+    """
+    return [
+        {
+            "id": "hero_1",
+            "title": {"pt": "Sintra Mágica", "en": "Magical Sintra", "es": "Sintra Mágica"},
+            "subtitle": {"pt": "Descubra palácios encantados", "en": "Discover enchanted palaces", "es": "Descubre palacios encantados"},
+            "imageUrl": "https://media.timeout.com/images/105732838/1920/1080/image.webp"
+        },
+        {
+            "id": "hero_2",
+            "title": {"pt": "Lisboa Histórica", "en": "Historic Lisbon", "es": "Lisboa Histórica"},
+            "subtitle": {"pt": "Explore bairros típicos", "en": "Explore typical neighborhoods", "es": "Explora barrios típicos"},
+            "imageUrl": "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+        },
+        {
+            "id": "hero_3",
+            "title": {"pt": "Porto Autêntico", "en": "Authentic Porto", "es": "Oporto Auténtico"},
+            "subtitle": {"pt": "Sabores e tradições do Norte", "en": "Northern flavors and traditions", "es": "Sabores y tradiciones del Norte"},
+            "imageUrl": "https://images.unsplash.com/photo-1555881400-69e38bb0c85f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
+        }
+    ]
+
 
 # Security scheme for Firebase JWT
 security = HTTPBearer(auto_error=False)
@@ -130,6 +208,58 @@ def upload_image_to_firebase(image_data: str, filename: str) -> str:
             return f"data:image/jpeg;base64,{image_data}"
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
+# ================================
+# 🔒 FUNÇÃO PARA MARCAR DATA COMO OCUPADA
+# ================================
+def handle_successful_payment(booking_id: str, tour_id: str, selected_date: str):
+    """
+    Marcar data como ocupada após pagamento confirmado
+    """
+    try:
+        print(f"🔒 Marcando data {selected_date} como ocupada para tour {tour_id}")
+        
+        # Buscar tour atual
+        tour_ref = db_firestore.collection('tours').document(tour_id)
+        tour_doc = tour_ref.get()
+        
+        if not tour_doc.exists:
+            print(f"❌ Tour {tour_id} não encontrado")
+            return False
+        
+        tour_data = tour_doc.to_dict()
+        
+        # Obter lista atual de datas ocupadas
+        occupied_dates = tour_data.get('occupied_dates', [])
+        
+        # Adicionar nova data se não existir
+        if selected_date not in occupied_dates:
+            occupied_dates.append(selected_date)
+            
+            # Atualizar documento do tour
+            tour_ref.update({
+                'occupied_dates': occupied_dates,
+                'updated_at': datetime.utcnow()
+            })
+            
+            print(f"✅ Data {selected_date} adicionada às datas ocupadas do tour {tour_id}")
+            
+            # Atualizar status da reserva
+            booking_ref = db_firestore.collection('bookings').document(booking_id)
+            booking_ref.update({
+                'date_blocked': True,
+                'date_blocked_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow()
+            })
+            
+            return True
+        else:
+            print(f"⚠️ Data {selected_date} já estava ocupada para tour {tour_id}")
+            return True
+            
+    except Exception as e:
+        print(f"❌ Erro ao marcar data como ocupada: {e}")
+        return False
 
 # ================================
 # GOOGLE CALENDAR UTILITIES
@@ -263,6 +393,19 @@ class PaymentIntentRequest(BaseModel):
     customer_name: str
     currency: Optional[str] = "eur"
 
+# --- NOVO MODELO ADICIONADO AQUI ---
+class CreatePaymentIntentRequest(BaseModel):
+    amount: float
+    currency: str = "EUR"
+    tour_id: str
+    booking_id: str
+    customer_email: str
+    customer_name: str
+    tour_name: Optional[str] = None
+    participants: Optional[int] = 1
+# --- FIM DO NOVO MODELO ---
+
+
 # ================================
 # FIREBASE MODELS
 # ================================
@@ -304,6 +447,191 @@ class BookingStats(BaseModel):
     bookings_by_tour: Dict[str, int]
     bookings_by_date: Dict[str, int]
     bookings_by_status: Dict[str, int]
+
+# ================================
+# 🔒 ENDPOINTS PARA DATAS OCUPADAS
+# ================================
+
+@api_router.get("/tours/{tour_id}/occupied-dates")
+async def get_tour_occupied_dates(tour_id: str):
+    """
+    Retornar datas ocupadas para um tour específico
+    """
+    try:
+        tour_ref = db_firestore.collection('tours').document(tour_id)
+        tour_doc = tour_ref.get()
+        
+        if not tour_doc.exists:
+            raise HTTPException(status_code=404, detail="Tour não encontrado")
+        
+        tour_data = tour_doc.to_dict()
+        occupied_dates = tour_data.get('occupied_dates', [])
+        
+        # Log para debug
+        print(f"📅 Datas ocupadas para tour {tour_id}: {occupied_dates}")
+        
+        return {
+            "success": True,
+            "tour_id": tour_id,
+            "occupied_dates": occupied_dates,
+            "total_occupied": len(occupied_dates),
+            "last_updated": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Erro ao buscar datas ocupadas: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/tours/{tour_id}/release-date/{date}")
+async def release_occupied_date(tour_id: str, date: str, user=Depends(verify_firebase_token)):
+    """
+    Liberar data ocupada (para admin ou cancelamentos)
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Autenticação necessária")
+    
+    try:
+        print(f"🔓 Liberando data {date} do tour {tour_id}")
+        
+        tour_ref = db_firestore.collection('tours').document(tour_id)
+        tour_doc = tour_ref.get()
+        
+        if not tour_doc.exists:
+            raise HTTPException(status_code=404, detail="Tour não encontrado")
+        
+        tour_data = tour_doc.to_dict()
+        occupied_dates = tour_data.get('occupied_dates', [])
+        
+        if date in occupied_dates:
+            occupied_dates.remove(date)
+            
+            tour_ref.update({
+                'occupied_dates': occupied_dates,
+                'updated_at': datetime.utcnow()
+            })
+            
+            return {
+                "success": True,
+                "message": f"Data {date} liberada com sucesso",
+                "tour_id": tour_id,
+                "date_released": date
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Data {date} não estava ocupada",
+                "tour_id": tour_id
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Erro ao liberar data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/debug/tours/{tour_id}/dates-status")
+async def debug_tour_dates_status(tour_id: str):
+    """
+    Debug: ver status completo das datas do tour
+    """
+    try:
+        tour_ref = db_firestore.collection('tours').document(tour_id)
+        tour_doc = tour_ref.get()
+        
+        if not tour_doc.exists:
+            raise HTTPException(status_code=404, detail="Tour não encontrado")
+        
+        tour_data = tour_doc.to_dict()
+        
+        # Buscar reservas confirmadas para este tour
+        bookings_ref = db_firestore.collection('bookings')
+        confirmed_bookings = bookings_ref.where('tour_id', '==', tour_id).where('status', '==', 'confirmed').stream()
+        
+        booking_dates = []
+        for booking in confirmed_bookings:
+            booking_data = booking.to_dict()
+            booking_dates.append({
+                "date": booking_data.get('selected_date'),
+                "customer": booking_data.get('customer_name'),
+                "booking_id": booking.id,
+                "participants": booking_data.get('participants')
+            })
+        
+        return {
+            "tour_id": tour_id,
+            "tour_name": tour_data.get('name', {}),
+            "available_dates": tour_data.get('available_dates', []),
+            "occupied_dates": tour_data.get('occupied_dates', []),
+            "confirmed_bookings": booking_dates,
+            "total_occupied": len(tour_data.get('occupied_dates', [])),
+            "total_confirmed_bookings": len(booking_dates),
+            "debug_timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/admin/sync-occupied-dates")
+async def sync_occupied_dates(user=Depends(verify_firebase_token)):
+    """
+    Sincronizar datas ocupadas baseado nas reservas confirmadas
+    """
+    if not user:
+        raise HTTPException(status_code=401, detail="Autenticação necessária")
+    
+    try:
+        print("🔄 Sincronizando datas ocupadas...")
+        
+        # Buscar todos os tours
+        tours_ref = db_firestore.collection('tours')
+        tours = tours_ref.stream()
+        
+        sync_results = []
+        
+        for tour_doc in tours:
+            tour_id = tour_doc.id
+            tour_data = tour_doc.to_dict()
+            
+            # Buscar reservas confirmadas para este tour
+            bookings_ref = db_firestore.collection('bookings')
+            confirmed_bookings = bookings_ref.where('tour_id', '==', tour_id).where('status', '==', 'confirmed').stream()
+            
+            occupied_dates = []
+            for booking in confirmed_bookings:
+                booking_data = booking.to_dict()
+                selected_date = booking_data.get('selected_date')
+                if selected_date and selected_date not in occupied_dates:
+                    occupied_dates.append(selected_date)
+            
+            # Atualizar tour com datas ocupadas
+            if occupied_dates:
+                tour_doc.reference.update({
+                    'occupied_dates': occupied_dates,
+                    'updated_at': datetime.utcnow()
+                })
+            
+            sync_results.append({
+                "tour_id": tour_id,
+                "tour_name": tour_data.get('name', {}),
+                "occupied_dates": occupied_dates,
+                "total_occupied": len(occupied_dates)
+            })
+        
+        return {
+            "success": True,
+            "message": "Sincronização concluída",
+            "tours_processed": len(sync_results),
+            "results": sync_results,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"❌ Erro na sincronização: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ================================
 # 🔧 ENDPOINTS DE DEBUG E TESTE - ADICIONADOS
@@ -621,7 +949,7 @@ async def get_environment_debug():
     }
 
 # ================================
-# 📊 ENDPOINT DE MONITORAMENTO EM TEMPO REAL
+# 📈 ENDPOINT DE MONITORAMENTO EM TEMPO REAL
 # ================================
 
 @api_router.get("/debug/monitor/live")
@@ -1415,11 +1743,14 @@ async def create_paypal_payment(payment_request: PaymentRequest):
 
 @api_router.post("/payments/paypal/execute/{payment_id}")
 async def execute_paypal_payment(payment_id: str, execution: PaymentExecution):
-    """Executar pagamento PayPal aprovado"""
+    """🔒 Executar pagamento PayPal com bloqueio de data"""
     if not PAYPAL_AVAILABLE or not paypal_service:
         raise HTTPException(status_code=503, detail="PayPal não está disponível")
     
     try:
+        print(f"💰 Executando pagamento PayPal: {payment_id}")
+        
+        # Buscar transação
         transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_id).stream()
         transaction_doc = None
         for doc in transaction_docs:
@@ -1430,10 +1761,14 @@ async def execute_paypal_payment(payment_id: str, execution: PaymentExecution):
             raise HTTPException(status_code=404, detail="Transação não encontrada")
         
         transaction_data = transaction_doc.to_dict()
+        
         if transaction_data.get("status") == "completed":
             return {"message": "Pagamento já processado", "status": "completed"}
         
+        # Executar pagamento
         execution_result = paypal_service.execute_payment(payment_id, execution.payer_id)
+        
+        # Atualizar transação
         update_data = {
             "status": "completed",
             "transaction_id": execution_result.get("transaction_id"),
@@ -1444,21 +1779,39 @@ async def execute_paypal_payment(payment_id: str, execution: PaymentExecution):
         
         db_firestore.collection('payment_transactions').document(transaction_doc.id).update(update_data)
         
+        # ✅ NOVO: BLOQUEAR DATA APÓS PAGAMENTO PAYPAL CONFIRMADO
         booking_id = transaction_data.get("booking_id")
-        if booking_id:
-            booking_update = {
-                "payment_status": "paid",
-                "status": "confirmed",
-                "payment_transaction_id": execution_result.get("transaction_id"),
-                "updated_at": datetime.utcnow()
-            }
-            db_firestore.collection('bookings').document(booking_id).update(booking_update)
+        tour_id = transaction_data.get("tour_id")
+        
+        if booking_id and tour_id:
+            # Buscar dados da reserva
+            booking_ref = db_firestore.collection('bookings').document(booking_id)
+            booking_doc = booking_ref.get()
+            
+            if booking_doc.exists:
+                booking_data = booking_doc.to_dict()
+                selected_date = booking_data.get('selected_date')
+                
+                # ✅ MARCAR DATA COMO OCUPADA
+                if selected_date:
+                    success = handle_successful_payment(booking_id, tour_id, selected_date)
+                    print(f"🔒 Data bloqueada: {success}")
+                
+                # Atualizar reserva
+                booking_update = {
+                    "payment_status": "paid",
+                    "status": "confirmed",
+                    "payment_transaction_id": execution_result.get("transaction_id"),
+                    "updated_at": datetime.utcnow()
+                }
+                booking_ref.update(booking_update)
         
         return execution_result
         
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ Erro na execução PayPal: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/payments/paypal/status/{payment_id}")
@@ -1488,7 +1841,7 @@ async def get_paypal_payment_status(payment_id: str):
 
 @api_router.post("/webhooks/paypal")
 async def paypal_webhook(request: Request):
-    """Webhook PayPal"""
+    """🔒 Webhook PayPal com bloqueio de data"""
     try:
         body = await request.body()
         body_str = body.decode('utf-8')
@@ -1502,6 +1855,24 @@ async def paypal_webhook(request: Request):
             if payment_id:
                 transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_id).stream()
                 for doc in transaction_docs:
+                    transaction_data = doc.to_dict()
+                    
+                    # ✅ BLOQUEAR DATA VIA WEBHOOK
+                    booking_id = transaction_data.get("booking_id")
+                    tour_id = transaction_data.get("tour_id")
+                    
+                    if booking_id and tour_id:
+                        booking_ref = db_firestore.collection('bookings').document(booking_id)
+                        booking_doc = booking_ref.get()
+                        
+                        if booking_doc.exists:
+                            booking_data = booking_doc.to_dict()
+                            selected_date = booking_data.get('selected_date')
+                            
+                            if selected_date:
+                                success = handle_successful_payment(booking_id, tour_id, selected_date)
+                                print(f"🔗 PayPal Webhook - Data bloqueada: {success}")
+                    
                     db_firestore.collection('payment_transactions').document(doc.id).update({
                         "status": "completed",
                         "webhook_received_at": datetime.utcnow()
@@ -1550,71 +1921,53 @@ async def get_stripe_config():
         "mode": stripe_service.mode
     }
 
+# --- ENDPOINT ANTIGO REMOVIDO E SUBSTITUÍDO PELO NOVO ---
 @api_router.post("/payments/create-intent")
-async def create_stripe_payment_intent(payment_data: PaymentIntentRequest):
+async def create_payment_intent(request: CreatePaymentIntentRequest):
     """
     Cria um Payment Intent genérico para qualquer pagamento via Stripe (Cartão, MB WAY, Google Pay, etc).
-    Este endpoint usa automatic_payment_methods.
+    Este endpoint usa um modelo Pydantic para validação robusta dos dados.
     """
     if not STRIPE_AVAILABLE or not stripe_service:
         raise HTTPException(status_code=503, detail="O serviço de pagamento Stripe não está disponível.")
 
     try:
-        # Converter o modelo Pydantic num dicionário para enviar ao serviço
-        stripe_data = payment_data.dict()
+        # O Pydantic já validou os dados, então podemos usá-los diretamente.
+        # Convertemos o modelo Pydantic num dicionário para enviar ao serviço.
+        payment_data = request.dict()
         
-        # Adicionar dados extra que o seu serviço pode precisar (ex: tour_name)
-        # (Esta lógica pode ser adaptada conforme a sua necessidade)
-        tour_doc = db_firestore.collection('tours').document(payment_data.tour_id).get()
-        if tour_doc.exists:
-            stripe_data['tour_name'] = tour_doc.to_dict().get('name', {}).get('pt', 'Tour em Portugal')
-        else:
-            stripe_data['tour_name'] = 'Tour em Portugal'
-            
-        # Chamar a função do seu stripe_service
-        intent_result = stripe_service.create_payment_intent(stripe_data)
+        # Chama a função do seu stripe_service
+        result = stripe_service.create_payment_intent(payment_data)
         
         # Se o serviço do Stripe retornar um erro, envie uma resposta HTTP de erro
-        if intent_result.get("status") != "created":
-            raise HTTPException(status_code=400, detail=intent_result.get("message", "Erro ao criar intenção de pagamento no Stripe"))
-
-        # A criação da transação no Firestore pode ser feita aqui ou após confirmação,
-        # mas para manter a consistência com o seu código anterior, vamos mantê-la.
-        transaction = PaymentTransaction(
-            payment_id=intent_result["payment_intent_id"],
-            booking_id=payment_data.booking_id,
-            tour_id=payment_data.tour_id,
-            customer_email=payment_data.customer_email,
-            customer_name=payment_data.customer_name,
-            amount=payment_data.amount,
-            currency="EUR",
-            payment_method="stripe", # Genérico para todos os métodos do Elements
-            status="created",
-            client_secret=intent_result["client_secret"]
-        )
-        db_firestore.collection('payment_transactions').document(transaction.id).set(transaction.dict())
-
+        if result.get("status") == "error":
+            # Usamos a mensagem de erro vinda do serviço para mais detalhes no frontend
+            raise HTTPException(status_code=400, detail=result.get("message"))
+        
         # Se tudo correr bem, retorne o resultado para o frontend
-        return {
-            "client_secret": intent_result["client_secret"],
-            "payment_intent_id": intent_result["payment_intent_id"],
-            "status": intent_result["status"]
-        }
-
+        return result
+            
     except HTTPException:
+        # Re-lança a exceção HTTP para que o FastAPI a trate
         raise
     except Exception as e:
+        # Captura qualquer outro erro inesperado
         logger.error(f"❌ Erro inesperado ao criar Payment Intent: {e}")
-        raise HTTPException(status_code=500, detail=f"Ocorreu um erro interno: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ocorreu um erro interno no servidor: {str(e)}")
+# --- FIM DO NOVO ENDPOINT ---
 
 @api_router.post("/payments/stripe/confirm/{payment_intent_id}")
 async def confirm_stripe_payment(payment_intent_id: str):
-    """Confirmar pagamento Stripe"""
+    """🔒 Confirmar pagamento Stripe com bloqueio de data"""
     if not STRIPE_AVAILABLE or not stripe_service:
         raise HTTPException(status_code=503, detail="Stripe não está disponível")
     
     try:
+        print(f"💳 Confirmando pagamento Stripe: {payment_intent_id}")
+        
         payment_result = stripe_service.confirm_payment(payment_intent_id)
+        
+        # Buscar transação
         transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_intent_id).stream()
         transaction_doc = None
         for doc in transaction_docs:
@@ -1625,6 +1978,8 @@ async def confirm_stripe_payment(payment_intent_id: str):
             raise HTTPException(status_code=404, detail="Transação não encontrada")
         
         transaction_data = transaction_doc.to_dict()
+        
+        # Atualizar transação
         update_data = {
             "status": payment_result["status"],
             "transaction_id": payment_result.get("transaction_id"),
@@ -1636,22 +1991,40 @@ async def confirm_stripe_payment(payment_intent_id: str):
         
         db_firestore.collection('payment_transactions').document(transaction_doc.id).update(update_data)
         
+        # ✅ NOVO: BLOQUEAR DATA APÓS PAGAMENTO CONFIRMADO
         if payment_result["status"] == "succeeded":
             booking_id = transaction_data.get("booking_id")
-            if booking_id:
-                booking_update = {
-                    "payment_status": "paid",
-                    "status": "confirmed", 
-                    "payment_transaction_id": payment_result.get("transaction_id"),
-                    "updated_at": datetime.utcnow()
-                }
-                db_firestore.collection('bookings').document(booking_id).update(booking_update)
+            tour_id = transaction_data.get("tour_id")
+            
+            if booking_id and tour_id:
+                # Buscar dados da reserva
+                booking_ref = db_firestore.collection('bookings').document(booking_id)
+                booking_doc = booking_ref.get()
+                
+                if booking_doc.exists:
+                    booking_data = booking_doc.to_dict()
+                    selected_date = booking_data.get('selected_date')
+                    
+                    # ✅ MARCAR DATA COMO OCUPADA
+                    if selected_date:
+                        success = handle_successful_payment(booking_id, tour_id, selected_date)
+                        print(f"🔒 Data bloqueada: {success}")
+                    
+                    # Atualizar reserva
+                    booking_update = {
+                        "payment_status": "paid",
+                        "status": "confirmed", 
+                        "payment_transaction_id": payment_result.get("transaction_id"),
+                        "updated_at": datetime.utcnow()
+                    }
+                    booking_ref.update(booking_update)
         
         return payment_result
         
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ Erro na confirmação Stripe: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/payments/stripe/status/{payment_intent_id}")
@@ -1677,6 +2050,48 @@ async def get_stripe_payment_status(payment_intent_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/webhooks/stripe")
+async def stripe_webhook(request: Request):
+    """🔒 Webhook Stripe com garantia de bloqueio de data"""
+    try:
+        body = await request.body()
+        signature = request.headers.get('stripe-signature')
+        
+        if not STRIPE_AVAILABLE or not stripe_service:
+            print("❌ Stripe não disponível para webhook")
+            raise HTTPException(status_code=503, detail="Stripe não disponível")
+        
+        # Processar webhook
+        webhook_result = stripe_service.handle_webhook(body.decode('utf-8'), signature)
+        
+        # Se for um evento de pagamento bem-sucedido
+        if webhook_result.get('event_type') == 'payment_intent.succeeded':
+            payment_intent = webhook_result.get('payment_intent')
+            
+            if payment_intent:
+                booking_id = payment_intent.get('metadata', {}).get('booking_id')
+                tour_id = payment_intent.get('metadata', {}).get('tour_id')
+                
+                if booking_id and tour_id:
+                    # Buscar dados da reserva
+                    booking_ref = db_firestore.collection('bookings').document(booking_id)
+                    booking_doc = booking_ref.get()
+                    
+                    if booking_doc.exists:
+                        booking_data = booking_doc.to_dict()
+                        selected_date = booking_data.get('selected_date')
+                        
+                        if selected_date:
+                            # ✅ GARANTIR QUE A DATA FICA OCUPADA VIA WEBHOOK
+                            success = handle_successful_payment(booking_id, tour_id, selected_date)
+                            print(f"🔗 Webhook - Data bloqueada: {success}")
+        
+        return {"status": "success", "result": webhook_result}
+        
+    except Exception as e:
+        print(f"❌ Erro no webhook Stripe: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ================================
@@ -1801,207 +2216,46 @@ async def get_bookings(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ================================
+# 🔧 FUNÇÃO GET_BOOKING CORRIGIDA - RESOLVE ERRO 500
+# ================================
 @api_router.get("/bookings/{booking_id}", response_model=Booking)
 async def get_booking(booking_id: str):
-    """Get specific booking by ID"""
+    """Get specific booking by ID - VERSÃO CORRIGIDA"""
     try:
-        doc = db_firestore.collection('bookings').document(booking_id).get()
-        if not doc.exists:
+        booking_doc = db_firestore.collection('bookings').document(booking_id).get()
+        if not booking_doc.exists:
             raise HTTPException(status_code=404, detail="Booking not found")
-        booking_data = doc.to_dict()
-        booking_data['id'] = doc.id
+        booking_data = booking_doc.to_dict()
+        # Adicionar o ID do documento aos dados retornados, pois ele não está nos campos
+        booking_data['id'] = booking_doc.id
         return Booking(**booking_data)
     except Exception as e:
+        # Log do erro para debug no servidor
+        print(f"❌ Erro ao buscar booking {booking_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# ================================
-# ADMIN AUTH ENDPOINTS
-# ================================
-@api_router.post("/admin/login", response_model=AdminResponse)
-async def admin_login(credentials: AdminLogin):
-    """Admin login"""
-    if credentials.username == "admin" and credentials.password == "9rocks2025":
-        return AdminResponse(
-            message="Login successful",
-            token="temp_admin_token_" + str(uuid.uuid4())
-        )
-    else:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
 
 # ================================
-# STATISTICS ENDPOINTS
+# ✅ ALTERAÇÃO 3: INCLUSÃO FINAL DOS ROUTERS
 # ================================
-@api_router.get("/admin/stats", response_model=BookingStats)
-async def get_booking_stats():
-    """Get booking statistics"""
-    try:
-        docs = db_firestore.collection('bookings').stream()
-        bookings = [doc.to_dict() for doc in docs]
-        total_bookings = len(bookings)
-        total_revenue = sum(booking.get("total_amount", 0) for booking in bookings)
-        bookings_by_tour = {}
-        for booking in bookings:
-            tour_id = booking.get("tour_id")
-            bookings_by_tour[tour_id] = bookings_by_tour.get(tour_id, 0) + 1
-        bookings_by_date = {}
-        for booking in bookings:
-            date_str = booking.get("selected_date", "")[:10]
-            bookings_by_date[date_str] = bookings_by_date.get(date_str, 0) + 1
-        bookings_by_status = {}
-        for booking in bookings:
-            status = booking.get("status", "unknown")
-            bookings_by_status[status] = bookings_by_status.get(status, 0) + 1
-        return BookingStats(
-            total_bookings=total_bookings,
-            total_revenue=total_revenue,
-            bookings_by_tour=bookings_by_tour,
-            bookings_by_date=bookings_by_date,
-            bookings_by_status=bookings_by_status
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-# ================================
-# FIREBASE ENDPOINTS
-# ================================
-@api_router.post("/admin/upload-image", response_model=ImageUploadResponse)
-async def upload_tour_image(image_upload: ImageUpload, user=Depends(verify_firebase_token)):
-    """Upload image to Firebase Storage"""
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    try:
-        image_url = upload_image_to_firebase(image_upload.image_data, image_upload.filename)
-        if image_upload.tour_id:
-            doc = db_firestore.collection('tours').document(image_upload.tour_id).get()
-            if doc.exists:
-                tour = doc.to_dict()
-                images = tour.get("images", [])
-                images.append(image_url)
-                db_firestore.collection('tours').document(image_upload.tour_id).update({
-                    "images": images,
-                    "updated_at": datetime.utcnow()
-                })
-        return ImageUploadResponse(
-            image_url=image_url,
-            filename=image_upload.filename,
-            message="Image uploaded successfully"
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.get("/firebase-config")
-async def get_firebase_config():
-    """Get Firebase configuration for frontend"""
-    return {
-        "apiKey": os.environ.get('FIREBASE_API_KEY', ''),
-        "authDomain": os.environ.get('FIREBASE_AUTH_DOMAIN', ''),
-        "projectId": os.environ.get('FIREBASE_PROJECT_ID', ''),
-        "storageBucket": os.environ.get('FIREBASE_STORAGE_BUCKET', ''),
-        "messagingSenderId": os.environ.get('FIREBASE_MESSAGING_SENDER_ID', ''),
-        "appId": os.environ.get('FIREBASE_APP_ID', '')
-    }
-
-# ================================
-# TEST ENDPOINTS
-# ================================
-@api_router.get("/")
-async def root():
-    return {
-        "message": "9 Rocks Tours API - Ready!",
-        "paypal_status": "available" if PAYPAL_AVAILABLE else "unavailable",
-        "stripe_status": "available" if STRIPE_AVAILABLE else "unavailable",
-        "google_pay_status": "ready" if STRIPE_AVAILABLE and os.getenv('GOOGLE_MERCHANT_ID') else "not_ready",
-        "version": "2.0.0"
-    }
-
-@api_router.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "2.0.0",
-        "firebase_status": "connected" if db_firestore else "disconnected",
-        "paypal_status": "available" if PAYPAL_AVAILABLE else "unavailable",
-        "stripe_status": "available" if STRIPE_AVAILABLE else "unavailable",
-        "google_pay_ready": bool(STRIPE_AVAILABLE and os.getenv('GOOGLE_MERCHANT_ID'))
-    }
-
-# ===================================================================
-# ✅ ENDPOINTS DE CONFIGURAÇÃO CORRIGIDOS
-# ===================================================================
-
-@api_router.get("/config/tour-filters")
-async def get_tour_filters_config():
-    """Retorna os filtros de tours ativos do Firestore de forma segura."""
-    try:
-        filters_ref = db_firestore.collection('tourFilters')
-        docs = filters_ref.where('active', '==', True).stream()
-        
-        filters_list = []
-        for doc in docs:
-            filter_data = doc.to_dict()
-            filter_data['key'] = doc.id
-            filters_list.append(filter_data)
-        
-        filters_list.sort(key=lambda x: x.get('order', 99))
-            
-        return filters_list
-    except Exception as e:
-        print(f"❌ Erro ao buscar filtros de tours: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar filtros: {str(e)}")
-
-@api_router.get("/config/hero-images")
-async def get_hero_images_config():
-    """Retorna as imagens de herói ativas do Firestore de forma segura."""
-    try:
-        images_ref = db_firestore.collection('heroImages')
-        docs = images_ref.where('active', '==', True).stream()
-        
-        images_list = []
-        for doc in docs:
-            image_data = doc.to_dict()
-            image_data['id'] = doc.id
-            images_list.append(image_data)
-        
-        images_list.sort(key=lambda x: x.get('order', 99))
-            
-        return images_list
-    except Exception as e:
-        print(f"❌ Erro ao buscar imagens de herói: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar imagens: {str(e)}")
-
-# ===================================================================
-# ✅ ENDPOINT DE DEBUG (APENAS EM MODO DE DESENVOLVIMENTO)
-# ===================================================================
-if os.getenv("DEBUG", "False").lower() == "true":
-    @api_router.get("/debug/routes", include_in_schema=False)
-    async def list_routes_api():
-        """Lista todas as rotas registadas na aplicação (apenas para debug)."""
-        from fastapi.routing import APIRoute
-        routes = []
-        for route in app.routes:
-            if isinstance(route, APIRoute) and route.path.startswith("/api"):
-                routes.append({
-                    "path": route.path,
-                    "name": route.name,
-                    "methods": sorted(list(route.methods)),
-                })
-        return {"routes": sorted(routes, key=lambda x: x["path"])}
-
-# ================================
-# APP CONFIGURATION FINAL
-# ================================
-api_router.include_router(
-    tours_router.router,
-    prefix="/tours",
-    tags=["Tours"],
-    include_in_schema=True
-)
+# Incluir o router principal na aplicação principal
 app.include_router(api_router)
 
-# Configurar SEO routes
-try:
-    app = setup_seo_routes(app)
-except Exception as e:
-    # O print do erro deve estar DENTRO do bloco except
-    print(f"❌ Erro ao configurar as rotas de SEO: {e}")
+# Incluir o router de bookings da V1 (que tem o seu próprio prefixo /api/v1/bookings)
+app.include_router(booking_routes.router)
+
+# A função de SEO deve ser montada na app principal, não no api_router.
+setup_seo_routes(app)
+
+# ================================
+# ENDPOINT DE TESTE NA RAIZ
+# ================================
+@app.get("/", tags=["Root"])
+async def read_root():
+    return {
+        "message": "Bem-vindo à API da 9 Rocks Tours",
+        "docs_url": "/docs",
+        "status": "healthy"
+    }

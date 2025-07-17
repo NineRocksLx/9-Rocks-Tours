@@ -21,6 +21,7 @@ backend/
     requirements.txt
     routers/
         __init__.py
+        booking_routes.py
         seo_routes.py
         tours.py
         tours_fixed.py
@@ -69,6 +70,8 @@ frontend/
             MapLocationPicker.js
             MapLocationsDiagnostic.js
             PaymentComponent.js
+            PremiumPaymentComponent.jsx
+            PremiumPaymentComponent_old.jsx
             SEO/
                 LanguageSwitcher.js
                 SEOBreadcrumbs.js
@@ -82,13 +85,13 @@ frontend/
             TourItinerary.js
             TourItineraryManager.js
             hooks/
-                useSEO.js
         config/
             appConfig.js
             emailConfig.js
             firebase.js
         hooks/
-            usePremiumEmbeddedPayment.js
+            useEmbeddedPayment.js
+            useEmbeddedPayment_original.js
             useSEO.js
         index.css
         index.js
@@ -97,10 +100,10 @@ frontend/
             AdminPanel_metade.js
             AdminPanel_old.js
             HomePage.js
+            PaymentSuccessPage.js
+            TestPayment.js
             TourDetails.js
             ToursPage.js
-        screens/
-            PremiumCheckoutScreen.js
         services/
             heroImagesService.js
             mockServices.js

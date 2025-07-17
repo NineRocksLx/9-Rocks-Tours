@@ -1,4 +1,4 @@
-# backend/services/stripe_service.py - VERSÃO MELHORADA COM GOOGLE PAY E DEBUG
+# backend/services/stripe_service.py - VERSÃO CORRIGIDA COM GOOGLE PAY
 
 import os
 import logging
@@ -16,8 +16,10 @@ class StripeService:
         self.publishable_key = os.getenv('STRIPE_PUBLISHABLE_KEY')
         self.webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
         
-        # Determinar modo baseado na chave
-        self.mode = "test" if self.secret_key and "test" in self.secret_key else "live"
+        # ✅ CORREÇÃO: Determinar modo e environment corretamente
+        self.is_test_mode = bool(self.secret_key and "test" in self.secret_key)
+        self.mode = "test" if self.is_test_mode else "live"
+        self.google_pay_environment = "TEST" if self.is_test_mode else "PRODUCTION"
         self.available = bool(self.secret_key and self.publishable_key)
         
         # Google Pay Configuration
@@ -32,6 +34,7 @@ class StripeService:
                 stripe.api_version = "2020-08-27"
                 
                 logger.info(f"✅ Stripe configurado em modo {self.mode}")
+                logger.info(f"✅ Google Pay Environment: {self.google_pay_environment}")
                 logger.info(f"✅ Google Pay Merchant ID: {self.merchant_id}")
                 
                 # Testar conexão inicial
@@ -62,6 +65,7 @@ class StripeService:
                 "status": "unavailable",
                 "message": "Stripe não configurado - verifique as variáveis de ambiente",
                 "mode": self.mode,
+                "google_pay_environment": self.google_pay_environment,
                 "missing_keys": [
                     "STRIPE_SECRET_KEY" if not self.secret_key else None,
                     "STRIPE_PUBLISHABLE_KEY" if not self.publishable_key else None
@@ -86,6 +90,7 @@ class StripeService:
                 "status": "connected",
                 "message": "Stripe conectado e funcional",
                 "mode": self.mode,
+                "google_pay_environment": self.google_pay_environment,
                 "account_id": account.id,
                 "account_country": getattr(account, 'country', 'Unknown'),
                 "publishable_key": self.publishable_key[:12] + "...",
@@ -101,6 +106,7 @@ class StripeService:
                 "status": "error",
                 "message": f"Erro na conexão: {str(e)}",
                 "mode": self.mode,
+                "google_pay_environment": self.google_pay_environment,
                 "error_type": type(e).__name__
             }
 
@@ -109,17 +115,18 @@ class StripeService:
         return self.publishable_key or ""
 
     def get_google_pay_config(self) -> Dict:
-        """Retornar configuração completa para Google Pay"""
+        """✅ CORREÇÃO: Retornar configuração completa e consistente para Google Pay"""
         return {
+            "available": self.available,
             "publishable_key": self.publishable_key,
             "merchant_id": self.merchant_id,
             "mode": self.mode,
+            "environment": self.google_pay_environment,  # ✅ Campo correto para o frontend
             "gateway": "stripe",
             "gateway_merchant_id": self.merchant_id,
             "api_version": "2020-08-27",
             "supported_networks": ["AMEX", "DISCOVER", "JCB", "MASTERCARD", "VISA"],
-            "supported_methods": ["PAN_ONLY", "CRYPTOGRAM_3DS"],
-            "environment": "TEST" if self.mode == "test" else "PRODUCTION"
+            "supported_methods": ["PAN_ONLY", "CRYPTOGRAM_3DS"]
         }
 
     def create_payment_intent(self, payment_data: Dict) -> Dict:
@@ -159,7 +166,8 @@ class StripeService:
                 "tour_name": str(payment_data.get("tour_name", "")),
                 "participants": str(payment_data.get("participants", 1)),
                 "created_at": datetime.utcnow().isoformat(),
-                "source": "9rocks_tours_google_pay"
+                "source": "9rocks_tours_payment",
+                "environment": self.google_pay_environment
             }
             
             # Configuração do Payment Intent
@@ -168,14 +176,14 @@ class StripeService:
                 "currency": "eur",
                 "automatic_payment_methods": {
                     "enabled": True,
+                    "allow_redirects": "never"
                 },
                 "metadata": metadata,
                 "receipt_email": payment_data.get("customer_email"),
                 "description": f"9 Rocks Tours - {payment_data.get('tour_name', 'Tour Portugal')}",
-                "statement_descriptor": "9ROCKS TOURS",
+                "statement_descriptor_suffix": "9ROCKS TOURS",
                 "capture_method": "automatic",
-                "confirmation_method": "automatic",
-                "setup_future_usage": None  # Não salvar cartão
+                "setup_future_usage": None
             }
             
             logger.info(f"🔄 Criando Payment Intent: {amount_cents/100}EUR para booking {payment_data.get('booking_id')}")
@@ -366,13 +374,13 @@ class StripeService:
                 }
             },
             "google_pay_test_setup": {
-                "environment": "TEST",
+                "environment": self.google_pay_environment,
                 "merchant_name": "9 Rocks Tours",
                 "merchant_id": self.merchant_id,
                 "gateway": "stripe",
                 "gateway_merchant_id": self.merchant_id,
                 "instructions": [
-                    "1. Usar ambiente TEST do Google Pay",
+                    f"1. Usar ambiente {self.google_pay_environment} do Google Pay",
                     "2. Adicionar os cartões de teste acima ao Google Pay",
                     "3. Certificar que merchant_id está configurado",
                     "4. Testar em Chrome com extensão Google Pay"
@@ -412,6 +420,8 @@ class StripeService:
         return {
             "service_available": self.available,
             "mode": self.mode,
+            "google_pay_environment": self.google_pay_environment,
+            "is_test_mode": self.is_test_mode,
             "publishable_key_set": bool(self.publishable_key),
             "secret_key_set": bool(self.secret_key),
             "webhook_secret_set": bool(self.webhook_secret),
