@@ -1,50 +1,50 @@
 # ==============================================================================
 #  Ficheiro de Configuração do Cloud Build para o projeto 9 Rocks Tours
-#  VERSÃO CORRIGIDA
+#  VERSÃO FINAL CORRIGIDA - Usando Artifact Registry e nomes válidos
 # ==============================================================================
 
 steps:
   # ------------------------------------------------------------------------------
-  #  Passo 1: Construir a imagem Docker (VERSÃO CORRIGIDA)
-  #  -f backend/Dockerfile: Especifica o caminho exato para o Dockerfile.
-  #  backend: Usa a pasta 'backend' como o "contexto" de construção.
-  #  Isto é mais explícito e robusto do que usar 'dir'.
+  #  Passo 1: Construir a imagem Docker
+  #  CORREÇÃO: O nome do repositório e da imagem estão agora em minúsculas.
   # ------------------------------------------------------------------------------
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/ninerocks-backend:latest'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/ninerocks-backend/ninerocks-backend:latest'
       - '-f'
       - 'backend/Dockerfile'
       - 'backend'
 
   # ------------------------------------------------------------------------------
-  #  Passo 2: Enviar (Push) a imagem construída para o Artifact Registry
+  #  Passo 2: Enviar (Push) a imagem para o NOVO Artifact Registry
   # ------------------------------------------------------------------------------
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/ninerocks-backend:latest']
+    args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/ninerocks-backend/ninerocks-backend:latest']
 
   # ------------------------------------------------------------------------------
   #  Passo 3: Fazer o deploy da imagem para o Cloud Run
+  #  CORREÇÃO: O nome do serviço e da imagem estão agora em minúsculas.
   # ------------------------------------------------------------------------------
   - name: 'gcr.io/google-cloud-sdk/gcloud'
     args:
       - 'run'
       - 'deploy'
       - 'ninerocks-backend'
-      - '--image=gcr.io/$PROJECT_ID/ninerocks-backend:latest'
+      - '--image=europe-west1-docker.pkg.dev/$PROJECT_ID/ninerocks-backend/ninerocks-backend:latest'
       - '--region=europe-west1'
       - '--platform=managed'
       - '--allow-unauthenticated'
 
 # --------------------------------------------------------------------------------
-#  Conta de Serviço (Service Account)
+#  Conta de Serviço (Service Account) - Mantém-se a mesma
 # --------------------------------------------------------------------------------
 serviceAccount: 'projects/tours-81516-acfbc/serviceAccounts/tours-81516-acfbc@appspot.gserviceaccount.com'
 
 # --------------------------------------------------------------------------------
-#  Opções de Logging
+#  Opções de Logging - Mantém-se a mesma
 # --------------------------------------------------------------------------------
 options:
   logging: CLOUD_LOGGING_ONLY
+
