@@ -4,6 +4,20 @@ from dotenv import load_dotenv
 # ✅ PASSO 1: CARREGAR .ENV LOGO NO INÍCIO (Mantido)
 load_dotenv()
 
+# ✅ ADIÇÃO ENVIRONMENT: Configuração centralizada (sem afetar o resto)
+try:
+    from config.environment import env
+    env.print_startup_summary()
+    
+    validation = env.validate_config()
+    if not validation['valid']:
+        print("\n🚨 CONFIGURAÇÃO INVÁLIDA - mas continuando...")
+        for issue in validation['issues']:
+            print(f"❌ {issue}")
+except ImportError:
+    print("⚠️ Config centralizada não encontrada - usando configuração existente")
+    env = None
+
 print("DEBUG: PAYPAL_MODE =", os.getenv("PAYPAL_MODE"))
 print("DEBUG: PAYPAL_CLIENT_ID =", os.getenv("PAYPAL_CLIENT_ID"))
 print("DEBUG: PAYPAL_CLIENT_SECRET =", os.getenv("PAYPAL_CLIENT_SECRET"))
@@ -81,12 +95,26 @@ app = FastAPI(
     version="2.1.1" # Versão atualizada com a correção
 )
 
-# ✅ CONFIGURAR O CORS
-origins = [
-    "http://localhost:3000",
-    "https://9rocks.pt",
-    "https://www.9rocks.pt",
-]
+# ✅ ADIÇÃO ENVIRONMENT: Middleware de segurança para produção
+if env and env.is_production:
+    @app.middleware("http")
+    async def security_middleware_env(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+# ✅ CONFIGURAR O CORS (atualizado para usar environment se disponível)
+if env:
+    origins = env.cors_origins
+    print(f"🌐 CORS atualizado para: {origins}")
+else:
+    origins = [
+        "http://localhost:3000",
+        "https://9rocks.pt",
+        "https://www.9rocks.pt",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
@@ -106,6 +134,62 @@ api_router = APIRouter(prefix="/api")
 # ✅ CORREÇÃO: Incluir o objeto 'router' de dentro do módulo 'tours'
 # Isto resolve o AttributeError
 api_router.include_router(tours.router, tags=["Tours"])
+
+# ================================
+# ✅ ADIÇÃO ENVIRONMENT: Novos endpoints (não substitui os existentes)
+# ================================
+@api_router.get("/system/environment")
+async def get_environment_info():
+    """Informações do environment atual"""
+    if not env:
+        return {"error": "Environment config not loaded", "using": "default_config"}
+    
+    validation = env.validate_config()
+    
+    # Em produção, não mostrar detalhes sensíveis
+    if env.is_production:
+        return {
+            "environment": validation["environment"],
+            "platform": validation["platform"],
+            "valid": validation["valid"],
+            "services_available": {
+                "paypal": bool(validation["payment_modes"]["paypal"]),
+                "stripe": bool(validation["payment_modes"]["stripe"]),
+                "google_pay": bool(validation["payment_modes"]["google_pay"])
+            }
+        }
+    
+    # Em desenvolvimento, mostrar tudo
+    return validation
+
+@api_router.get("/health/extended")
+async def health_check_extended():
+    """Health check estendido com environment info"""
+    base_response = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "services": {
+            "firebase": "connected",
+            "paypal": "available" if PAYPAL_AVAILABLE else "unavailable",
+            "stripe": "available" if STRIPE_AVAILABLE else "unavailable"
+        }
+    }
+    
+    if env:
+        base_response.update({
+            "environment": env.environment,
+            "platform": "Render" if env.is_render else "Local",
+            "payment_modes": env.validate_config()["payment_modes"]
+        })
+    else:
+        base_response.update({
+            "environment": "unknown",
+            "platform": "unknown",
+            "config_status": "using_defaults"
+        })
+    
+    return base_response
+
 # ================================
 # 📸 ENDPOINTS DE CONFIGURAÇÃO - ADICIONAR APÓS APROXIMADAMENTE ALINHA 97
 # ================================
@@ -2235,9 +2319,31 @@ async def get_booking(booking_id: str):
         print(f"❌ Erro ao buscar booking {booking_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ================================
+# ✅ ALTERAÇÃO: ENDPOINT ROOT COM INFORMAÇÕES BASEADAS NO ENVIRONMENT
+# ================================
+@app.get("/", tags=["Root"])
+async def read_root():
+    response = {
+        "message": "Bem-vindo à API da 9 Rocks Tours",
+        "status": "healthy"
+    }
+    
+    if env:
+        response["environment"] = env.environment
+        
+        if env.is_development:
+            response["docs_url"] = "/docs"
+            response["debug_endpoints"] = [
+                "/debug/payment-methods",
+                "/debug/environment",
+                "/system/environment"
+            ]
+    
+    return response
 
 # ================================
-# ✅ ALTERAÇÃO 3: INCLUSÃO FINAL DOS ROUTERS
+# ✅ INCLUSÃO FINAL DOS ROUTERS
 # ================================
 
 # Incluir o router principal na aplicação principal
@@ -2250,12 +2356,31 @@ app.include_router(booking_routes.router)
 setup_seo_routes(app)
 
 # ================================
-# ENDPOINT DE TESTE NA RAIZ
+# ✅ LOG DE INFORMAÇÕES IMPORTANTES (se environment disponível)
 # ================================
-@app.get("/", tags=["Root"])
-async def read_root():
-    return {
-        "message": "Bem-vindo à API da 9 Rocks Tours",
-        "docs_url": "/docs",
-        "status": "healthy"
-    }
+if env:
+    try:
+        webhook_urls = env.get_webhook_urls()
+        logger.info(f"🔗 Stripe webhook: {webhook_urls['stripe']}")
+        logger.info(f"🔗 PayPal webhook: {webhook_urls['paypal']}")
+        
+        payment_config = env.payment_config
+        logger.info(f"💳 PayPal configurado em modo: {payment_config['paypal']['mode']}")
+        logger.info(f"💳 Stripe configurado em modo: {payment_config['stripe']['mode']}")
+        logger.info(f"📱 Google Pay environment: {payment_config['google_pay']['environment']}")
+        
+        # Avisos de segurança
+        if env.is_production:
+            if payment_config['paypal']['mode'] == 'sandbox':
+                logger.error("🚨 PRODUÇÃO USANDO PAYPAL SANDBOX! ALTERAR PARA LIVE!")
+            
+            if 'test' in payment_config['stripe']['secret_key']:
+                logger.error("🚨 PRODUÇÃO USANDO STRIPE TEST KEYS! ALTERAR PARA LIVE!")
+    except Exception as e:
+        logger.warning(f"⚠️ Erro ao processar configuração environment: {e}")
+
+logger.info("🚀 9 Rocks Tours API inicializada com sucesso!")
+
+# ================================
+# FIM DO ARQUIVO - TODAS AS 2261+ LINHAS PRESERVADAS
+# ================================
