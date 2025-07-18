@@ -2,14 +2,25 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from pathlib import Path
 import asyncio
+import os
+import json
 
 # ✅ ÚNICA INICIALIZAÇÃO FIREBASE - FONTE DA VERDADE
 if not firebase_admin._apps:
-    ROOT_DIR = Path(__file__).parent.parent
-    cred_path = ROOT_DIR / 'google-calendar-key.json'
-    print(f"✅ A carregar credenciais Firebase de: {cred_path.resolve()}")
     try:
-        cred = credentials.Certificate(str(cred_path))
+        # Primeiro: tentar variável de ambiente (produção - Render)
+        if os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'):
+            print("✅ A carregar credenciais Firebase da variável de ambiente")
+            cred_dict = json.loads(os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON'))
+            cred = credentials.Certificate(cred_dict)
+            print("✅ Credenciais carregadas da variável de ambiente")
+        else:
+            # Fallback: ficheiro local (desenvolvimento)
+            ROOT_DIR = Path(__file__).parent.parent
+            cred_path = ROOT_DIR / 'google-calendar-key.json'
+            print(f"✅ A carregar credenciais Firebase de: {cred_path.resolve()}")
+            cred = credentials.Certificate(str(cred_path))
+        
         firebase_admin.initialize_app(cred, {'projectId': 'tours-81516-acfbc'})
         print("✅ Firebase Admin inicializado com sucesso")
     except Exception as e:
