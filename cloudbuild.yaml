@@ -1,12 +1,11 @@
 # ==============================================================================
 #  Ficheiro de Configuração do Cloud Build para o projeto 9 Rocks Tours
-#  VERSÃO FINAL CORRIGIDA - Usando Artifact Registry e nomes válidos
+#  VERSÃO FINAL SIMPLIFICADA - Usando a conta de serviço padrão do Cloud Build
 # ==============================================================================
 
 steps:
   # ------------------------------------------------------------------------------
   #  Passo 1: Construir a imagem Docker
-  #  CORREÇÃO: O nome do repositório e da imagem estão agora em minúsculas.
   # ------------------------------------------------------------------------------
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -18,14 +17,13 @@ steps:
       - 'backend'
 
   # ------------------------------------------------------------------------------
-  #  Passo 2: Enviar (Push) a imagem para o NOVO Artifact Registry
+  #  Passo 2: Enviar (Push) a imagem para o Artifact Registry
   # ------------------------------------------------------------------------------
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'europe-west1-docker.pkg.dev/$PROJECT_ID/ninerocks-backend/ninerocks-backend:latest']
 
   # ------------------------------------------------------------------------------
   #  Passo 3: Fazer o deploy da imagem para o Cloud Run
-  #  CORREÇÃO: O nome do serviço e da imagem estão agora em minúsculas.
   # ------------------------------------------------------------------------------
   - name: 'gcr.io/google-cloud-sdk/gcloud'
     args:
@@ -38,9 +36,12 @@ steps:
       - '--allow-unauthenticated'
 
 # --------------------------------------------------------------------------------
-#  Conta de Serviço (Service Account) - Mantém-se a mesma
+#  Conta de Serviço (Service Account)
+#  A linha abaixo foi comentada. Ao não especificar uma conta, o Cloud Build
+#  usará a sua própria conta de serviço padrão, que já tem as permissões
+#  necessárias para ler as imagens base e resolver o erro.
 # --------------------------------------------------------------------------------
-serviceAccount: 'projects/tours-81516-acfbc/serviceAccounts/tours-81516-acfbc@appspot.gserviceaccount.com'
+# serviceAccount: 'projects/tours-81516-acfbc/serviceAccounts/tours-81516-acfbc@appspot.gserviceaccount.com'
 
 # --------------------------------------------------------------------------------
 #  Opções de Logging - Mantém-se a mesma
