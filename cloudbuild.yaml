@@ -1,6 +1,6 @@
 # ==============================================================================
 #  Ficheiro de Configuração do Cloud Build para o projeto 9 Rocks Tours
-#  VERSÃO FINAL SIMPLIFICADA - Usando a conta de serviço padrão do Cloud Build
+#  VERSÃO FINAL CORRIGIDA - Resolve problema de permissões do gcloud
 # ==============================================================================
 
 steps:
@@ -24,8 +24,10 @@ steps:
 
   # ------------------------------------------------------------------------------
   #  Passo 3: Fazer o deploy da imagem para o Cloud Run
+  #  CORRIGIDO: Usa uma imagem gcloud pública e mais fiável para evitar erros de permissão.
   # ------------------------------------------------------------------------------
-  - name: 'gcr.io/google-cloud-sdk/gcloud'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
@@ -34,14 +36,6 @@ steps:
       - '--region=europe-west1'
       - '--platform=managed'
       - '--allow-unauthenticated'
-
-# --------------------------------------------------------------------------------
-#  Conta de Serviço (Service Account)
-#  A linha abaixo foi comentada. Ao não especificar uma conta, o Cloud Build
-#  usará a sua própria conta de serviço padrão, que já tem as permissões
-#  necessárias para ler as imagens base e resolver o erro.
-# --------------------------------------------------------------------------------
-# serviceAccount: 'projects/tours-81516-acfbc/serviceAccounts/tours-81516-acfbc@appspot.gserviceaccount.com'
 
 # --------------------------------------------------------------------------------
 #  Opções de Logging - Mantém-se a mesma
