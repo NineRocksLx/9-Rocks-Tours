@@ -126,8 +126,10 @@ else:
         "http://localhost:3000",
         "https://9rocks.pt",
         "https://www.9rocks.pt",
+        "https://tours-81516-acfbc.web.app",  # Adicionado aqui
+        "https://tours-81516-acfbc.firebaseapp.com"  # Adicionado o alternativo do Firebase
     ]
-
+    
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
