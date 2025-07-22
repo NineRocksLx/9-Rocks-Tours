@@ -1,6 +1,14 @@
 # Usar uma imagem oficial do Python como base
 FROM python:3.11-slim
 
+# Instalar ferramentas de build para dependências nativas
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Definir variáveis de ambiente
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
@@ -17,8 +25,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar todo o resto do código do backend para a pasta de trabalho
 COPY . .
 
-# Comando para iniciar o servidor quando o container arrancar
-# Ele vai usar o Gunicorn para correr o seu ficheiro principal (server.py)
-# Certifique-se que o nome do ficheiro e da app estão corretos
-# Ex: se o seu ficheiro é server.py e a app se chama "app", use "server:app"
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "server:app"]
+# Comando para iniciar o servidor
+# ... (mantenha o resto igual)
+
+# Comando para iniciar o servidor
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8080", "--workers", "1", "--timeout", "0", "server:app"]

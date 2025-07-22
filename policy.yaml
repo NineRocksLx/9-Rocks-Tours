@@ -1,0 +1,85 @@
+bindings:
+- members:
+  - serviceAccount:service-742946187892@gcp-sa-artifactregistry.iam.gserviceaccount.com
+  role: roles/artifactregistry.serviceAgent
+- members:
+  - serviceAccount:742946187892@cloudbuild.gserviceaccount.com
+  - serviceAccount:tours-81516-acfbc@appspot.gserviceaccount.com
+  role: roles/artifactregistry.writer
+- members:
+  - serviceAccount:tours-81516-acfbc@appspot.gserviceaccount.com
+  - user:geral@9rocks.pt
+  role: roles/cloudbuild.builds.editor
+- members:
+  - serviceAccount:service-742946187892@gcp-sa-cloudbuild.iam.gserviceaccount.com
+  role: roles/cloudbuild.serviceAgent
+- members:
+  - serviceAccount:service-742946187892@gcf-admin-robot.iam.gserviceaccount.com
+  role: roles/cloudfunctions.serviceAgent
+- members:
+  - serviceAccount:service-742946187892@containerregistry.iam.gserviceaccount.com
+  role: roles/containerregistry.ServiceAgent
+- members:
+  - serviceAccount:backend-firestore-access@tours-81516-acfbc.iam.gserviceaccount.com
+  - serviceAccount:firebase-adminsdk-fbsvc@tours-81516-acfbc.iam.gserviceaccount.com
+  role: roles/datastore.owner
+- members:
+  - serviceAccount:backend-firestore-access@tours-81516-acfbc.iam.gserviceaccount.com
+  - serviceAccount:firebase-adminsdk-fbsvc@tours-81516-acfbc.iam.gserviceaccount.com
+  - serviceAccount:tours-81516-acfbc@appspot.gserviceaccount.com
+  role: roles/datastore.user
+- members:
+  - serviceAccount:742946187892-compute@developer.gserviceaccount.com
+  - serviceAccount:742946187892@cloudservices.gserviceaccount.com
+  role: roles/editor
+- members:
+  - serviceAccount:service-742946187892@gcp-sa-firebase.iam.gserviceaccount.com
+  role: roles/firebase.managementServiceAgent
+- members:
+  - serviceAccount:backend-firestore-access@tours-81516-acfbc.iam.gserviceaccount.com
+  role: roles/firebase.sdkAdminServiceAgent
+- members:
+  - serviceAccount:firebase-adminsdk-fbsvc@tours-81516-acfbc.iam.gserviceaccount.com
+  role: roles/firebaseauth.admin
+- members:
+  - serviceAccount:service-742946187892@gcp-sa-firebasemods.iam.gserviceaccount.com
+  role: roles/firebasemods.serviceAgent
+- members:
+  - serviceAccount:backend-firestore-access@tours-81516-acfbc.iam.gserviceaccount.com
+  role: roles/firebaserules.firestoreServiceAgent
+- members:
+  - serviceAccount:service-742946187892@firebase-rules.iam.gserviceaccount.com
+  role: roles/firebaserules.system
+- members:
+  - serviceAccount:service-742946187892@gcp-sa-firebasestorage.iam.gserviceaccount.com
+  role: roles/firebasestorage.serviceAgent
+- members:
+  - serviceAccount:service-742946187892@gcp-sa-firestore.iam.gserviceaccount.com
+  role: roles/firestore.serviceAgent
+- members:
+  - serviceAccount:firebase-adminsdk-fbsvc@tours-81516-acfbc.iam.gserviceaccount.com
+  role: roles/iam.serviceAccountTokenCreator
+- members:
+  - serviceAccount:742946187892@cloudbuild.gserviceaccount.com
+  - serviceAccount:tours-81516-acfbc@appspot.gserviceaccount.com
+  role: roles/iam.serviceAccountUser
+- members:
+  - serviceAccount:tours-81516-acfbc@appspot.gserviceaccount.com
+  role: roles/logging.logWriter
+- members:
+  - user:geral@9rocks.pt
+  - user:ninerockstours@gmail.com
+  role: roles/owner
+- members:
+  - serviceAccount:742946187892@cloudbuild.gserviceaccount.com
+  - serviceAccount:tours-81516-acfbc@appspot.gserviceaccount.com
+  role: roles/run.admin
+- members:
+  - serviceAccount:service-742946187892@serverless-robot-prod.iam.gserviceaccount.com
+  role: roles/run.serviceAgent
+- members:
+  - serviceAccount:firebase-adminsdk-fbsvc@tours-81516-acfbc.iam.gserviceaccount.com
+  - serviceAccount:tours-81516-acfbc@appspot.gserviceaccount.com
+  role: roles/storage.admin
+etag: BwY6M-Oi7JU=
+version: 3

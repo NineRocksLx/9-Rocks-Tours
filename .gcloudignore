@@ -56,7 +56,7 @@ db.py
 generate_tree_files.py
 test_result.md
 test_google_pay.html
-
+test_firestore.py
 setup_debug.py
 tree_filtrada.txt
 migrateToursTofirestore.js

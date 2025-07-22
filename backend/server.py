@@ -19,8 +19,6 @@ except ImportError:
     env = None
 
 print("DEBUG: PAYPAL_MODE =", os.getenv("PAYPAL_MODE"))
-print("DEBUG: PAYPAL_CLIENT_ID =", os.getenv("PAYPAL_CLIENT_ID"))
-print("DEBUG: PAYPAL_CLIENT_SECRET =", os.getenv("PAYPAL_CLIENT_SECRET"))
 
 import sys
 import logging
@@ -46,9 +44,23 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import service_account
 from firebase_admin import firestore
 
+from google.cloud import secretmanager
 
-print("✅ STRIPE_SECRET_KEY carregada:", "SET" if os.getenv('STRIPE_SECRET_KEY') else "NOT SET")
-print("✅ STRIPE_PUBLISHABLE_KEY carregada:", "SET" if os.getenv('STRIPE_PUBLISHABLE_KEY') else "NOT SET")
+def access_secret(secret_id):
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{os.getenv('GOOGLE_CLOUD_PROJECT')}/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode("UTF-8")
+
+PAYPAL_CLIENT_ID = access_secret("PAYPAL_CLIENT_ID")
+PAYPAL_CLIENT_SECRET = access_secret("PAYPAL_CLIENT_SECRET")
+STRIPE_SECRET_KEY = access_secret("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = access_secret("STRIPE_PUBLISHABLE_KEY")
+GOOGLE_CALENDAR_API_KEY = access_secret("GOOGLE_CALENDAR_API_KEY")
+GOOGLE_CALENDAR_ID = access_secret("GOOGLE_CALENDAR_ID")
+
+print("✅ STRIPE_SECRET_KEY carregada:", "SET" if STRIPE_SECRET_KEY else "NOT SET")
+print("✅ STRIPE_PUBLISHABLE_KEY carregada:", "SET" if STRIPE_PUBLISHABLE_KEY else "NOT SET")
 
 # ✅ IMPORTAR SERVIÇOS DE PAGAMENTO
 try:
@@ -81,7 +93,7 @@ load_dotenv(ROOT_DIR / '.env')
 try:
     from config.firestore_db import db as db_firestore
     print("✅ Firebase importado do config centralizado")
-    print("🔍 Após Firebase - STRIPE_SECRET_KEY:", os.getenv('STRIPE_SECRET_KEY'))
+    print("🔍 Após Firebase - STRIPE_SECRET_KEY:", STRIPE_SECRET_KEY)
 except ImportError as e:
     print(f"❌ Erro ao importar config Firebase: {e}")
     sys.exit(1)
@@ -131,7 +143,7 @@ app.add_middleware(
 # Criar um router principal para todas as APIs com prefixo /api
 api_router = APIRouter(prefix="/api")
 
-# ✅ CORREÇÃO: Incluir o objeto 'router' de dentro do módulo 'tours'
+# ✅ CORREÇÃO: Incluir o object 'router' de dentro do módulo 'tours'
 # Isto resolve o AttributeError
 api_router.include_router(tours.router, tags=["Tours"])
 
@@ -260,8 +272,6 @@ security = HTTPBearer(auto_error=False)
 # ================================
 # GOOGLE CALENDAR CONFIGURATION
 # ================================
-GOOGLE_CALENDAR_API_KEY = os.environ.get('GOOGLE_CALENDAR_API_KEY', '')
-GOOGLE_CALENDAR_ID = os.environ.get('GOOGLE_CALENDAR_ID', '')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -998,20 +1008,20 @@ async def clear_test_payment_data():
 async def get_environment_debug():
     """Verificar variáveis de ambiente críticas"""
     env_vars = {
-        "STRIPE_SECRET_KEY": "✅ Set" if os.getenv('STRIPE_SECRET_KEY') else "❌ Missing",
-        "STRIPE_PUBLISHABLE_KEY": "✅ Set" if os.getenv('STRIPE_PUBLISHABLE_KEY') else "❌ Missing",
+        "STRIPE_SECRET_KEY": "✅ Set" if STRIPE_SECRET_KEY else "❌ Missing",
+        "STRIPE_PUBLISHABLE_KEY": "✅ Set" if STRIPE_PUBLISHABLE_KEY else "❌ Missing",
         "STRIPE_WEBHOOK_SECRET": "✅ Set" if os.getenv('STRIPE_WEBHOOK_SECRET') else "❌ Missing",
         "GOOGLE_MERCHANT_ID": "✅ Set" if os.getenv('GOOGLE_MERCHANT_ID') else "❌ Missing",
-        "PAYPAL_CLIENT_ID": "✅ Set" if os.getenv('PAYPAL_CLIENT_ID') else "❌ Missing",
-        "PAYPAL_CLIENT_SECRET": "✅ Set" if os.getenv('PAYPAL_CLIENT_SECRET') else "❌ Missing",
+        "PAYPAL_CLIENT_ID": "✅ Set" if PAYPAL_CLIENT_ID else "❌ Missing",
+        "PAYPAL_CLIENT_SECRET": "✅ Set" if PAYPAL_CLIENT_SECRET else "❌ Missing",
         "FIREBASE_PROJECT_ID": "✅ Set" if os.getenv('FIREBASE_PROJECT_ID') else "❌ Missing",
         "DEBUG": os.getenv('DEBUG', 'False'),
         "BACKEND_URL": os.getenv('BACKEND_URL', 'Not set')
     }
     
     # Verificar se chaves são de teste ou produção
-    stripe_key = os.getenv('STRIPE_SECRET_KEY', '')
-    paypal_key = os.getenv('PAYPAL_CLIENT_ID', '')
+    stripe_key = STRIPE_SECRET_KEY
+    paypal_key = PAYPAL_CLIENT_ID
     
     mode_analysis = {
         "stripe_mode": "TEST" if "test" in stripe_key else "LIVE" if stripe_key else "NOT_SET",
@@ -1040,11 +1050,11 @@ async def get_environment_debug():
 async def live_payment_monitor():
     """Monitor em tempo real dos pagamentos"""
     try:
-        # Buscar transações recentes (últimas 2 horas)
+        # Data limite
         two_hours_ago = datetime.utcnow() - timedelta(hours=2)
         
         transactions_ref = db_firestore.collection('payment_transactions')
-        docs = transactions_ref.where('created_at', '>=', two_hours_ago).order_by('created_at', direction=firestore.Query.DESCENDING).limit(20).stream()
+        docs = transactions_ref.where('created_at', '>=', two_hours_ago).order_by('created_at', direction=firestore.Query.DESCENDING).stream()
         
         recent_transactions = []
         status_counts = {"created": 0, "completed": 0, "failed": 0, "pending": 0}
@@ -1054,8 +1064,9 @@ async def live_payment_monitor():
             data['id'] = doc.id
             
             # Converter timestamps
-            if 'created_at' in data and data['created_at']:
-                data['created_at'] = data['created_at'].isoformat()
+            for field in ['created_at', 'completed_at', 'updated_at']:
+                if field in data and data[field]:
+                    data[field] = data[field].isoformat() if hasattr(data[field], 'isoformat') else str(data[field])
             
             status = data.get('status', 'unknown')
             if status in status_counts:
@@ -1089,7 +1100,6 @@ async def live_payment_monitor():
 # ================================
 # 🔄 ENDPOINT DE SIMULAÇÃO DE FLUXO COMPLETO
 # ================================
-
 @api_router.post("/debug/simulate/complete-flow")
 async def simulate_complete_payment_flow(
     payment_method: str = "google_pay",
@@ -1365,8 +1375,8 @@ async def validate_security_config(request: Request):
         security_recommendations = []
         
         # Verificar chaves de ambiente
-        stripe_secret = os.getenv('STRIPE_SECRET_KEY', '')
-        stripe_public = os.getenv('STRIPE_PUBLISHABLE_KEY', '')
+        stripe_secret = STRIPE_SECRET_KEY
+        stripe_public = STRIPE_PUBLISHABLE_KEY
         
         # Verificar se são chaves de teste
         if stripe_secret and not stripe_secret.startswith('sk_test_'):
@@ -1946,6 +1956,7 @@ async def paypal_webhook(request: Request):
                     tour_id = transaction_data.get("tour_id")
                     
                     if booking_id and tour_id:
+                        # Buscar dados da reserva
                         booking_ref = db_firestore.collection('bookings').document(booking_id)
                         booking_doc = booking_ref.get()
                         
@@ -1966,216 +1977,6 @@ async def paypal_webhook(request: Request):
         return {"status": "webhook_processed"}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ================================
-# 🚀 STRIPE/GOOGLE PAY ENDPOINTS
-# ================================
-
-@api_router.get("/payments/test/stripe")
-async def test_stripe_connection():
-    """Testar conexão Stripe"""
-    if not STRIPE_AVAILABLE or not stripe_service:
-        return {
-            "status": "error",
-            "message": "Stripe Service não disponível",
-            "mode": "N/A"
-        }
-    
-    try:
-        result = stripe_service.test_connection()
-        return result
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Erro na conexão Stripe: {str(e)}",
-            "mode": stripe_service.mode if stripe_service else "N/A"
-        }
-
-@api_router.get("/payments/stripe/config")
-async def get_stripe_config():
-    """Configuração Stripe para frontend"""
-    if not STRIPE_AVAILABLE or not stripe_service:
-        raise HTTPException(status_code=503, detail="Stripe não está disponível")
-    
-    return {
-        "publishable_key": stripe_service.get_publishable_key(),
-        "merchant_id": os.getenv('GOOGLE_MERCHANT_ID'),
-        "available": True,
-        "mode": stripe_service.mode
-    }
-
-# --- ENDPOINT ANTIGO REMOVIDO E SUBSTITUÍDO PELO NOVO ---
-@api_router.post("/payments/create-intent")
-async def create_payment_intent(request: CreatePaymentIntentRequest):
-    """
-    Cria um Payment Intent genérico para qualquer pagamento via Stripe (Cartão, MB WAY, Google Pay, etc).
-    Este endpoint usa um modelo Pydantic para validação robusta dos dados.
-    """
-    if not STRIPE_AVAILABLE or not stripe_service:
-        raise HTTPException(status_code=503, detail="O serviço de pagamento Stripe não está disponível.")
-
-    try:
-        # O Pydantic já validou os dados, então podemos usá-los diretamente.
-        # Convertemos o modelo Pydantic num dicionário para enviar ao serviço.
-        payment_data = request.dict()
-        
-        # Chama a função do seu stripe_service
-        result = stripe_service.create_payment_intent(payment_data)
-        
-        # Se o serviço do Stripe retornar um erro, envie uma resposta HTTP de erro
-        if result.get("status") == "error":
-            # Usamos a mensagem de erro vinda do serviço para mais detalhes no frontend
-            raise HTTPException(status_code=400, detail=result.get("message"))
-        
-        # Se tudo correr bem, retorne o resultado para o frontend
-        return result
-            
-    except HTTPException:
-        # Re-lança a exceção HTTP para que o FastAPI a trate
-        raise
-    except Exception as e:
-        # Captura qualquer outro erro inesperado
-        logger.error(f"❌ Erro inesperado ao criar Payment Intent: {e}")
-        raise HTTPException(status_code=500, detail=f"Ocorreu um erro interno no servidor: {str(e)}")
-# --- FIM DO NOVO ENDPOINT ---
-
-@api_router.post("/payments/stripe/confirm/{payment_intent_id}")
-async def confirm_stripe_payment(payment_intent_id: str):
-    """🔒 Confirmar pagamento Stripe com bloqueio de data"""
-    if not STRIPE_AVAILABLE or not stripe_service:
-        raise HTTPException(status_code=503, detail="Stripe não está disponível")
-    
-    try:
-        print(f"💳 Confirmando pagamento Stripe: {payment_intent_id}")
-        
-        payment_result = stripe_service.confirm_payment(payment_intent_id)
-        
-        # Buscar transação
-        transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_intent_id).stream()
-        transaction_doc = None
-        for doc in transaction_docs:
-            transaction_doc = doc
-            break
-        
-        if not transaction_doc:
-            raise HTTPException(status_code=404, detail="Transação não encontrada")
-        
-        transaction_data = transaction_doc.to_dict()
-        
-        # Atualizar transação
-        update_data = {
-            "status": payment_result["status"],
-            "transaction_id": payment_result.get("transaction_id"),
-            "updated_at": datetime.utcnow()
-        }
-        
-        if payment_result["status"] == "succeeded":
-            update_data["completed_at"] = datetime.utcnow()
-        
-        db_firestore.collection('payment_transactions').document(transaction_doc.id).update(update_data)
-        
-        # ✅ NOVO: BLOQUEAR DATA APÓS PAGAMENTO CONFIRMADO
-        if payment_result["status"] == "succeeded":
-            booking_id = transaction_data.get("booking_id")
-            tour_id = transaction_data.get("tour_id")
-            
-            if booking_id and tour_id:
-                # Buscar dados da reserva
-                booking_ref = db_firestore.collection('bookings').document(booking_id)
-                booking_doc = booking_ref.get()
-                
-                if booking_doc.exists:
-                    booking_data = booking_doc.to_dict()
-                    selected_date = booking_data.get('selected_date')
-                    
-                    # ✅ MARCAR DATA COMO OCUPADA
-                    if selected_date:
-                        success = handle_successful_payment(booking_id, tour_id, selected_date)
-                        print(f"🔒 Data bloqueada: {success}")
-                    
-                    # Atualizar reserva
-                    booking_update = {
-                        "payment_status": "paid",
-                        "status": "confirmed", 
-                        "payment_transaction_id": payment_result.get("transaction_id"),
-                        "updated_at": datetime.utcnow()
-                    }
-                    booking_ref.update(booking_update)
-        
-        return payment_result
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Erro na confirmação Stripe: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.get("/payments/stripe/status/{payment_intent_id}")
-async def get_stripe_payment_status(payment_intent_id: str):
-    """Verificar status Stripe"""
-    if not STRIPE_AVAILABLE or not stripe_service:
-        raise HTTPException(status_code=503, detail="Stripe não está disponível")
-    
-    try:
-        payment_details = stripe_service.confirm_payment(payment_intent_id)
-        transaction_docs = db_firestore.collection('payment_transactions').where('payment_id', '==', payment_intent_id).stream()
-        for doc in transaction_docs:
-            current_data = doc.to_dict()
-            if current_data.get("status") != payment_details["status"]:
-                db_firestore.collection('payment_transactions').document(doc.id).update({
-                    "status": payment_details["status"],
-                    "updated_at": datetime.utcnow()
-                })
-            break
-        
-        return payment_details
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@api_router.post("/webhooks/stripe")
-async def stripe_webhook(request: Request):
-    """🔒 Webhook Stripe com garantia de bloqueio de data"""
-    try:
-        body = await request.body()
-        signature = request.headers.get('stripe-signature')
-        
-        if not STRIPE_AVAILABLE or not stripe_service:
-            print("❌ Stripe não disponível para webhook")
-            raise HTTPException(status_code=503, detail="Stripe não disponível")
-        
-        # Processar webhook
-        webhook_result = stripe_service.handle_webhook(body.decode('utf-8'), signature)
-        
-        # Se for um evento de pagamento bem-sucedido
-        if webhook_result.get('event_type') == 'payment_intent.succeeded':
-            payment_intent = webhook_result.get('payment_intent')
-            
-            if payment_intent:
-                booking_id = payment_intent.get('metadata', {}).get('booking_id')
-                tour_id = payment_intent.get('metadata', {}).get('tour_id')
-                
-                if booking_id and tour_id:
-                    # Buscar dados da reserva
-                    booking_ref = db_firestore.collection('bookings').document(booking_id)
-                    booking_doc = booking_ref.get()
-                    
-                    if booking_doc.exists:
-                        booking_data = booking_doc.to_dict()
-                        selected_date = booking_data.get('selected_date')
-                        
-                        if selected_date:
-                            # ✅ GARANTIR QUE A DATA FICA OCUPADA VIA WEBHOOK
-                            success = handle_successful_payment(booking_id, tour_id, selected_date)
-                            print(f"🔗 Webhook - Data bloqueada: {success}")
-        
-        return {"status": "success", "result": webhook_result}
-        
-    except Exception as e:
-        print(f"❌ Erro no webhook Stripe: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ================================
@@ -2222,7 +2023,7 @@ async def get_all_payments_detailed():
                 data['completed_at'] = data['completed_at'].isoformat() if hasattr(data['completed_at'], 'isoformat') else str(data['completed_at'])
             
             if 'updated_at' in data and data['updated_at']:
-                data['updated_at'] = data['updated_at'].isoformat() if hasattr(data['updated_at'], 'isoformat') else str(data['updated_at'])
+                data['updated_at'] = data['updated_at'].isoformat() if hasattr(data['completed_at'], 'isoformat') else str(data['updated_at'])
             
             payments.append(data)
         
