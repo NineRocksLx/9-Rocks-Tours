@@ -1,9 +1,3 @@
-# backend/test_map_locations_firestore.py - SCRIPT DE TESTE PARA MAP_LOCATIONS
-"""
-Script para testar se o Firestore está salvando corretamente o campo map_locations
-Execute este script para verificar se há problemas de configuração no Firestore
-"""
-
 import asyncio
 import time
 from config.firestore_db import tours_collection

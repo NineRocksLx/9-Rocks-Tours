@@ -5,19 +5,8 @@ from datetime import datetime
 from typing import List, Optional, Dict
 from pydantic import BaseModel
 import xml.etree.ElementTree as ET
-import firebase_admin
-from firebase_admin import credentials, firestore
 
-# Initialize Firebase if not already initialized
-try:
-    firebase_admin.get_app()  # Check if app is already initialized
-except ValueError:
-    cred = credentials.Certificate("google-calendar-key.json")  # Path to your service account key
-    firebase_admin.initialize_app(cred, {
-        'projectId': 'tours-81516-acfbc',
-    })
-    print("Firebase initialized in seo_routes.py")
-db_firestore = firestore.client()
+from config.firestore_db import db as db_firestore
 
 # 🎯 SEO Configuration
 class SEOConfig:
@@ -25,7 +14,8 @@ class SEOConfig:
     COMPANY_NAME = "9 Rocks Tours"
     LANGUAGES = ["pt", "en", "es"]
     CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "info@9rocks.pt")
-    CONTACT_PHONE = os.getenv("CONTACT_PHONE", "+351-XXX-XXX-XXX")
+    # LINHA 25 ATUALIZADA: Número de telemóvel
+    CONTACT_PHONE = os.getenv("CONTACT_PHONE", "+351-963-366-458")
     GOOGLE_ANALYTICS_ID = os.getenv("FIREBASE_MEASUREMENT_ID", "G-36FC6SS4WD")
     PRIORITY_PAGES = {
         "home": 1.0,
@@ -39,7 +29,7 @@ class SEOConfig:
 # 📊 Pydantic Models for SEO Data
 class TourData(BaseModel):
     slug: str
-    name: Dict[str, str]  # ✅ CORRIGIDO: agora é Dict[str, str] em vez de str
+    name: Dict[str, str]
     description: Optional[str] = None
     price: Optional[float] = None
     rating: Optional[float] = None
@@ -62,6 +52,7 @@ class SEOData(BaseModel):
 async def get_tour_count() -> int:
     """🎯 Count active tours in Firestore"""
     try:
+        # Usa a instância db_firestore importada
         query = db_firestore.collection('tours').where('active', '==', True)
         docs = query.stream()
         count = sum(1 for _ in docs)
@@ -73,6 +64,7 @@ async def get_tour_count() -> int:
 async def get_customer_count() -> int:
     """🌟 Count customers/bookings in Firestore"""
     try:
+        # Usa a instância db_firestore importada
         query = db_firestore.collection('bookings')
         docs = query.stream()
         count = sum(1 for _ in docs)
@@ -84,6 +76,7 @@ async def get_customer_count() -> int:
 async def get_all_tours() -> List[TourData]:
     """🎢 Fetch all active tours from Firestore with logging"""
     try:
+        # Usa a instância db_firestore importada
         query = db_firestore.collection('tours').where('active', '==', True)
         docs = query.stream()
         tours = []
@@ -97,7 +90,7 @@ async def get_all_tours() -> List[TourData]:
             seen_ids.add(doc_id)
             tour_data = {
                 "slug": tour_doc.get("id", "tour-" + doc_id),
-                "name": tour_doc.get("name", {"pt": "Tour sem nome", "en": "Unnamed Tour"}),  # ✅ CORRIGIDO: garantir que é objeto
+                "name": tour_doc.get("name", {"pt": "Tour sem nome", "en": "Unnamed Tour"}),
                 "description": tour_doc.get("description", {}).get("pt", ""),
                 "price": tour_doc.get("price", 0.0),
                 "rating": tour_doc.get("rating", 4.5),
@@ -113,7 +106,7 @@ async def get_all_tours() -> List[TourData]:
         return [
             TourData(
                 slug="cascatas-secretas-sintra",
-                name={"pt": "Cascatas Secretas de Sintra", "en": "Secret Waterfalls of Sintra"},  # ✅ CORRIGIDO: agora é objeto
+                name={"pt": "Cascatas Secretas de Sintra", "en": "Secret Waterfalls of Sintra"},
                 description="Descubra cascatas escondidas nas montanhas de Sintra",
                 price=65.0,
                 rating=4.9,
@@ -123,7 +116,7 @@ async def get_all_tours() -> List[TourData]:
             ),
             TourData(
                 slug="aventura-costa-vicentina",
-                name={"pt": "Aventura na Costa Vicentina", "en": "Vicentine Coast Adventure"},  # ✅ CORRIGIDO: agora é objeto
+                name={"pt": "Aventura na Costa Vicentina", "en": "Vicentine Coast Adventure"},
                 description="Explore a costa selvagem do sudoeste português",
                 price=85.0,
                 rating=4.8,
@@ -136,6 +129,7 @@ async def get_all_tours() -> List[TourData]:
 async def get_featured_tours(language: str = "pt") -> List[TourData]:
     """⭐ Fetch featured tours from Firestore"""
     try:
+        # Usa a instância db_firestore importada
         query = db_firestore.collection('tours').where('active', '==', True).where('rating', '>=', 4.5).limit(6)
         docs = query.stream()
         tours = []
@@ -143,7 +137,7 @@ async def get_featured_tours(language: str = "pt") -> List[TourData]:
             tour_doc = doc.to_dict()
             tour_data = {
                 "slug": tour_doc.get("id", "tour-" + str(doc.id)),
-                "name": tour_doc.get("name", {"pt": "Tour em destaque", "en": "Featured Tour"}),  # ✅ CORRIGIDO: garantir que é objeto
+                "name": tour_doc.get("name", {"pt": "Tour em destaque", "en": "Featured Tour"}),
                 "description": tour_doc.get("description", {}).get(language, ""),
                 "price": tour_doc.get("price", 0.0),
                 "rating": tour_doc.get("rating", 4.5),
@@ -161,13 +155,14 @@ async def get_featured_tours(language: str = "pt") -> List[TourData]:
 async def get_tour_by_id(tour_id: str) -> Optional[TourData]:
     """🎢 Fetch a tour by ID from Firestore"""
     try:
+        # Usa a instância db_firestore importada
         doc = db_firestore.collection('tours').document(tour_id).get()
         if not doc.exists:
             return None
         tour_doc = doc.to_dict()
         tour_data = {
             "slug": tour_doc.get("id", tour_id),
-            "name": tour_doc.get("name", {"pt": "Tour", "en": "Tour"}),  # ✅ CORRIGIDO: garantir que é objeto
+            "name": tour_doc.get("name", {"pt": "Tour", "en": "Tour"}),
             "description": tour_doc.get("description", {}).get("pt", ""),
             "price": tour_doc.get("price", 0.0),
             "rating": tour_doc.get("rating", 4.5),
@@ -385,7 +380,7 @@ Crawl-delay: 0"""
                 tour_schema = {
                     "@context": "https://schema.org",
                     "@type": "TouristTrip",
-                    "name": tour_data.name.get("pt", "Tour"),  # ✅ CORRIGIDO: acesso ao dicionário
+                    "name": tour_data.name.get("pt", "Tour"),
                     "description": tour_data.description,
                     "image": tour_data.images,
                     "offers": {
@@ -424,6 +419,7 @@ Crawl-delay: 0"""
     async def health_check():
         """✅ Health check with Firestore status"""
         try:
+            # Usa a instância db_firestore importada
             db_firestore.collection('tours').limit(1).get()
             db_status = "healthy"
         except Exception as e:

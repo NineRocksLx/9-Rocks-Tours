@@ -1,257 +1,92 @@
 # ============================================================================
-# 🚀 MAIN.PY - APLICAÇÃO PRINCIPAL COM SEO INTEGRADO - 9 ROCKS TOURS
-# Arquivo: backend/main.py
+# 📦 Importações de Módulos Essenciais
 # ============================================================================
-
-from fastapi import FastAPI, Request, HTTPException
+import os
+import uvicorn
+import firebase_admin
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-import uvicorn
-import os
-from dotenv import load_dotenv
+from firebase_admin import credentials
+# ❌ LINHA REMOVIDA: A importação do ProxyHeadersMiddleware foi removida por ser incompatível.
+# from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 
-# 🔥 IMPORTAÇÃO DO SISTEMA SEO
-from seo_routes import setup_seo_routes
+# ============================================================================
+# ⚙️ Configuração e Inicialização Central
+# ============================================================================
+# A inicialização do Firebase é feita aqui, e apenas aqui.
+# Isto garante que a aplicação só é inicializada uma vez.
+try:
+    print("🔥 A tentar inicializar a aplicação Firebase Admin...")
+    if not firebase_admin._apps:
+        # A chave 'google-calendar-key.json' deve estar na raiz da pasta 'backend'
+        cred_path = os.path.join(os.path.dirname(__file__), 'google-calendar-key.json')
+        cred = credentials.ApplicationDefault() if os.getenv("ENVIRONMENT") == "production" else credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        print("✅ Firebase Admin inicializado com sucesso.")
+    else:
+        print("ℹ️ Aplicação Firebase Admin já existe.")
+except Exception as e:
+    print(f"❌ ERRO CRÍTICO AO INICIALIZAR FIREBASE: {e}")
+    # Em caso de falha, a aplicação não deve continuar.
+    exit(1)
 
-# 📦 SUAS ROTAS EXISTENTES (adicione conforme necessário)
-# from routes.tours import tours_router
-# from routes.bookings import bookings_router
-# from routes.auth import auth_router
-# from routes.payments import payments_router
+# ============================================================================
+# 🚚 Importações dos Módulos da Aplicação (DEPOIS da inicialização)
+# ============================================================================
+from routers import tours_fixed, config_routes, booking_routes, payment_routes, admin_routes, hero_images_routes
+from services import paypal_service, stripe_service
 
-# 🌍 CARREGAMENTO DE VARIÁVEIS DE AMBIENTE
-load_dotenv()
+# ============================================================================
+# 🚀 Criação e Configuração da Aplicação FastAPI
+# ============================================================================
+app = FastAPI(title="9 Rocks Tours API")
 
-# 🚀 APLICAÇÃO PRINCIPAL
-app = FastAPI(
-    title="9 Rocks Tours API",
-    description="Sistema completo de turismo com SEO multilíngue otimizado",
-    version="2.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
-)
+# --- Configuração do Middleware ---
 
-# ⚡ MIDDLEWARE DE PERFORMANCE E SEGURANÇA
+# ❌ LINHA REMOVIDA: A adição do middleware foi removida.
+# app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+origins = [
+    "https://www.9rocks.pt",
+    "https://9rocks.pt",
+    "https://tours-81516-acfbc.web.app",
+    "http://localhost:3000", # Para desenvolvimento local
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # React dev
-        "http://localhost:3001", 
-        "https://9rockstours.com",  # Produção
-        "https://www.9rockstours.com"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 🔒 MIDDLEWARE DE SEGURANÇA E SEO
-@app.middleware("http")
-async def security_and_seo_middleware(request: Request, call_next):
-    """🔒 HEADERS DE SEGURANÇA E PERFORMANCE SEO"""
-    response = await call_next(request)
-    
-    # 🔒 Headers de segurança
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    
-    # ⚡ Headers de performance para SEO
-    seo_paths = ["/sitemap.xml", "/robots.txt", "/api/seo", "/api/schema"]
-    if any(request.url.path.startswith(path) for path in seo_paths):
-        response.headers["Cache-Control"] = "public, max-age=3600"
-    
-    # 🌐 Headers para recursos estáticos
-    if request.url.path.startswith("/static"):
-        response.headers["Cache-Control"] = "public, max-age=86400"
-    
-    return response
+# ============================================================================
+# 🔗 Inclusão de Todas as Rotas
+# ============================================================================
+api_prefix = "/api"
+app.include_router(tours_fixed.router, prefix=f"{api_prefix}/tours", tags=["Tours"])
+app.include_router(config_routes.router, prefix=f"{api_prefix}/config", tags=["Config"])
+app.include_router(booking_routes.router, prefix=f"{api_prefix}/bookings", tags=["Bookings"])
+app.include_router(hero_images_routes.router, prefix=f"{api_prefix}/hero-images", tags=["Hero Images"])
 
-# 🔥 INTEGRAÇÃO DO SISTEMA SEO (ESSENCIAL!)
-print("🔗 Integrando sistema SEO multilíngue...")
-app = setup_seo_routes(app)
-print("✅ Sistema SEO integrado com sucesso!")
+# As rotas de Admin e Pagamentos podem ser adicionadas aqui conforme necessário
+app.include_router(payment_routes.router, prefix=f"{api_prefix}/payments", tags=["Payments"])
+app.include_router(admin_routes.router, prefix=f"{api_prefix}/admin", tags=["Admin"])
 
-# 📊 SUAS ROTAS API EXISTENTES (descomente conforme necessário)
-# app.include_router(tours_router, prefix="/api/tours", tags=["tours"])
-# app.include_router(bookings_router, prefix="/api/bookings", tags=["bookings"])
-# app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
-# app.include_router(payments_router, prefix="/api/payments", tags=["payments"])
 
-# 🏠 ROTA PRINCIPAL DA API
-@app.get("/api")
-async def api_root():
-    """🏠 ENDPOINT PRINCIPAL DA API"""
-    return {
-        "message": "9 Rocks Tours API",
-        "version": "2.0.0",
-        "features": [
-            "SEO Multilíngue Automático",
-            "Tours Management API", 
-            "Booking System",
-            "Payment Integration",
-            "MongoDB Integration"
-        ],
-        "seo_endpoints": {
-            "sitemap": "/sitemap.xml",
-            "robots": "/robots.txt", 
-            "seo_status": "/seo-status",
-            "health": "/health",
-            "seo_data": "/api/seo/{page}/{language}"
-        },
-        "documentation": {
-            "swagger": "/docs",
-            "redoc": "/redoc"
-        },
-        "languages_supported": ["pt", "en", "es"]
-    }
-
-# 📊 STATUS GERAL DA APLICAÇÃO
-@app.get("/api/status")
-async def application_status():
-    """📊 STATUS COMPLETO DA APLICAÇÃO"""
-    return {
-        "api_status": "active",
-        "seo_status": "active",
-        "database_status": "connected", 
-        "features": {
-            "multilingual_seo": True,
-            "dynamic_sitemap": True,
-            "structured_data": True,
-            "performance_optimized": True,
-            "mongodb_integration": True,
-            "automatic_hreflang": True
-        },
-        "environment": os.getenv("ENVIRONMENT", "development"),
-        "base_url": os.getenv("BASE_URL", "https://9rockstours.com"),
-        "supported_languages": ["pt", "en", "es"]
-    }
-
-# 🌐 ROTA PARA DETECÇÃO DE IDIOMA
-@app.get("/api/detect-language")
-async def detect_language(request: Request):
-    """🌐 DETECTA IDIOMA PREFERIDO DO USUÁRIO"""
-    
-    # 🔍 Análise do cabeçalho Accept-Language
-    accept_language = request.headers.get("accept-language", "")
-    
-    # 🎯 Lógica de detecção
-    if "en" in accept_language.lower():
-        detected = "en"
-    elif "es" in accept_language.lower():
-        detected = "es"
-    else:
-        detected = "pt"  # Padrão
-    
-    return {
-        "detected_language": detected,
-        "supported_languages": ["pt", "en", "es"],
-        "redirect_url": f"/{detected}" if detected != "pt" else "/",
-        "browser_preference": accept_language
-    }
-
-# ❌ HANDLERS DE ERRO PERSONALIZADOS PARA SEO
-@app.exception_handler(404)
-async def not_found_handler(request: Request, exc):
-    """🔍 HANDLER 404 SEO-FRIENDLY"""
-    
-    # 🎯 Sugestões inteligentes baseadas na URL
-    path = request.url.path
-    suggestions = []
-    
-    if "tour" in path:
-        suggestions.extend([
-            "Veja todos os tours: /tours",
-            "Tours em destaque: /tours/featured"
-        ])
-    elif any(lang in path for lang in ["en", "es"]):
-        suggestions.extend([
-            "Visit homepage: /",
-            "See all tours: /tours"
-        ])
-    else:
-        suggestions.extend([
-            "Visite a homepage: /",
-            "Veja nossos tours: /tours",
-            "Entre em contato: /contact"
-        ])
-    
-    return JSONResponse(
-        status_code=404,
-        content={
-            "detail": "Página não encontrada",
-            "message": "A página que procura não existe ou foi movida",
-            "suggestions": suggestions,
-            "seo_help": {
-                "sitemap": "/sitemap.xml",
-                "all_pages": "/seo-status"
-            },
-            "contact": "info@9rockstours.com"
-        }
-    )
-
-@app.exception_handler(500)
-async def server_error_handler(request: Request, exc):
-    """⚠️ HANDLER 500 COM INFORMAÇÕES ÚTEIS"""
-    return JSONResponse(
-        status_code=500,
-        content={
-            "detail": "Erro interno do servidor",
-            "message": "Nossa equipe técnica foi notificada automaticamente",
-            "support": {
-                "email": "tech@9rockstours.com",
-                "status_page": "/health"
-            },
-            "estimated_fix": "Geralmente resolvemos problemas em menos de 30 minutos"
-        }
-    )
-
-# 🔧 CONFIGURAÇÃO DE RECURSOS ESTÁTICOS (se necessário)
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+print("✅ Todos os routers da API foram montados com sucesso.")
 
 # ============================================================================
-# 🚀 CONFIGURAÇÃO DE EXECUÇÃO
+# ❤️ Endpoint de Verificação de Saúde
 # ============================================================================
+@app.get("/health", tags=["Health"])
+async def health_check():
+    return {"status": "healthy"}
 
+# ============================================================================
+# 🌍 Lógica de Arranque do Servidor
+# ============================================================================
 if __name__ == "__main__":
-    # 🔧 CONFIGURAÇÕES DO SERVIDOR
-    HOST = os.getenv("HOST", "0.0.0.0")
-    PORT = int(os.getenv("PORT", 8000))
-    DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-    RELOAD = DEBUG  # Apenas reload em desenvolvimento
-    
-    print("🚀 Iniciando 9 Rocks Tours API + SEO Multilíngue...")
-    print("=" * 60)
-    print(f"🌐 Servidor: http://{HOST}:{PORT}")
-    print(f"📚 Documentação: http://{HOST}:{PORT}/docs")
-    print(f"🗺️ Sitemap: http://{HOST}:{PORT}/sitemap.xml")
-    print(f"🤖 Robots: http://{HOST}:{PORT}/robots.txt")
-    print(f"📊 Status SEO: http://{HOST}:{PORT}/seo-status")
-    print(f"💊 Health Check: http://{HOST}:{PORT}/health")
-    print("=" * 60)
-    print("🔥 RECURSOS SEO ATIVADOS:")
-    print("   ✅ Sitemap XML dinâmico (3 idiomas)")
-    print("   ✅ Robots.txt otimizado") 
-    print("   ✅ Hreflang automático")
-    print("   ✅ Structured data")
-    print("   ✅ Performance headers")
-    print("   ✅ MongoDB integration")
-    print("=" * 60)
-    
-    # 🚀 EXECUÇÃO DO SERVIDOR
-    uvicorn.run(
-        "main:app",
-        host=HOST,
-        port=PORT,
-        reload=RELOAD,
-        access_log=True,
-        reload_includes=["*.py"],
-        log_level="info" if not DEBUG else "debug",
-        workers=1 if DEBUG else 4  # Múltiplos workers em produção
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

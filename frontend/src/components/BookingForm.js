@@ -1,6 +1,6 @@
 // frontend/src/components/BookingForm.js - VERSÃO COMPLETAMENTE CORRIGIDA
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useLocation, Link } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import { BACKEND_URL } from '../config/appConfig';
@@ -149,8 +149,7 @@ const BookingSEOHead = ({ tourData }) => {
 // Componente Principal BookingForm
 const BookingForm = () => {
   const { currentLang } = useSEO();
-  const [searchParams] = useSearchParams();
-  const tourSlug = searchParams.get('tour');
+  const { id: tourSlug } = useParams();
   
   const [tourData, setTourData] = useState(null);
   const [availableDates, setAvailableDates] = useState([]);
@@ -310,7 +309,7 @@ const BookingForm = () => {
     if (!tourSlug) return;
     
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/v1/bookings/occupied-dates/${tourSlug}`);
+      const response = await axios.get(`${BACKEND_URL}/api/tours/${tourSlug}/occupied-dates`);
       if (response.data && response.data.occupied_dates) {
         setOccupiedDates(response.data.occupied_dates);
         console.log("✅ Datas ocupadas atualizadas:", response.data.occupied_dates);
@@ -338,19 +337,13 @@ const BookingForm = () => {
         const tourResponse = await axios.get(`${BACKEND_URL}/api/tours/${tourSlug}`);
         setTourData(tourResponse.data);
         
-        // Passo 2: Popula as datas disponíveis
+        // Passo 2: Popula as datas disponíveis (CÓDIGO MODIFICADO PARA DAR CONTROLO TOTAL AO ADMIN)
         if (tourResponse.data && tourResponse.data.available_dates && tourResponse.data.available_dates.length > 0) {
             setAvailableDates(tourResponse.data.available_dates);
         } else {
-            console.warn("Aviso: O tour não tem 'available_dates'. A gerar datas de fallback para os próximos 90 dias.");
-            const fallbackDates = [];
-            const today = new Date();
-            for (let i = 0; i < 90; i++) {
-                const date = new Date();
-                date.setUTCDate(today.getUTCDate() + i);
-                fallbackDates.push(date.toISOString().split('T')[0]);
-            }
-            setAvailableDates(fallbackDates);
+            console.warn("Aviso: O tour não tem 'available_dates' definidas. O tour não estará disponível para reserva.");
+            // Garante que nenhuma data é mostrada se não forem definidas pelo admin
+            setAvailableDates([]);
         }
 
         // Passo 3: Buscar as datas já ocupadas
@@ -409,27 +402,31 @@ const BookingForm = () => {
 
     const bookingPayload = {
       tour_id: tourSlug,
-      selected_date_iso: formData.date, // ISO string do meio-dia UTC
-      user_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-      user_email: formData.email.trim(),
-      num_participants: parseInt(formData.numberOfPeople, 10),
+      selectedDate: formData.date,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone || '',
+      // ## ✅ CORREÇÃO CRÍTICA APLICADA AQUI ##
+      // O segundo argumento (radix) foi corrigido para 10 (decimal).
+      // O anterior `4` causava erros para números de pessoas >= 4.
+      numberOfPeople: parseInt(formData.numberOfPeople, 10),
+      specialRequests: formData.specialRequests || '',
     };
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/api/v1/bookings/book-tour`, bookingPayload);
+      const response = await axios.post(`${BACKEND_URL}/api/payments/create-booking`, bookingPayload);
 
-      if (response.status === 201) {
+      if (response.status === 200 || response.status === 201) {
         const newBookingId = response.data.bookingId;
         setBookingId(newBookingId);
         
-        // ✅ CORREÇÃO: Adiciona imediatamente a data à lista de ocupadas
         const bookedDateString = formData.selectedDateString;
         if (bookedDateString && !occupiedDates.includes(bookedDateString)) {
           setOccupiedDates(prev => [...prev, bookedDateString]);
           console.log(`✅ Data ${bookedDateString} marcada como ocupada localmente`);
         }
         
-        // ✅ Recarrega datas ocupadas do servidor para sincronização total
         setTimeout(() => refreshOccupiedDates(), 1000);
         
         setSubmitted(true);
@@ -439,14 +436,13 @@ const BookingForm = () => {
         if (error.response.status === 409) {
           setApiError(content[currentLang].dateUnavailable);
           
-          // Marca a data como ocupada e força recarregamento
           const failedDateString = formData.selectedDateString;
           if (failedDateString && !occupiedDates.includes(failedDateString)) {
             setOccupiedDates(prev => [...prev, failedDateString]);
           }
           
           setFormData(prev => ({ ...prev, date: '', selectedDateString: '' }));
-          refreshOccupiedDates(); // Recarrega do servidor
+          refreshOccupiedDates();
         } else {
           const detail = error.response.data?.detail || 'Ocorreu um erro ao processar a sua reserva.';
           setApiError(`Erro: ${detail}`);
@@ -507,7 +503,6 @@ const BookingForm = () => {
     
     console.log(`🗓️ SELECIONADO: ${selectedDateString}`);
     
-    // Converte para ISO string do meio-dia UTC
     const isoString = convertDateToISOMidday(selectedDateString);
     
     if (!isoString) {
@@ -515,11 +510,10 @@ const BookingForm = () => {
         return;
     }
     
-    // CORREÇÃO CRÍTICA: Estado duplo para separar backend de display
     setFormData(prev => ({ 
       ...prev, 
-      date: isoString,                    // Para backend
-      selectedDateString: selectedDateString // Para display
+      date: isoString,
+      selectedDateString: selectedDateString
     }));
     
     console.log(`✅ ARMAZENADO: ISO=${isoString}, Display=${selectedDateString}`);

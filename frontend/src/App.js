@@ -23,7 +23,7 @@ function App() {
             <Route path="/" element={<><Header /><HomePage lang="pt" /></>} />
             <Route path="/tours" element={<><Header /><ToursPage lang="pt" /></>} />
             <Route path="/tour/:id" element={<><Header /><TourDetails lang="pt" /></>} />
-            <Route path="/reservar" element={<><Header /><BookingForm lang="pt" /></>} />
+            <Route path="/reservar/:id" element={<><Header /><BookingForm lang="pt" /></>} />
             <Route path="/admin" element={<AdminPanel />} />
             
             {/* Teste de Pagamento */}
@@ -33,13 +33,13 @@ function App() {
             <Route path="/en/" element={<><Header /><HomePage lang="en" /></>} />
             <Route path="/en/tours" element={<><Header /><ToursPage lang="en" /></>} />
             <Route path="/en/tour/:id" element={<><Header /><TourDetails lang="en" /></>} />
-            <Route path="/en/reservar" element={<><Header /><BookingForm lang="en" /></>} />
+            <Route path="/en/reservar/:id" element={<><Header /><BookingForm lang="en" /></>} />
             
             {/* Español */}
             <Route path="/es/" element={<><Header /><HomePage lang="es" /></>} />
             <Route path="/es/tours" element={<><Header /><ToursPage lang="es" /></>} />
             <Route path="/es/tour/:id" element={<><Header /><TourDetails lang="es" /></>} />
-            <Route path="/es/reservar" element={<><Header /><BookingForm lang="es" /></>} />
+            <Route path="/es/reservar/:id" element={<><Header /><BookingForm lang="es" /></>} />
             
             {/* Outras páginas */}
             <Route path="/about" element={<><Header /><AboutPage /></>} />

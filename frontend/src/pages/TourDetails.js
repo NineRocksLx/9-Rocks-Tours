@@ -262,14 +262,16 @@ const TourDetails = () => {
         }
     }, [currentLang, tourData]);
 
+    // 🔧 CORREÇÃO: URL de booking corrigida para evitar dupla barra
     const bookingUrl = React.useMemo(() => {
         try {
             if (!id) return '#';
             
-            const langPrefix = currentLang !== 'pt' ? `${currentLang}/` : '';
-            const url = `/${langPrefix}reservar?tour=${id}`;
+            // Se for português, usa apenas /reservar/id
+            // Se for outras línguas, usa /en/reservar/id ou /es/reservar/id
+            const baseUrl = currentLang !== 'pt' ? `/${currentLang}/reservar/${id}` : `/reservar/${id}`;
             
-            return url;
+            return baseUrl;
         } catch (error) {
             console.error('Error generating booking URL:', error);
             return '#';

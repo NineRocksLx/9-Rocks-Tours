@@ -1,4 +1,4 @@
-# backend/routers/tours.py - VERSÃO FINAL COM FIREBASE CENTRALIZADO
+# backend/routers/tours.py - VERSÃO FINAL COM FIREBASE CENTRALIZADO E ENDPOINT OCUPADAS
 
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional, Dict, Any
@@ -8,7 +8,7 @@ import sys
 # ✅ INICIALIZAR ROUTER (ESSENCIAL!)
 router = APIRouter()
 
-# ✅ IMPORTAÇÕES FIRESTORE CENTRALIZADAS
+# ✅ IMPORTAÇÕES FIRESTORE CENTRALIZADAS (CORRIGIDO: Importação absoluta)
 try:
     from config.firestore_db import db as db_firestore, tours_collection
     FIRESTORE_CONNECTED = True
@@ -309,8 +309,8 @@ async def update_tour(tour_id: str, tour_update: dict):
         # Usar SET para garantir persistência
         doc_ref.set(updated_data)
         
-        result = {**updated_data, "id": tour_id}
-        debug_map_locations(result, f"UPDATE {tour_id} - Final")
+        result = {**updated_data, "id": doc_ref.id}
+        debug_map_locations(result, "CREATE - Final")
         
         print(f"✅ Tour atualizado: {result.get('name', {}).get('pt', 'Sem nome')}")
         return result
@@ -381,3 +381,47 @@ async def tours_status():
             "firestore_connected": False,
             "timestamp": datetime.utcnow().isoformat()
         }
+
+# --- ✅ ENDPOINT PARA DATAS OCUPADAS ---
+@router.get("/{tour_id}/occupied-dates")
+async def get_occupied_dates(tour_id: str):
+    """
+    Retorna uma lista de datas (formato 'YYYY-MM-DD') que já estão reservadas
+    para um tour específico.
+    """
+    try:
+        bookings_ref = db_firestore.collection("bookings")
+        # Query para encontrar todas as reservas para o tour_id especificado.
+        query = bookings_ref.where("tourId", "==", tour_id)
+        docs = query.stream()
+
+        occupied_dates = set()  # Use set para evitar duplicatas
+        
+        for doc in docs:
+            booking = doc.to_dict()
+            
+            # Tenta múltiplos campos de data para compatibilidade
+            date_value = booking.get('bookingDate') or booking.get('date') or booking.get('selected_date')
+            
+            if date_value:
+                if isinstance(date_value, datetime):
+                    # Se é datetime, formata diretamente
+                    date_str = date_value.strftime('%Y-%m-%d')
+                    occupied_dates.add(date_str)
+                elif isinstance(date_value, str):
+                    # Se é string, tenta parse ou extrair YYYY-MM-DD
+                    if len(date_value) >= 10:
+                        date_str = date_value[:10]  # Pega os primeiros 10 caracteres
+                        occupied_dates.add(date_str)
+        
+        # Converte set para lista ordenada
+        occupied_dates_list = sorted(list(occupied_dates))
+        
+        print(f"📅 Datas ocupadas para tour {tour_id}: {occupied_dates_list}")
+        
+        return {"occupied_dates": occupied_dates_list}
+        
+    except Exception as e:
+        print(f"❌ Erro ao buscar datas ocupadas para o tour {tour_id}: {e}")
+        # Retorna uma lista vazia em caso de erro para não quebrar o frontend.
+        return {"occupied_dates": []}

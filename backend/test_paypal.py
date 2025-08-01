@@ -1,4 +1,3 @@
-# backend/test_paypal.py
 import requests
 import json
 from datetime import datetime

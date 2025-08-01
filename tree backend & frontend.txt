@@ -1,64 +1,87 @@
-Tree de C:\Users\paulo\Desktop\9-Rocks-Tours-Git (excluindo pastas comuns de ambiente)
+Tree de C:\Users\paulo\Desktop\9-Rocks-Tours-Git (excluindo pastas e ficheiros indesejados)
 
-.gitconfig
-.gitignore
-README.md
-abre_repositorio.py
-backend/
-    .env
+9-Rocks-Tours-Git/
+    .gitconfig
     .gitignore
-    config/
-        db.py
-        firestore_db.py
-    diagnostic.py
-    fixtures/
-        populate_tours.py
-        tours_fixtures.json
+    cloudbuild.yaml
+    package-lock.json
+    package.json
+    policy.yaml
+    README.md
+    structure of my backend and frontend project.txt
+    tree backend & frontend.txt
+    tree of backend and frontend project.txt
+    tree_filtrada_final_corrigida.txt
+    yarn.lock
+backend\
+    .dockerignore
+    .env
+    .gcloudignore
+    .gitignore
+    build-sent.tgz
+    Dockerfile
+    files-sent-to-cloud.txt
     google-calendar-key.json
     main.py
-    models/
-        tour.py
     requirements.txt
-    routers/
-        __init__.py
+    server.py
+    server_debug.py
+    test_secret.py
+    config\
+        db.py
+        environment.py
+        firestore_db.py
+    fixtures\
+        populate_tours.py
+        tours_fixtures.json
+    models\
+        booking.py
+        payment.py
+        tour.py
+    routers\
+        admin_routes.py
         booking_routes.py
+        config_routes.py
+        hero_images_routes.py
+        payment_routes.py
         seo_routes.py
         tours.py
         tours_fixed.py
-    server.py
-    server.py.backup.original
-    server_test.py
-    services/
         __init__.py
+    services\
+        booking_service.py
         paypal_service.py
         stripe_service.py
-    start_backend.py
-    test_firestore.py
-    test_map_locations_firestore.py
-    test_paypal.py
-    test_permissions.py
-    test_stripe_setup_fixed.py
-    utils/
+        tour_service.py
+        __init__.py
+    utils\
+        auth.py
         google_calendar.py
-e --abort
-fecha_repositorio.py
-fix-frontend.ps1
-frontend/
+frontend\
     .env
-    README.md
+    .env.production
+    .firebaserc
+    .gcloudignore
+    .gitignore
     booking.html
+    firebase.json
     imports.js
     package-lock.json
     package.json
     postcss.config.js
-    public/
+    README.md
+    tailwind.config.js
+    yarn.lock
+    public\
         index.html
-    src/
+        manifest.json
+    src\
         App.css
         App.js
-        components/
+        index.css
+        index.js
+        components\
             AdminTourManager.js
-            AdminTourManager_old.js
             BookingCalendarPicker.js
             BookingCheckoutPage.jsx
             BookingForm.js
@@ -71,63 +94,39 @@ frontend/
             MapLocationsDiagnostic.js
             PaymentComponent.js
             PremiumPaymentComponent.jsx
-            PremiumPaymentComponent_old.jsx
-            SEO/
-                LanguageSwitcher.js
-                SEOBreadcrumbs.js
-                SEOHead.js
             SEO.js
             SEOHead.js
-            SimpleTest.js
             StripeCheckoutForm.js
-            TestFirebase.js
+            TermsModal.js
             TourFiltersManager.js
             TourItinerary.js
             TourItineraryManager.js
-            hooks/
-        config/
+            hooks\
+            SEO\
+                LanguageSwitcher.js
+                SEOBreadcrumbs.js
+                SEOHead.js
+        config\
             appConfig.js
             emailConfig.js
             firebase.js
-        hooks/
+        hooks\
             useEmbeddedPayment.js
             useEmbeddedPayment_original.js
             useSEO.js
-        index.css
-        index.js
-        pages/
+        pages\
             AdminPanel.js
-            AdminPanel_metade.js
-            AdminPanel_old.js
             HomePage.js
             PaymentSuccessPage.js
             TestPayment.js
             TourDetails.js
             ToursPage.js
-        services/
+        services\
             heroImagesService.js
             mockServices.js
             tourFiltersService.js
-        utils/
+        utils\
             i18n.js
             seoConfig.js
             seoHelpers.js
             useTranslation.js
-    start_frontend.py
-    tailwind.config.js
-    yarn.lock
-generate_tree_filtered.py
-git_check_changes.ps1
-migrateToursToFirestore.js
-ninerocks.tours.json
-package-lock.json
-package.json
-repo_visibility_log.txt
-setup_debug.py
-test_firestore.js
-test_google_pay.html
-test_result.md
-tests/
-    __init__.py
-tree_filtrada.txt
-yarn.lock

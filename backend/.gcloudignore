@@ -1,0 +1,58 @@
+ Ficheiro de configuração do gcloudignore.
+# Use isto para evitar o upload de ficheiros desnecessários ou sensíveis.
+
+# Ficheiros e pastas do Git
+.git
+.gitignore
+
+# Ficheiro de ambiente - NUNCA ENVIAR SEGREDOS!
+.env
+*.env
+
+# Ficheiros de backup e de conflito que mencionou
+*.backup.*
+*.original
+*_old.*
+*.tmp
+
+
+__pycache__/
+*.pyc
+venv/
+.venv/
+repo_visibility_log.txt
+
+.vscode/
+.idea/
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Ficheiros de sistema operativo
+.DS_Store
+Thumbs.db
+
+# =========================================================
+# ✅Scripts e Ficheiros de Teste Pessoais
+# =========================================================
+abre_repositorio.py
+fecha_repositorio.py
+test_permissions.py
+test_stripe_setup_fixed.py
+test_paypal.py
+test_map_locations_firestore.py
+start_backend.py
+server.py.backup.original
+server_test.py
+db.py
+generate_tree_files.py
+test_result.md
+test_google_pay.html
+test_firestore.py
+setup_debug.py
+tree_filtrada.txt
+migrateToursTofirestore.js
+
+.env
+

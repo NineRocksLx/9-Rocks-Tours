@@ -1,6 +1,5 @@
-// Em frontend/src/pages/HomePage.js
-
-import React, { useState, useEffect, useCallback } from 'react'; // ✅ ALTERAÇÃO 1: Adicionado 'useCallback'
+// frontend/src/pages/HomePage.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../utils/useTranslation';
 import SEOHead from '../components/SEOHead';
@@ -8,7 +7,15 @@ import axios from 'axios';
 import { BACKEND_URL } from '../config/appConfig';
 import PremiumPaymentComponent from '../components/PremiumPaymentComponent';
 
-// O seu código original, sem alterações
+// 🐞 FUNÇÃO DE DEPURAÇÃO PARA O FRONTEND
+const debugLog = (...args) => {
+  // Esta função só vai imprimir para a consola se estiver em modo de desenvolvimento
+  if (process.env.NODE_ENV === 'development') {
+    console.log('%c[DEBUG 🏠 HomePage.js]', 'color: #22C55E; font-weight: bold;', ...args);
+  }
+};
+
+// O seu componente original, com a correção integrada
 const HomePage = () => {
   const { t, getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -44,59 +51,83 @@ const HomePage = () => {
   const [tourFilters, setTourFilters] = useState(defaultTourFilters);
   const [selectedType, setSelectedType] = useState('all');
 
-  // ✅ ALTERAÇÃO 2: A sua função original, agora envolvida em useCallback
+  // ✅ CORREÇÃO APLICADA AQUI
   const loadAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    debugLog("Iniciando carregamento de TODOS os dados da página.");
 
-    try {
-      const [heroImagesResponse, tourFiltersResponse, toursResponse] = await Promise.all([
-        axios.get(`${BACKEND_URL}/api/config/hero-images`),
-        axios.get(`${BACKEND_URL}/api/config/tour-filters`),
-        axios.get(`${BACKEND_URL}/api/tours?active_only=true&featured=true`)
-      ]);
+    // Função para buscar os tours de forma independente
+    const fetchTours = async () => {
+        try {
+            const tourParams = { active_only: true};
+            debugLog("1. A fazer pedido de TOURS para:", `${BACKEND_URL}/api/tours`, "com parâmetros:", tourParams);
+            const toursResponse = await axios.get(`${BACKEND_URL}/api/tours/`, { params: tourParams });
+            
+            debugLog("2. Resposta de TOURS recebida do backend:", toursResponse);
 
-      if (Array.isArray(heroImagesResponse.data) && heroImagesResponse.data.length > 0) {
-        setHeroImages(heroImagesResponse.data);
-      } else {
-        console.warn("Hero images from backend is empty, using fallback.");
-        setHeroImages(fallbackHeroImages);
-      }
+            if (toursResponse && Array.isArray(toursResponse.data)) {
+                debugLog(`3. ✅ SUCESSO: Recebidos ${toursResponse.data.length} tours. A atualizar o estado.`);
+                setTours(toursResponse.data);
+            } else {
+                debugLog("❌ ERRO: Os dados de tours recebidos não são um array!", toursResponse.data);
+                setTours([]); // Garante que fica como um array vazio em caso de erro
+            }
+        } catch (err) {
+            debugLog("❌ ERRO CRÍTICO ao buscar TOURS:", err);
+            // Define um erro geral, mas não impede que o resto carregue
+            setError(t('message_error'));
+            setTours([]);
+        }
+    };
 
-      if (Array.isArray(tourFiltersResponse.data) && tourFiltersResponse.data.length > 0) {
-        const hasAllFilter = tourFiltersResponse.data.some(f => f.key === 'all');
-        const allFilter = { key: 'all', labels: { pt: 'Todos os Tours', en: 'All Tours', es: 'Todos los Tours' }, order: -1 };
-        const finalFilters = hasAllFilter ? tourFiltersResponse.data : [allFilter, ...tourFiltersResponse.data];
-        finalFilters.sort((a, b) => (a.order || 0) - (b.order || 0));
-        setTourFilters(finalFilters);
-      } else {
-        console.warn("Tour filters from backend is empty, using defaults.");
-        setTourFilters(defaultTourFilters);
-      }
+    // Função para buscar as outras configurações
+    const fetchConfigs = async () => {
+        try {
+            debugLog("A fazer pedidos de CONFIGS (hero-images, tour-filters).");
+            const [heroImagesResponse, tourFiltersResponse] = await Promise.all([
+                axios.get(`${BACKEND_URL}/api/config/hero-images`),
+                axios.get(`${BACKEND_URL}/api/config/tour-filters`),
+            ]);
 
-      if (Array.isArray(toursResponse.data)) {
-        setTours(toursResponse.data);
-      } else {
-        console.error("Tours data from backend is not an array.");
-        setTours([]);
-      }
+            if (Array.isArray(heroImagesResponse.data) && heroImagesResponse.data.length > 0) {
+                setHeroImages(heroImagesResponse.data);
+            } else {
+                setHeroImages(fallbackHeroImages);
+            }
 
-    } catch (err) {
-      console.error("❌ Failed to load page data:", err);
-      setError(t('message_error'));
-      setHeroImages(fallbackHeroImages);
-      setTourFilters(defaultTourFilters);
-      setTours([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [t]); // A dependência [t] é segura com o hook de tradução otimizado
+            if (Array.isArray(tourFiltersResponse.data) && tourFiltersResponse.data.length > 0) {
+                const hasAllFilter = tourFiltersResponse.data.some(f => f.key === 'all');
+                const allFilter = { key: 'all', labels: { pt: 'Todos os Tours', en: 'All Tours', es: 'Todos los Tours' }, order: -1 };
+                const finalFilters = hasAllFilter ? tourFiltersResponse.data : [allFilter, ...tourFiltersResponse.data];
+                finalFilters.sort((a, b) => (a.order || 0) - (b.order || 0));
+                setTourFilters(finalFilters);
+            } else {
+                setTourFilters(defaultTourFilters);
+            }
+        } catch (err) {
+            debugLog("Aviso: Ocorreu um erro ao buscar as configurações. A usar valores de fallback.", err);
+            // Define um erro geral, mas não impede que o resto carregue
+            setError(t('message_error'));
+            setHeroImages(fallbackHeroImages);
+            setTourFilters(defaultTourFilters);
+        }
+    };
+    
+    // Executa as duas funções em paralelo e só para o loading no fim
+    await Promise.all([fetchTours(), fetchConfigs()]);
+    setLoading(false);
+    debugLog("Carregamento de dados finalizado.");
 
-  // ✅ ALTERAÇÃO 3: O useEffect agora depende da função estável 'loadAllData'
+  }, [t]);
+
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
 
+  useEffect(() => {
+    debugLog(`O estado 'tours' foi atualizado. Contém agora ${tours.length} tours.`);
+  }, [tours]);
 
   useEffect(() => {
     if (heroImages.length > 1) {
@@ -217,7 +248,7 @@ const HomePage = () => {
     );
   }
 
-  if (error) {
+  if (error && tours.length === 0) { // Mostra erro principal apenas se os tours não carregarem
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50">
         <div className="text-center max-w-lg bg-white p-8 rounded-lg shadow-lg border border-red-200">
@@ -376,7 +407,10 @@ const HomePage = () => {
           ))}
         </div>
 
-        {filteredTours.length === 0 ? (
+        {debugLog("4. A renderizar a secção de tours. Número de tours filtrados:", filteredTours.length)}
+        {loading ? (
+          <div className="text-center py-16 text-gray-500 text-xl">{t('message_loading')}</div>
+        ) : filteredTours.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-gray-500 text-xl">
               {t('message_no_tours')}

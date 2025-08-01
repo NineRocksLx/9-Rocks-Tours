@@ -1,4 +1,4 @@
-# backend/test_stripe_setup_fixed.py - VERSÃO CORRIGIDA SEM __version__
+
 import os
 import sys
 from pathlib import Path

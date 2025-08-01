@@ -1,9 +1,17 @@
+// frontend/src/pages/ToursPage.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from '../utils/useTranslation';
 import { tourFiltersService } from '../services/tourFiltersService';
 import { BACKEND_URL } from '../config/appConfig';
+
+// 🐞 FUNÇÃO DE DEPURAÇÃO PARA O FRONTEND
+const debugLog = (...args) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[DEBUG ✈️ ToursPage.js]', ...args);
+  }
+};
 
 const ToursPage = () => {
   const { t, getCurrentLanguage } = useTranslation();
@@ -22,13 +30,36 @@ const ToursPage = () => {
     fetchTourFilters();
   }, []);
 
+  // Efeito para monitorizar o estado dos tours
+  useEffect(() => {
+    debugLog(`O estado 'tours' foi atualizado. Contém agora ${tours.length} tours.`);
+  }, [tours]);
+
   const fetchTours = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=true`);
-      setTours(response.data);
+      const url = `${BACKEND_URL}/api/tours/`;
+      debugLog("Iniciando 'fetchTours'. A fazer pedido para:", url);
+      
+      const response = await axios.get(url, { params: { active_only: true } });
+      debugLog("Resposta recebida do backend para /api/tours:", response);
+
+      if (response && Array.isArray(response.data)) {
+        debugLog(`✅ SUCESSO: Recebidos ${response.data.length} tours do backend.`);
+        if (response.data.length > 0) {
+            debugLog("   -> Estrutura do primeiro tour recebido:", response.data[0]);
+        }
+        setTours(response.data);
+      } else {
+        debugLog("❌ ERRO: Os dados de tours recebidos do backend não são um array ou estão vazios!", response.data);
+        setError(t('message.error'));
+        setTours([]);
+      }
     } catch (err) {
-      console.error('Error fetching tours:', err);
+      debugLog("❌ ERRO CRÍTICO ao buscar tours em 'fetchTours':", err);
+      if (err.response) {
+        debugLog("   -> Resposta do erro do Axios:", err.response);
+      }
       setError(t('message.error'));
     } finally {
       setLoading(false);
