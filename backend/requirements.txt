@@ -24,6 +24,7 @@ email-validator>=2.2.0
 requests>=2.31.0
 python-multipart>=0.0.9
 Pillow>=10.4.0
+aiohttp>=3.9.1
 
 # Google APIs (se usar Calendar, etc.)
 google-api-python-client>=2.108.0
