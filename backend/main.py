@@ -22,8 +22,14 @@ try:
         # A chave 'google-calendar-key.json' deve estar na raiz da pasta 'backend'
         cred_path = os.path.join(os.path.dirname(__file__), 'google-calendar-key.json')
         cred = credentials.ApplicationDefault() if os.getenv("ENVIRONMENT") == "production" else credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-        print("✅ Firebase Admin inicializado com sucesso.")
+        
+        # ✅ ALTERAÇÃO: Especificar o ID do projeto explicitamente
+        project_id = os.getenv('GOOGLE_CLOUD_PROJECT', 'tours-81516-acfbc')
+        firebase_admin.initialize_app(cred, {
+            'projectId': project_id,
+        })
+        
+        print(f"✅ Firebase Admin inicializado com sucesso para o projeto: {project_id}")
     else:
         print("ℹ️ Aplicação Firebase Admin já existe.")
 except Exception as e:
