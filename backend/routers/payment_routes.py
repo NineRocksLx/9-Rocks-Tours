@@ -1,5 +1,5 @@
 # backend/routers/payment_routes.py - VERSÃO FINAL E COMPLETA
-
+import os # 
 from fastapi import APIRouter, HTTPException, Request, Response, Query
 from typing import Dict
 from models.payment import CreatePaymentIntentRequest
