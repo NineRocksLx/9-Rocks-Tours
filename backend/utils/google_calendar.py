@@ -22,7 +22,7 @@ def get_calendar_service():
             service = build('calendar', 'v3', credentials=credentials)
         else:
             # Usar API Key (desenvolvimento)
-            API_KEY = os.environ.get('GOOGLE_CALENDAR_API_KEY')
+            API_KEY = os.environ.get('GOOGLE_CALENDAR_ID')
             service = build('calendar', 'v3', developerKey=API_KEY)
         
         return service
