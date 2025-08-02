@@ -56,7 +56,7 @@ PAYPAL_CLIENT_ID = access_secret("PAYPAL_CLIENT_ID")
 PAYPAL_CLIENT_SECRET = access_secret("PAYPAL_CLIENT_SECRET")
 STRIPE_SECRET_KEY = access_secret("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = access_secret("STRIPE_PUBLISHABLE_KEY")
-GOOGLE_CALENDAR_API_KEY = access_secret("GOOGLE_CALENDAR_API_KEY")
+GOOGLE_CALENDAR_ID = access_secret("GOOGLE_CALENDAR_ID")
 GOOGLE_CALENDAR_ID = access_secret("GOOGLE_CALENDAR_ID")
 
 print("✅ STRIPE_SECRET_KEY carregada:", "SET" if STRIPE_SECRET_KEY else "NOT SET")
@@ -363,7 +363,7 @@ def handle_successful_payment(booking_id: str, tour_id: str, selected_date: str)
 def get_calendar_availability(start_date: str, end_date: str) -> List[str]:
     """Get available dates from Google Calendar"""
     try:
-        service = build('calendar', 'v3', developerKey=GOOGLE_CALENDAR_API_KEY)
+        service = build('calendar', 'v3', developerKey=GOOGLE_CALENDAR_ID)
         events_result = service.events().list(
             calendarId=GOOGLE_CALENDAR_ID,
             timeMin=f"{start_date}T00:00:00Z",
