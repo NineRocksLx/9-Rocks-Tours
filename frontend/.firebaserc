@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "tours-81516-acfbc"
+  },
+  "targets": {
+    "tours-81516-acfbc": {
+      "hosting": {
+        "production": [
+          "tours-81516-acfbc" 
+        ],
+        "development": [
+          "ninerocks-develop"
+        ]
+      }
+    }
   }
 }

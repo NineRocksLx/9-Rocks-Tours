@@ -8,8 +8,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from firebase_admin import credentials
-# ❌ LINHA REMOVIDA: A importação do ProxyHeadersMiddleware foi removida por ser incompatível.
-# from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 # ============================================================================
 # ⚙️ Configuração e Inicialização Central
@@ -57,6 +59,8 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 origins = [
     "https://www.9rocks.pt",
     "https://9rocks.pt",
+    "https://www.9rockstours.pt",
+    "https://9rockstours.pt",
     "https://tours-81516-acfbc.web.app",
     "http://localhost:3000", # Para desenvolvimento local
 ]

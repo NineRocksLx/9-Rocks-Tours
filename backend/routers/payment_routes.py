@@ -1,5 +1,5 @@
 # backend/routers/payment_routes.py - VERSÃO FINAL E COMPLETA
-import os # 
+import os
 from fastapi import APIRouter, HTTPException, Request, Response, Query
 from typing import Dict
 from models.payment import CreatePaymentIntentRequest
@@ -216,44 +216,114 @@ async def get_paypal_config():
         return {"available": False, "message": "PayPal não está configurado no servidor."}
     return {"available": True, "client_id": paypal_service.client_id, "mode": paypal_service.mode}
 
+@router.get("/test/paypal")
+async def test_paypal_connection():
+    """Endpoint de teste para verificar a conexão com o serviço PayPal."""
+    if not paypal_service or not paypal_service.available:
+        return {"status": "unavailable", "message": "PayPal não está configurado no servidor."}
+    try:
+        result = paypal_service.test_connection()
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/debug/env")
+async def debug_environment_variables():
+    """
+    Endpoint de diagnóstico para verificar as variáveis de ambiente
+    lidas pela aplicação diretamente do ambiente do Cloud Run.
+    """
+    paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
+    paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
+    paypal_mode = os.getenv('PAYPAL_MODE')
+
+    return {
+        "message": "Reading environment variables from Cloud Run",
+        "PAYPAL_CLIENT_ID": "PRESENT" if paypal_client_id else "MISSING",
+        "PAYPAL_CLIENT_SECRET": "PRESENT" if paypal_client_secret else "MISSING",
+        "PAYPAL_MODE": paypal_mode if paypal_mode else "MISSING"
+    }
+
+
+
 @router.post("/paypal/create")
 async def create_paypal_payment(request_data: Dict):
     """Cria um pagamento PayPal e retorna o URL de aprovação."""
+    print(f"--- INÍCIO: /paypal/create ---")
+    print(f"🔍 Dados recebidos do frontend: {request_data}")
+
     if not paypal_service or not paypal_service.available:
+        print("❌ ERRO: Serviço PayPal não disponível no momento da chamada.")
         raise HTTPException(status_code=503, detail="Serviço PayPal não disponível.")
 
     try:
-        # Extrair dados do booking para passar ao PayPal
+        # --- VALIDAÇÃO DOS DADOS DE ENTRADA ---
         booking_id = request_data.get("booking_id")
+        amount = request_data.get("amount")
+
+        if not booking_id:
+            print("❌ ERRO: 'booking_id' em falta nos dados do frontend.")
+            raise HTTPException(status_code=400, detail="Dados incompletos: booking_id em falta.")
+        if not amount or float(amount) <= 0:
+            print(f"❌ ERRO: 'amount' inválido ou em falta. Valor recebido: {amount}")
+            raise HTTPException(status_code=400, detail="Dados incompletos: valor (amount) inválido.")
+
+        print(f"✅ Dados validados: booking_id={booking_id}, amount={amount}")
+
+        # --- BUSCAR DADOS NO FIRESTORE ---
+        print(f"🔍 A buscar booking '{booking_id}' no Firestore...")
         booking_doc = db_firestore.collection('bookings').document(booking_id).get()
         if not booking_doc.exists:
+            print(f"❌ ERRO: Booking '{booking_id}' não encontrado no Firestore.")
             raise HTTPException(status_code=404, detail="Reserva associada não encontrada.")
         
         booking_data = booking_doc.to_dict()
         tour_id = booking_data.get("tour_id")
+        if not tour_id:
+            print(f"❌ ERRO: 'tour_id' não encontrado no documento do booking '{booking_id}'.")
+            raise HTTPException(status_code=500, detail="Erro interno: tour_id não encontrado na reserva.")
+
+        print(f"🔍 A buscar tour '{tour_id}' no Firestore...")
         tour_doc = db_firestore.collection('tours').document(tour_id).get()
         if not tour_doc.exists:
+            print(f"❌ ERRO: Tour '{tour_id}' não encontrado no Firestore.")
             raise HTTPException(status_code=404, detail="Tour associado não encontrado.")
         tour_data = tour_doc.to_dict()
+        print("✅ Dados do Firestore obtidos com sucesso.")
 
-        payment_data = {
-            "amount": request_data.get("amount"),
+        # --- MONTAR PAYLOAD PARA O PAYPAL ---
+        payment_payload = {
+            "amount": float(amount),
             "tour_name": tour_data.get("name", {}).get("pt", "Reserva de Tour"),
             "tour_id": tour_id,
             "booking_id": booking_id,
             "participants": booking_data.get("participants", 1),
-            "return_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/payment/success?method=paypal&booking_id={booking_id}",
-            "cancel_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/reservar/{tour_id}",
+            "return_url": f"{os.getenv('FRONTEND_URL')}/payment/success?method=paypal&booking_id={booking_id}",
+            "cancel_url": f"{os.getenv('FRONTEND_URL')}/payment/cancel?booking_id={booking_id}",
         }
+        print(f"📤 Payload a ser enviado para o serviço PayPal: {payment_payload}")
 
-        result = paypal_service.create_payment(payment_data)
+        # --- CHAMAR O SERVIÇO PAYPAL ---
+        result = paypal_service.create_payment(payment_payload)
+        print(f"📥 Resultado do serviço PayPal: {result}")
+
         if result.get("status") == "created":
+            print(f"✅ Pagamento criado com sucesso. URL de aprovação: {result.get('approval_url')}")
+            print(f"--- FIM: /paypal/create ---")
             return {"approval_url": result.get("approval_url")}
         else:
-            raise HTTPException(status_code=500, detail=result.get("message", "Erro ao criar pagamento PayPal."))
+            error_message = result.get("message", "Erro desconhecido ao criar pagamento PayPal.")
+            print(f"❌ ERRO: O serviço PayPal retornou um erro: {error_message}")
+            raise HTTPException(status_code=500, detail=error_message)
+
+    except HTTPException as e:
+        # Re-lança exceções HTTP para manter o status code original
+        raise e
     except Exception as e:
+        print(f"💥 ERRO INESPERADO em /paypal/create: {str(e)}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro interno inesperado no servidor: {str(e)}")
+
 
 @router.post("/paypal/execute")
 async def execute_paypal_payment(request: Request):
