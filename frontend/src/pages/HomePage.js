@@ -1,21 +1,10 @@
-// frontend/src/pages/HomePage.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../utils/useTranslation';
 import SEOHead from '../components/SEOHead';
 import axios from 'axios';
 import { BACKEND_URL } from '../config/appConfig';
-import PremiumPaymentComponent from '../components/PremiumPaymentComponent';
 
-// 🐞 FUNÇÃO DE DEPURAÇÃO PARA O FRONTEND
-const debugLog = (...args) => {
-  // Esta função só vai imprimir para a consola se estiver em modo de desenvolvimento
-  if (process.env.NODE_ENV === 'development') {
-    console.log('%c[DEBUG 🏠 HomePage.js]', 'color: #22C55E; font-weight: bold;', ...args);
-  }
-};
-
-// O seu componente original, com a correção integrada
 const HomePage = () => {
   const { t, getCurrentLanguage } = useTranslation();
   const currentLang = getCurrentLanguage();
@@ -23,7 +12,6 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showPaymentTest, setShowPaymentTest] = useState(false);
 
   const fallbackHeroImages = [
     {
@@ -31,12 +19,16 @@ const HomePage = () => {
       title: { pt: 'Sintra Mágica', en: 'Magical Sintra', es: 'Sintra Mágica' },
       subtitle: { pt: 'Descubra palácios encantados', en: 'Discover enchanted palaces', es: 'Descubre palacios encantados' },
       imageUrl: 'https://media.timeout.com/images/105732838/1920/1080/image.webp',
+      showTextOverlay: true,
+      duration: 4000
     },
     {
       id: 'fallback_2',
       title: { pt: 'Porto Autêntico', en: 'Authentic Porto', es: 'Oporto Auténtico' },
       subtitle: { pt: 'Sabores e tradições do Norte', en: 'Northern flavors and traditions', es: 'Sabores y tradiciones del Norte' },
       imageUrl: 'https://images.unsplash.com/photo-1555881400-69e38bb0c85f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      showTextOverlay: true,
+      duration: 4000
     }
   ];
 
@@ -51,40 +43,28 @@ const HomePage = () => {
   const [tourFilters, setTourFilters] = useState(defaultTourFilters);
   const [selectedType, setSelectedType] = useState('all');
 
-  // ✅ CORREÇÃO APLICADA AQUI
   const loadAllData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    debugLog("Iniciando carregamento de TODOS os dados da página.");
 
-    // Função para buscar os tours de forma independente
     const fetchTours = async () => {
         try {
             const tourParams = { active_only: true};
-            debugLog("1. A fazer pedido de TOURS para:", `${BACKEND_URL}/api/tours`, "com parâmetros:", tourParams);
             const toursResponse = await axios.get(`${BACKEND_URL}/api/tours/`, { params: tourParams });
-            
-            debugLog("2. Resposta de TOURS recebida do backend:", toursResponse);
 
             if (toursResponse && Array.isArray(toursResponse.data)) {
-                debugLog(`3. ✅ SUCESSO: Recebidos ${toursResponse.data.length} tours. A atualizar o estado.`);
                 setTours(toursResponse.data);
             } else {
-                debugLog("❌ ERRO: Os dados de tours recebidos não são um array!", toursResponse.data);
-                setTours([]); // Garante que fica como um array vazio em caso de erro
+                setTours([]);
             }
         } catch (err) {
-            debugLog("❌ ERRO CRÍTICO ao buscar TOURS:", err);
-            // Define um erro geral, mas não impede que o resto carregue
             setError(t('message_error'));
             setTours([]);
         }
     };
 
-    // Função para buscar as outras configurações
     const fetchConfigs = async () => {
         try {
-            debugLog("A fazer pedidos de CONFIGS (hero-images, tour-filters).");
             const [heroImagesResponse, tourFiltersResponse] = await Promise.all([
                 axios.get(`${BACKEND_URL}/api/config/hero-images`),
                 axios.get(`${BACKEND_URL}/api/config/tour-filters`),
@@ -106,18 +86,14 @@ const HomePage = () => {
                 setTourFilters(defaultTourFilters);
             }
         } catch (err) {
-            debugLog("Aviso: Ocorreu um erro ao buscar as configurações. A usar valores de fallback.", err);
-            // Define um erro geral, mas não impede que o resto carregue
             setError(t('message_error'));
             setHeroImages(fallbackHeroImages);
             setTourFilters(defaultTourFilters);
         }
     };
     
-    // Executa as duas funções em paralelo e só para o loading no fim
     await Promise.all([fetchTours(), fetchConfigs()]);
     setLoading(false);
-    debugLog("Carregamento de dados finalizado.");
 
   }, [t]);
 
@@ -126,17 +102,17 @@ const HomePage = () => {
   }, [loadAllData]);
 
   useEffect(() => {
-    debugLog(`O estado 'tours' foi atualizado. Contém agora ${tours.length} tours.`);
-  }, [tours]);
+    if (heroImages.length <= 1) return;
 
-  useEffect(() => {
-    if (heroImages.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
-      }, 4000);
-      return () => clearInterval(interval);
-    }
-  }, [heroImages.length]);
+    const currentImageDuration = heroImages[currentImageIndex]?.duration || 4000;
+
+    const timer = setTimeout(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
+    }, currentImageDuration);
+
+    return () => clearTimeout(timer);
+    
+  }, [currentImageIndex, heroImages]);
 
   const getLocalizedText = (textObj) => {
     if (!textObj) return '';
@@ -151,7 +127,7 @@ const HomePage = () => {
   };
 
   const getURL = (path) => {
-    const langPrefix = currentLang === 'en' ? '' : `/${currentLang}`;
+    const langPrefix = currentLang === 'pt' ? '' : `/${currentLang}`;
     return `${langPrefix}${path}`;
   };
 
@@ -166,76 +142,6 @@ const HomePage = () => {
     ? tours 
     : tours.filter(tour => tour.tour_type === selectedType);
 
-  const TestPaymentSection = () => {
-    const testData = {
-      tour: { id: 'test-homepage', name: 'Tour de Teste - HomePage' },
-      firstName: 'João', lastName: 'Silva',
-      email: 'joao@teste.com', phone: '+351912345678',
-      date: '2025-08-15', numberOfPeople: 1,
-      depositAmount: 5.0, remainingAmount: 20.0,
-      specialRequests: 'Teste via HomePage'
-    };
-
-    if (!showPaymentTest) {
-      return (
-        <div className="max-w-2xl mx-auto text-center py-8">
-          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
-            <h3 className="text-xl font-bold text-red-800 mb-3">
-              🧪 Modo de Desenvolvimento
-            </h3>
-            <p className="text-red-700 mb-4">
-              Testar novo sistema de pagamento (Cartões + MB WAY)
-            </p>
-            <button 
-              onClick={() => setShowPaymentTest(true)}
-              className="bg-red-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-600 transition-colors"
-            >
-              🧪 TESTAR PAGAMENTO PREMIUM
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="max-w-4xl mx-auto py-8">
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold mb-4">🧪 Teste de Pagamento Premium</h2>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <h3 className="font-bold text-yellow-800 mb-2">🔧 Cartões de Teste:</h3>
-            <div className="text-sm text-yellow-700 space-y-1">
-              <p>• <strong>✅ Sucesso:</strong> 4242424242424242</p>
-              <p>• <strong>❌ Falha:</strong> 4000000000000002</p>
-              <p>• <strong>CVC:</strong> 123 | <strong>Data:</strong> 12/25</p>
-              <p>• <strong>📱 MB WAY:</strong> +351912345678</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowPaymentTest(false)}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
-          >
-            ← Voltar à HomePage
-          </button>
-        </div>
-        
-        <PremiumPaymentComponent 
-          bookingData={testData}
-          onPaymentSuccess={(result) => {
-            console.log('✅ Teste bem-sucedido:', result);
-            alert('✅ TESTE BEM-SUCEDIDO!\n\n' + 
-              'Método: ' + result.method + '\n' +
-              'ID Transação: ' + result.transaction_id + '\n' +
-              'Booking ID: ' + result.booking_id + '\n' +
-              'Valor: €' + result.amount
-            );
-            setShowPaymentTest(false);
-          }}
-          onBack={() => setShowPaymentTest(false)}
-        />
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100">
@@ -248,7 +154,7 @@ const HomePage = () => {
     );
   }
 
-  if (error && tours.length === 0) { // Mostra erro principal apenas se os tours não carregarem
+  if (error && tours.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-red-50">
         <div className="text-center max-w-lg bg-white p-8 rounded-lg shadow-lg border border-red-200">
@@ -274,7 +180,8 @@ const HomePage = () => {
         lang={currentLang}
       />
       
-      <div className="relative h-screen overflow-hidden">
+      {/* Hero Section */}
+      <div className="relative h-[60vh] sm:h-[70vh] md:h-[80vh] lg:h-screen overflow-hidden">
         <div className="absolute inset-0">
           {heroImages.map((image, index) => (
             <div
@@ -286,60 +193,62 @@ const HomePage = () => {
               <img 
                 src={image.imageUrl} 
                 alt={getLocalizedText(image.title)}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-center sm:object-top md:object-center"
                 loading={index === 0 ? "eager" : "lazy"}
                 onError={(e) => {
                   e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="%23e5e7eb"/><text x="960" y="540" text-anchor="middle" fill="%236b7280" font-size="48">Image not available</text></svg>';
                 }}
               />
-              <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+              <div className="absolute inset-0 bg-black bg-opacity-30 sm:bg-opacity-40"></div>
             </div>
           ))}
         </div>
 
-        <div className="relative z-10 h-full flex items-center justify-center">
-          <div className="text-center text-white px-4 max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
-              <span className="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+        <div className="relative z-10 h-full flex items-center justify-center px-3 sm:px-4 md:px-6 lg:px-8">
+          {(heroImages[currentImageIndex]?.showTextOverlay !== false) && (
+            <div className="text-center text-white max-w-5xl mx-auto">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-7xl font-bold mb-2 sm:mb-4 md:mb-6 tracking-tight leading-tight">
+                <span className="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                  {heroImages[currentImageIndex] 
+                    ? getLocalizedText(heroImages[currentImageIndex].title)
+                    : t('home_title')
+                  }
+                </span>
+              </h1>
+              <p className="text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-2 sm:mb-3 md:mb-4 font-light opacity-90 leading-snug">
                 {heroImages[currentImageIndex] 
-                  ? getLocalizedText(heroImages[currentImageIndex].title)
-                  : t('home_title')
+                  ? getLocalizedText(heroImages[currentImageIndex].subtitle)
+                  : t('home_subtitle')
                 }
-              </span>
-            </h1>
-            <p className="text-xl md:text-3xl mb-4 font-light opacity-90">
-              {heroImages[currentImageIndex] 
-                ? getLocalizedText(heroImages[currentImageIndex].subtitle)
-                : t('home_subtitle')
-              }
-            </p>
-            <p className="text-lg md:text-xl mb-12 opacity-80 max-w-2xl mx-auto leading-relaxed">
-              {t('home_description')}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <a 
-                href="#tours" 
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl"
-              >
-                {t('home_cta')}
-              </a>
-              <Link
-                to={getURL('/contact')}
-                className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-gray-900 transition-all duration-300"
-              >
-                {t('cta_contact_us')}
-              </Link>
+              </p>
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl mb-4 sm:mb-6 md:mb-8 lg:mb-12 opacity-80 max-w-xl sm:max-w-2xl mx-auto leading-relaxed px-2">
+                {t('home_description')}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 justify-center items-center max-w-lg sm:max-w-none mx-auto">
+                <a 
+                  href="#tours" 
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold text-sm sm:text-base md:text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-xl w-full sm:w-auto text-center"
+                >
+                  {t('home_cta')}
+                </a>
+                <Link
+                  to={getURL('/contact')}
+                  className="border-2 border-white text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 rounded-full font-semibold text-sm sm:text-base md:text-lg hover:bg-white hover:text-gray-900 transition-all duration-300 w-full sm:w-auto text-center"
+                >
+                  {t('cta_contact_us')}
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {heroImages.length > 1 && (
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-20">
+          <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 sm:space-x-3 z-20">
             {heroImages.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                   index === currentImageIndex 
                     ? 'bg-white scale-125' 
                     : 'bg-white bg-opacity-50 hover:bg-opacity-75'
@@ -350,14 +259,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-red-50 py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <TestPaymentSection />
-          </div>
-        </div>
-      )}
-
+      {/* Estatísticas */}
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center opacity-60">
@@ -381,6 +283,7 @@ const HomePage = () => {
         </div>
       </div>
 
+      {/* Tours Section */}
       <div id="tours" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -407,7 +310,6 @@ const HomePage = () => {
           ))}
         </div>
 
-        {debugLog("4. A renderizar a secção de tours. Número de tours filtrados:", filteredTours.length)}
         {loading ? (
           <div className="text-center py-16 text-gray-500 text-xl">{t('message_loading')}</div>
         ) : filteredTours.length === 0 ? (
@@ -482,6 +384,7 @@ const HomePage = () => {
         )}
       </div>
 
+      {/* Why Choose Us */}
       <div className="bg-gradient-to-br from-indigo-50 to-purple-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -537,6 +440,7 @@ const HomePage = () => {
         </div>
       </div>
 
+      {/* Call to Action */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-20">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">

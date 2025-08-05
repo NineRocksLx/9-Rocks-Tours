@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebas
 import AdminTourManager from '../components/AdminTourManager';
 import HeroImagesManager from '../components/HeroImagesManager';
 import TourFiltersManager from '../components/TourFiltersManager';
+import { generateEmailConfig, getEmailByLanguage, trackEmailEvent } from '../config/emailConfig';
 import { BACKEND_URL } from '../config/appConfig';
 
 const AdminPanel = () => {
@@ -24,7 +25,15 @@ const AdminPanel = () => {
         completed_payments: 0,
         pending_payments: 0,
         total_revenue: 0,
+        paypal_count: 0,
+        google_pay_count: 0,
         last_updated: null
+    });
+
+    const [emailStrategy, setEmailStrategy] = useState({
+        enabled: false,
+        selectedBookings: [],
+        emailType: 'booking_confirmation'
     });
 
     const [credentials, setCredentials] = useState({
@@ -39,12 +48,10 @@ const AdminPanel = () => {
             if (user) {
                 try {
                     const token = await user.getIdToken();
-                    
                     setUser(user);
                     setIsLoggedIn(true);
                     localStorage.setItem('admin_token', token);
                     localStorage.setItem('admin_uid', user.uid);
-                    
                 } catch (error) {
                     setError('Erro de autenticação');
                     handleLogout();
@@ -92,11 +99,12 @@ const AdminPanel = () => {
                 return;
             }
 
-            const response = await axios.get(`${BACKEND_URL}/api/tours?active_only=false`, {
-                headers: { 
+            const response = await axios.get(`${BACKEND_URL}/api/tours/`, {
+                 params: { active_only: false },
+                 headers: { 
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                }
+                 }
             });
 
             setTours(response.data || []);
@@ -201,24 +209,99 @@ const AdminPanel = () => {
                 last_updated: new Date().toISOString()
             });
             
-            console.log('💳 Pagamentos carregados:', paymentsData.length);
-            console.log('📊 Stats PayPal + Google Pay:', { 
-                completedPayments: completedPayments.length, 
-                totalRevenue,
-                paypal: paypalPayments.length,
-                googlePay: googlePayPayments.length 
-            });
-            
         } catch (err) {
             if (err.response?.status === 401) {
                 setError('Sessão expirada. Faça login novamente.');
                 handleLogout();
             } else {
                 setError('Erro ao carregar pagamentos');
-                console.error('❌ Erro pagamentos:', err);
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const sendBookingEmail = async (booking, emailType = 'booking_confirmation') => {
+        try {
+            const language = booking.language || 'pt';
+            const emailConfig = generateEmailConfig(emailType, language, {
+                to: booking.customer_email,
+                customerName: booking.customer_name || `${booking.first_name} ${booking.last_name}`,
+                tourName: booking.tour_name,
+                tourDate: new Date(booking.tour_date).toLocaleDateString('pt-PT'),
+                bookingId: booking.id
+            });
+            
+            const response = await axios.post(`${BACKEND_URL}/api/admin/send-email`, {
+                booking_id: booking.id,
+                email_type: emailType,
+                email_config: emailConfig,
+                language: language
+            }, {
+                headers: { 
+                    Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.data.success) {
+                trackEmailEvent(emailType, language, {
+                    booking_id: booking.id,
+                    customer_email: booking.customer_email,
+                    admin_action: true
+                });
+                
+                alert(`✅ Email enviado com sucesso para ${booking.customer_email}`);
+                
+                if (emailType === 'booking_confirmation') {
+                    await updateBookingStatus(booking.id, 'confirmed');
+                }
+            }
+        } catch (error) {
+            console.error('❌ Erro ao enviar email:', error);
+            alert('❌ Erro ao enviar email: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const sendBookingStrategy = async (booking) => {
+        try {
+            const language = booking.language || 'pt';
+            const confirmationConfig = generateEmailConfig('booking_confirmation', language, {
+                to: booking.customer_email,
+                customerName: booking.customer_name || `${booking.first_name} ${booking.last_name}`,
+                tourName: booking.tour_name,
+                tourDate: new Date(booking.tour_date).toLocaleDateString('pt-PT')
+            });
+            
+            const response = await axios.post(`${BACKEND_URL}/api/admin/schedule-booking-emails`, {
+                booking_id: booking.id,
+                confirmation_config: confirmationConfig,
+                language: language,
+                tour_date: booking.tour_date
+            }, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` }
+            });
+            
+            if (response.data.success) {
+                alert(`✅ Estratégia de emails agendada para ${booking.customer_email}`);
+                fetchBookings();
+            }
+        } catch (error) {
+            console.error('❌ Erro ao agendar emails:', error);
+            alert('❌ Erro ao agendar estratégia de emails');
+        }
+    };
+
+    const updateBookingStatus = async (bookingId, status) => {
+        try {
+            const token = localStorage.getItem('admin_token');
+            await axios.put(`${BACKEND_URL}/api/bookings/${bookingId}/status`, {
+                status: status
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+        } catch (error) {
+            console.error('❌ Erro ao atualizar status:', error);
         }
     };
 
@@ -264,7 +347,6 @@ const AdminPanel = () => {
                 credentials.email, 
                 credentials.password
             );
-            
         } catch (error) {
             let errorMessage = 'Credenciais inválidas';
             
@@ -310,6 +392,11 @@ const AdminPanel = () => {
                 google_pay_count: 0,
                 last_updated: null
             });
+            setEmailStrategy({
+                enabled: false,
+                selectedBookings: [],
+                emailType: 'booking_confirmation'
+            });
             setError('');
         } catch (error) {
             setError('Erro ao fazer logout');
@@ -330,6 +417,19 @@ const AdminPanel = () => {
     const getTourName = (tourId) => {
         const tour = tours.find(t => t.id === tourId);
         return tour ? tour.name.pt : tourId;
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'confirmed':
+                return 'bg-green-100 text-green-800';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'cancelled':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
     };
 
     const exportBookings = async () => {
@@ -645,8 +745,25 @@ const AdminPanel = () => {
                 
                 {currentView === 'bookings' && !loading && (
                     <div>
+                        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border border-blue-200">
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={emailStrategy.enabled}
+                                    onChange={(e) => setEmailStrategy(prev => ({...prev, enabled: e.target.checked}))}
+                                    className="w-5 h-5 text-blue-600 mr-3"
+                                />
+                                <span className="text-lg font-semibold text-gray-900">
+                                    📧 Ativar Funcionalidades Avançadas de Email
+                                </span>
+                            </label>
+                            <p className="text-sm text-gray-600 mt-1 ml-8">
+                                Envio de emails personalizados e estratégia sequencial para reservas
+                            </p>
+                        </div>
+
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">Gestão de Reservas</h2>
+                            <h2 className="text-xl font-semibold text-gray-900">📋 Gestão de Reservas</h2>
                             <button
                                 onClick={exportBookings}
                                 className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center transition-colors duration-200"
@@ -682,6 +799,14 @@ const AdminPanel = () => {
                                                 Status
                                             </th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Idioma
+                                            </th>
+                                            {emailStrategy.enabled && (
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Emails
+                                                </th>
+                                            )}
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Data Criação
                                             </th>
                                         </tr>
@@ -689,7 +814,7 @@ const AdminPanel = () => {
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {bookings.length === 0 ? (
                                             <tr>
-                                                <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                                                <td colSpan={emailStrategy.enabled ? "9" : "8"} className="px-6 py-12 text-center text-gray-500">
                                                     <div className="text-4xl mb-4">📋</div>
                                                     <div>Nenhuma reserva encontrada</div>
                                                 </td>
@@ -728,18 +853,47 @@ const AdminPanel = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                            booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                            booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                            booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800'
-                                                        }`}>
+                                                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
                                                             {booking.status === 'confirmed' ? 'Confirmada' :
                                                             booking.status === 'pending' ? 'Pendente' :
                                                             booking.status === 'cancelled' ? 'Cancelada' :
                                                             booking.status}
                                                         </span>
                                                     </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                        <span className="font-medium">
+                                                            {booking.language === 'pt' ? '🇵🇹 PT' : 
+                                                             booking.language === 'en' ? '🇬🇧 EN' : 
+                                                             booking.language === 'es' ? '🇪🇸 ES' : '🇵🇹 PT'}
+                                                        </span>
+                                                    </td>
+                                                    {emailStrategy.enabled && (
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex space-x-1">
+                                                                <button
+                                                                    onClick={() => sendBookingEmail(booking, 'booking_confirmation')}
+                                                                    className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200"
+                                                                    title="Enviar Confirmação"
+                                                                >
+                                                                    📧
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => sendBookingEmail(booking, 'booking_reminder')}
+                                                                    className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded hover:bg-green-200"
+                                                                    title="Enviar Lembrete"
+                                                                >
+                                                                    🎒
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => sendBookingStrategy(booking)}
+                                                                    className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded hover:bg-purple-200"
+                                                                    title="Estratégia Completa"
+                                                                >
+                                                                    ⚡
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    )}
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                         {formatDate(booking.created_at)}
                                                     </td>
@@ -750,6 +904,64 @@ const AdminPanel = () => {
                                 </table>
                             </div>
                         </div>
+
+                        {emailStrategy.enabled && (
+                            <div className="mt-6 bg-white rounded-lg shadow p-6">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">📨 Controle de Emails em Massa</h3>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Tipo de Email:
+                                        </label>
+                                        <select
+                                            value={emailStrategy.emailType}
+                                            onChange={(e) => setEmailStrategy(prev => ({...prev, emailType: e.target.value}))}
+                                            className="w-full p-2 border border-gray-300 rounded-lg"
+                                        >
+                                            <option value="booking_confirmation">📧 Confirmação</option>
+                                            <option value="booking_reminder">🎒 Lembrete</option>
+                                            <option value="tour_inquiry">🎯 Informações</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Filtrar por Status:
+                                        </label>
+                                        <select className="w-full p-2 border border-gray-300 rounded-lg">
+                                            <option value="">Todos</option>
+                                            <option value="pending">Pendentes</option>
+                                            <option value="confirmed">Confirmadas</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div className="flex items-end">
+                                        <button
+                                            onClick={() => {
+                                                const selectedBookings = bookings.filter(b => b.status === 'pending');
+                                                selectedBookings.forEach(booking => {
+                                                    setTimeout(() => sendBookingEmail(booking, emailStrategy.emailType), 
+                                                              Math.random() * 2000);
+                                                });
+                                            }}
+                                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                        >
+                                            📧 Enviar para Pendentes
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                                    <p>💡 <strong>Como usar a estratégia de emails:</strong></p>
+                                    <ul className="mt-2 space-y-1">
+                                        <li>• <strong>📧 Confirmação:</strong> Email de agradecimento enviado 25 min após reserva</li>
+                                        <li>• <strong>🎒 Lembrete:</strong> Email com preparativos enviado na véspera do tour</li>
+                                        <li>• <strong>⚡ Estratégia Completa:</strong> Agenda automaticamente ambos os emails</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -757,9 +969,9 @@ const AdminPanel = () => {
                     <div>
                         <div className="flex justify-between items-center mb-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900">💳 Gestão de Pagamentos (PayPal + Google Pay)</h2>
+                                <h2 className="text-2xl font-bold text-gray-900">💳 Gestão de Pagamentos</h2>
                                 <p className="text-gray-600 mt-1">
-                                    Monitorize todas as transações PayPal e Google Pay do sistema
+                                    Monitorize todas as transações PayPal e Google Pay
                                 </p>
                             </div>
                             <div className="flex space-x-3">
@@ -767,9 +979,6 @@ const AdminPanel = () => {
                                     onClick={() => window.open('https://www.paypal.com/merchantapps/appcenter/acceptpayments/home', '_blank')}
                                     className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center transition-colors duration-200"
                                 >
-                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7h10M7 7v10M17 7v2" />
-                                    </svg>
                                     PayPal Dashboard
                                 </button>
                                 <button
@@ -777,9 +986,6 @@ const AdminPanel = () => {
                                     disabled={loading}
                                     className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center transition-colors duration-200 disabled:opacity-50"
                                 >
-                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                    </svg>
                                     {loading ? 'Atualizando...' : 'Atualizar'}
                                 </button>
                             </div>
@@ -812,7 +1018,7 @@ const AdminPanel = () => {
                                                 <div className="text-3xl font-bold">
                                                     {paypalStats.completed_payments}
                                                 </div>
-                                                <div className="text-sm opacity-90 mt-1">Pagamentos Confirmados</div>
+                                                <div className="text-sm opacity-90 mt-1">Confirmados</div>
                                             </div>
                                             <div className="text-4xl opacity-80">✅</div>
                                         </div>
@@ -879,41 +1085,9 @@ const AdminPanel = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-xl mb-8 shadow-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-xl font-bold mb-2">💳 Status Pagamentos em Tempo Real</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div>
-                                                    <div className="text-lg font-semibold">
-                                                        Taxa de Conversão: {paypalStats.total_transactions > 0 ? 
-                                                            ((paypalStats.completed_payments / paypalStats.total_transactions) * 100).toFixed(1) 
-                                                            : 0}%
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-lg font-semibold">
-                                                        Valor Médio: {paypalStats.completed_payments > 0 ? 
-                                                            formatPrice(paypalStats.total_revenue / paypalStats.completed_payments)
-                                                            : formatPrice(0)}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm opacity-90">
-                                                        Última atualização: {paypalStats.last_updated ? 
-                                                            new Date(paypalStats.last_updated).toLocaleTimeString('pt-PT') 
-                                                            : 'Nunca'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-5xl opacity-80">💳</div>
-                                    </div>
-                                </div>
-
                                 <div className="bg-white shadow-lg overflow-hidden sm:rounded-xl">
                                     <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                                        <h3 className="text-lg font-medium text-gray-900">Histórico de Transações (PayPal + Google Pay)</h3>
+                                        <h3 className="text-lg font-medium text-gray-900">Histórico de Transações</h3>
                                     </div>
                                     
                                     <div className="overflow-x-auto">
@@ -921,7 +1095,7 @@ const AdminPanel = () => {
                                             <thead className="bg-gray-50">
                                                 <tr>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Método / Payment ID
+                                                        Payment ID
                                                     </th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                         Cliente
@@ -933,25 +1107,16 @@ const AdminPanel = () => {
                                                         Status
                                                     </th>
                                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Transaction ID
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                         Data
-                                                    </th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Ações
                                                     </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
                                                 {payments.length === 0 ? (
                                                     <tr>
-                                                        <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                                                        <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                                                             <div className="text-6xl mb-4">💳</div>
                                                             <div className="text-lg font-medium mb-2">Nenhum pagamento encontrado</div>
-                                                            <div className="text-sm">
-                                                                Os pagamentos PayPal e Google Pay aparecerão aqui quando os clientes efetuarem reservas
-                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -960,116 +1125,33 @@ const AdminPanel = () => {
                                                         .map((payment) => (
                                                         <tr key={payment.id} className="hover:bg-gray-50 transition-colors duration-200">
                                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="flex items-center space-x-2">
-                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                                                        payment.payment_method === 'google_pay' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
-                                                                    }`}>
-                                                                        {payment.payment_method === 'google_pay' ? 'G' : 'P'}
-                                                                    </div>
-                                                                    <div className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
-                                                                        {payment.payment_id ? (
-                                                                            <span title={payment.payment_id}>
-                                                                                {payment.payment_id.substring(0, 15)}...
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="text-gray-400">N/A</span>
-                                                                        )}
-                                                                    </div>
+                                                                <div className="text-sm font-mono text-gray-900">
+                                                                    {payment.payment_id ? payment.payment_id.substring(0, 12) + '...' : 'N/A'}
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="flex flex-col">
-                                                                    <div className="text-sm font-medium text-gray-900">
-                                                                        {payment.customer_name || 'Cliente Anônimo'}
-                                                                    </div>
-                                                                    <div className="text-sm text-gray-500">
-                                                                        {payment.customer_email || 'Email não disponível'}
-                                                                    </div>
+                                                                <div className="text-sm text-gray-900">
+                                                                    {payment.customer_email || 'N/A'}
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="text-lg font-bold text-gray-900">
+                                                                <div className="text-sm font-medium text-gray-900">
                                                                     {formatPrice(payment.amount || 0)}
                                                                 </div>
-                                                                <div className="text-xs text-gray-500">
-                                                                    {payment.currency || 'EUR'}
-                                                                </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                                                    payment.status === 'completed' || payment.status === 'succeeded' ? 'bg-green-100 text-green-800' :
-                                                                    payment.status === 'created' ? 'bg-blue-100 text-blue-800' :
-                                                                    payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                                    payment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                                                    'bg-gray-100 text-gray-800'
+                                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                                    payment.status === 'completed' || payment.status === 'succeeded' 
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : payment.status === 'pending' || payment.status === 'created'
+                                                                        ? 'bg-yellow-100 text-yellow-800'
+                                                                        : 'bg-red-100 text-red-800'
                                                                 }`}>
-                                                                    {payment.status === 'completed' || payment.status === 'succeeded' ? '✅ Confirmado' :
-                                                                    payment.status === 'created' ? '🔄 Criado' :
-                                                                    payment.status === 'pending' ? '⏳ Pendente' :
-                                                                    payment.status === 'cancelled' ? '❌ Cancelado' :
-                                                                    payment.status || 'Desconhecido'}
+                                                                    {payment.status}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="text-sm font-mono text-gray-900">
-                                                                    {payment.transaction_id ? (
-                                                                        <span 
-                                                                            title={`Clique para copiar: ${payment.transaction_id}`}
-                                                                            className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
-                                                                            onClick={() => {
-                                                                                navigator.clipboard.writeText(payment.transaction_id);
-                                                                                alert('Transaction ID copiado!');
-                                                                            }}
-                                                                        >
-                                                                            {payment.transaction_id.substring(0, 12)}...
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="text-gray-400 italic">Aguardando...</span>
-                                                                    )}
-                                                                </div>
-                                                            </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                <div>
-                                                                    {payment.created_at ? formatDate(payment.created_at) : 'N/A'}
-                                                                </div>
-                                                                <div className="text-xs text-gray-400">
-                                                                    {payment.created_at ? new Date(payment.created_at).toLocaleTimeString('pt-PT') : ''}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                                <div className="flex space-x-2">
-                                                                    {payment.booking_id && (
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setCurrentView('bookings');
-                                                                                setTimeout(() => {
-                                                                                    const element = document.querySelector(`[data-booking-id="${payment.booking_id}"]`);
-                                                                                    if (element) element.scrollIntoView({ behavior: 'smooth' });
-                                                                                }, 100);
-                                                                            }}
-                                                                            className="text-blue-600 hover:text-blue-900 text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors"
-                                                                            title="Ver reserva relacionada"
-                                                                        >
-                                                                            📋 Ver Reserva
-                                                                        </button>
-                                                                    )}
-                                                                    {payment.payment_id && (
-                                                                        <button
-                                                                            onClick={(event) => {
-                                                                                navigator.clipboard.writeText(payment.payment_id);
-                                                                                const originalText = event.target.textContent;
-                                                                                event.target.textContent = '✅ Copiado!';
-                                                                                setTimeout(() => {
-                                                                                    event.target.textContent = originalText;
-                                                                                }, 2000);
-                                                                            }}
-                                                                            className="text-gray-600 hover:text-gray-900 text-xs bg-gray-50 hover:bg-gray-100 px-3 py-1 rounded-md transition-colors"
-                                                                            title="Copiar Payment ID"
-                                                                        >
-                                                                            📋 Copiar ID
-                                                                        </button>
-                                                                    )}
-                                                                </div>
+                                                                {formatDate(payment.created_at)}
                                                             </td>
                                                         </tr>
                                                     ))
@@ -1078,197 +1160,53 @@ const AdminPanel = () => {
                                         </table>
                                     </div>
                                 </div>
-
-                                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                                        <h3 className="font-semibold text-blue-900 mb-4 flex items-center">
-                                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                            </svg>
-                                            Status dos Pagamentos
-                                        </h3>
-                                        <div className="text-sm text-blue-800 space-y-2">
-                                            <p><span className="font-semibold">✅ Completed/Succeeded:</span> Pagamento confirmado e processado com sucesso</p>
-                                            <p><span className="font-semibold">🔄 Created:</span> Pagamento criado, aguardando aprovação do cliente</p>
-                                            <p><span className="font-semibold">⏳ Pending:</span> Pagamento em processamento</p>
-                                            <p><span className="font-semibold">❌ Cancelled:</span> Pagamento cancelado pelo cliente ou sistema</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-                                        <h3 className="font-semibold text-green-900 mb-4 flex items-center">
-                                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                                            </svg>
-                                            Métodos de Pagamento
-                                        </h3>
-                                        <div className="text-sm text-green-800 space-y-2">
-                                            <p><span className="font-semibold">💙 PayPal:</span> Ícone azul "P" - Processado via PayPal</p>
-                                            <p><span className="font-semibold">🅖 Google Pay:</span> Ícone vermelho "G" - Processado via Google Pay + Stripe</p>
-                                            <p><span className="font-semibold">🔄 Sincronização:</span> Status atualizados automaticamente via webhooks</p>
-                                            <p><span className="font-semibold">📊 Relatórios:</span> Use os dashboards externos para relatórios detalhados</p>
-                                        </div>
-                                    </div>
-                                </div>
                             </>
                         )}
                     </div>
                 )}
 
-                {currentView === 'stats' && !loading && stats && (
+                {currentView === 'stats' && (
                     <div>
-                        <h2 className="text-xl font-semibold text-gray-900 mb-6">Estatísticas de Performance</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">📊 Estatísticas do Sistema</h2>
                         
-                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-8 rounded-xl mb-8 shadow-lg">
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <h3 className="text-2xl font-bold mb-4 flex items-center">
-                                        <span className="text-3xl mr-3">💳</span>
-                                        Resumo Pagamentos Integrados
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                                            <div className="text-3xl font-bold">
-                                                {paypalStats.completed_payments}
-                                            </div>
-                                            <div className="text-sm opacity-90 mt-1">Pagamentos Confirmados</div>
-                                            <div className="text-xs opacity-75 mt-1">
-                                                {paypalStats.total_transactions > 0 ? 
-                                                    `${((paypalStats.completed_payments / paypalStats.total_transactions) * 100).toFixed(1)}% taxa conversão`
-                                                    : 'Sem dados'}
-                                            </div>
-                                        </div>
-                                        <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                                            <div className="text-3xl font-bold">
-                                                {formatPrice(paypalStats.total_revenue)}
-                                            </div>
-                                            <div className="text-sm opacity-90 mt-1">Receita Total</div>
-                                            <div className="text-xs opacity-75 mt-1">
-                                                {stats ? `${((paypalStats.total_revenue / (stats.total_revenue || 1)) * 100).toFixed(1)}% do total`
-                                                    : 'Calculando...'}
-                                            </div>
-                                        </div>
-                                        <div className="bg-white bg-opacity-20 rounded-lg p-4">
-                                            <div className="text-3xl font-bold">
-                                                💙 {paypalStats.paypal_count || 0} | 🅖 {paypalStats.google_pay_count || 0}
-                                            </div>
-                                            <div className="text-sm opacity-90 mt-1">PayPal | Google Pay</div>
-                                            <div className="text-xs opacity-75 mt-1">
-                                                Distribuição por método de pagamento
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-6xl opacity-80 ml-6">💳</div>
+                        {loading && (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mr-3"></div>
+                                <p className="text-gray-600">A carregar estatísticas...</p>
                             </div>
-                            
-                            {paypalStats.last_updated && (
-                                <div className="mt-4 pt-4 border-t border-white border-opacity-30">
-                                    <p className="text-sm opacity-90">
-                                        📊 Dados atualizados em: {new Date(paypalStats.last_updated).toLocaleString('pt-PT')}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
+                        )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                            <div className="bg-white overflow-hidden shadow rounded-lg">
-                                <div className="p-5">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                                <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <div className="ml-5 w-0 flex-1">
-                                            <dl>
-                                                <dt className="text-sm font-medium text-gray-500 truncate">
-                                                    Total de Reservas
-                                                </dt>
-                                                <dd className="text-lg font-medium text-gray-900">
-                                                    {stats.total_bookings}
-                                                </dd>
-                                            </dl>
-                                        </div>
-                                    </div>
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                                <div className="flex">
+                                    <svg className="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                    <div className="text-red-800">{error}</div>
                                 </div>
                             </div>
+                        )}
 
-                            <div className="bg-white overflow-hidden shadow rounded-lg">
-                                <div className="p-5">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                                <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <div className="ml-5 w-0 flex-1">
-                                            <dl>
-                                                <dt className="text-sm font-medium text-gray-500 truncate">
-                                                    Receita Total
-                                                </dt>
-                                                <dd className="text-lg font-medium text-gray-900">
-                                                    {formatPrice(stats.total_revenue)}
-                                                </dd>
-                                            </dl>
-                                        </div>
-                                    </div>
+                        {!loading && stats && (
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                <div className="bg-white p-6 rounded-lg shadow">
+                                    <div className="text-3xl font-bold text-blue-600">{stats.total_bookings || 0}</div>
+                                    <div className="text-gray-600">Total de Reservas</div>
+                                </div>
+                                <div className="bg-white p-6 rounded-lg shadow">
+                                    <div className="text-3xl font-bold text-green-600">{formatPrice(stats.total_revenue || 0)}</div>
+                                    <div className="text-gray-600">Receita Total</div>
+                                </div>
+                                <div className="bg-white p-6 rounded-lg shadow">
+                                    <div className="text-3xl font-bold text-yellow-600">{stats.pending_bookings || 0}</div>
+                                    <div className="text-gray-600">Reservas Pendentes</div>
+                                </div>
+                                <div className="bg-white p-6 rounded-lg shadow">
+                                    <div className="text-3xl font-bold text-purple-600">{tours.length}</div>
+                                    <div className="text-gray-600">Tours Ativos</div>
                                 </div>
                             </div>
-
-                            <div className="bg-white overflow-hidden shadow rounded-lg">
-                                <div className="p-5">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                                                <svg className="h-5 w-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <div className="ml-5 w-0 flex-1">
-                                            <dl>
-                                                <dt className="text-sm font-medium text-gray-500 truncate">
-                                                    Tours Ativos
-                                                </dt>
-                                                <dd className="text-lg font-medium text-gray-900">
-                                                    {tours.filter(tour => tour.active).length}
-                                                </dd>
-                                            </dl>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white overflow-hidden shadow rounded-lg">
-                                <div className="p-5">
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0">
-                                            <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                                                <svg className="h-5 w-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <div className="ml-5 w-0 flex-1">
-                                            <dl>
-                                                <dt className="text-sm font-medium text-gray-500 truncate">
-                                                    Receita Média
-                                                </dt>
-                                                <dd className="text-lg font-medium text-gray-900">
-                                                    {stats.total_bookings > 0 ? formatPrice(stats.total_revenue / stats.total_bookings) : formatPrice(0)}
-                                                </dd>
-                                            </dl>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 )}
             </div>

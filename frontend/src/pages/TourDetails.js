@@ -1,693 +1,753 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
-import { useTranslation } from '../utils/useTranslation';
-import TourItinerary from '../components/TourItinerary';
-import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
-import { BACKEND_URL } from '../config/appConfig';
 
-const Maps_API_KEY = process.env.REACT_APP_Maps_API_KEY;
+// ✅ CONFIGURAÇÃO ROBUSTA COM FALLBACKS SEGUROS
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_URL || 'https://ninerocks-backend-742946187892.europe-west1.run.app';
 
-const TourMap = ({ locationsStr }) => {
-    const { isLoaded } = useJsApiLoader({ 
-        id: 'google-map-script', 
-        googleMapsApiKey: Maps_API_KEY,
-        libraries: ['places']
+// ✅ IMPORTAÇÕES CONDICIONAIS MELHORADAS
+let Helmet, GoogleMap, useJsApiLoader, MarkerF, useTranslation, TourItinerary;
+
+try {
+  // Helmet com múltiplos fallbacks
+  try {
+    const helmetAsync = require('react-helmet-async');
+    Helmet = helmetAsync.Helmet;
+  } catch {
+    try {
+      const helmetRegular = require('react-helmet');
+      Helmet = helmetRegular.Helmet || helmetRegular.default;
+    } catch {
+      Helmet = ({ children, ...props }) => children || null;
+    }
+  }
+
+  // Google Maps com fallback completo
+  try {
+    const googleMapsModule = require('@react-google-maps/api');
+    GoogleMap = googleMapsModule.GoogleMap;
+    useJsApiLoader = googleMapsModule.useJsApiLoader;
+    MarkerF = googleMapsModule.MarkerF || googleMapsModule.Marker;
+  } catch {
+    GoogleMap = null;
+    useJsApiLoader = null;
+    MarkerF = null;
+  }
+
+  // Tradução com fallback funcional
+  try {
+    const translationModule = require('../utils/useTranslation');
+    useTranslation = translationModule.useTranslation || translationModule.default;
+  } catch {
+    useTranslation = () => ({
+      t: (key) => {
+        const translations = {
+          'tour_book_now': 'Reservar Agora',
+          'message_loading': 'A carregar...',
+          'message.error': 'Erro ao carregar',
+          'try_again': 'Tentar Novamente',
+          'tour_overview': 'Visão Geral',
+          'tour_itinerary': 'Itinerário',
+          'tour_includes': 'Incluído',
+          'tour_location': 'Localização',
+          'tour_highlights': 'Destaques',
+          'tour_duration': 'Duração',
+          'tour_price': 'Preço',
+          'per_person': 'por pessoa'
+        };
+        return translations[key] || key;
+      },
+      getCurrentLanguage: () => 'pt'
     });
+  }
+
+  // TourItinerary com fallback
+  try {
+    const itineraryModule = require('../components/TourItinerary');
+    TourItinerary = itineraryModule.default || itineraryModule.TourItinerary;
+  } catch {
+    TourItinerary = ({ itineraryData, currentLang }) => (
+      <div className="space-y-4">
+        <h4 className="font-semibold text-gray-800">📋 Itinerário</h4>
+        <p className="text-gray-600">Itinerário detalhado disponível durante a reserva.</p>
+      </div>
+    );
+  }
+
+} catch (error) {
+  console.warn('❌ Algumas dependências falharam ao carregar:', error);
+  
+  // Fallbacks completos se tudo falhar
+  Helmet = ({ children }) => children || null;
+  GoogleMap = null;
+  useJsApiLoader = null;
+  MarkerF = null;
+  useTranslation = () => ({
+    t: (key) => key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    getCurrentLanguage: () => 'pt'
+  });
+  TourItinerary = () => <div className="text-gray-600">Itinerário não disponível</div>;
+}
+
+// ✅ COMPONENTE MAPA MELHORADO
+const TourMap = ({ locationsStr }) => {
+  const Maps_API_KEY = process.env.REACT_APP_Maps_API_KEY || process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+
+  // Parse das localizações
+  const locations = React.useMemo(() => {
+    if (!locationsStr || typeof locationsStr !== 'string') return [];
     
-    const locations = React.useMemo(() => {
-        if (!locationsStr || typeof locationsStr !== 'string') {
-            return [];
-        }
-        
-        const lines = locationsStr.split('\n').filter(line => line.trim() !== '');
-        
-        const parsedLocations = lines.map((line, index) => {
-            const parts = line.split(',').map(item => item.trim());
+    try {
+      return locationsStr.split('\n')
+        .filter(line => line.trim() !== '')
+        .map((line, index) => {
+          const parts = line.split(',').map(item => item.trim());
+          if (parts.length >= 3) {
+            const [name, lat, lng] = parts;
+            const latitude = parseFloat(lat);
+            const longitude = parseFloat(lng);
             
-            if (parts.length >= 3) {
-                const [name, lat, lng] = parts;
-                const latitude = parseFloat(lat);
-                const longitude = parseFloat(lng);
-                
-                if (name && !isNaN(latitude) && !isNaN(longitude)) {
-                    const PORTUGAL_BOUNDS = {
-                        north: 42.154,
-                        south: 36.838,
-                        east: -6.189,
-                        west: -9.526
-                    };
-                    
-                    if (latitude >= PORTUGAL_BOUNDS.south && latitude <= PORTUGAL_BOUNDS.north &&
-                        longitude >= PORTUGAL_BOUNDS.west && longitude <= PORTUGAL_BOUNDS.east) {
-                        
-                        return { 
-                            name: name, 
-                            lat: latitude, 
-                            lng: longitude,
-                            id: `tour-loc-${index}`
-                        };
-                    }
-                }
+            if (!isNaN(latitude) && !isNaN(longitude)) {
+              return { 
+                id: `loc-${index}`, 
+                name, 
+                lat: latitude, 
+                lng: longitude 
+              };
             }
-            return null;
+          }
+          return null;
         }).filter(loc => loc !== null);
-        
-        return parsedLocations;
-    }, [locationsStr]);
+    } catch {
+      return [];
+    }
+  }, [locationsStr]);
 
-    const getMapCenter = () => {
-        if (locations.length > 0) {
-            const avgLat = locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length;
-            const avgLng = locations.reduce((sum, loc) => sum + loc.lng, 0) / locations.length;
-            return { lat: avgLat, lng: avgLng };
-        }
-        return { lat: 39.5, lng: -8.0 };
-    };
+  // Fallback se não há Google Maps ou API Key
+  if (!Maps_API_KEY || !useJsApiLoader || !GoogleMap) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-6 h-96">
+        <h4 className="font-semibold mb-4">🗺️ Localizações do Tour</h4>
+        {locations.length > 0 ? (
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {locations.map((location, index) => (
+              <div key={location.id} className="flex items-center p-3 bg-white rounded border">
+                <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">
+                  {index + 1}
+                </div>
+                <div>
+                  <p className="font-medium">{location.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-gray-500">
+              <div className="text-4xl mb-2">📍</div>
+              <p>Configure REACT_APP_Maps_API_KEY para ver o mapa</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
-    const getMapZoom = () => {
-        if (locations.length === 0) return 7;
-        if (locations.length === 1) return 12;
-        
-        const lats = locations.map(loc => loc.lat);
-        const lngs = locations.map(loc => loc.lng);
-        const latRange = Math.max(...lats) - Math.min(...lats);
-        const lngRange = Math.max(...lngs) - Math.min(...lngs);
-        const maxRange = Math.max(latRange, lngRange);
-        
-        if (maxRange > 2) return 6;
-        if (maxRange > 1) return 7;
-        if (maxRange > 0.5) return 8;
-        return 10;
-    };
+  // Componente Google Maps funcional
+  const GoogleMapComponent = () => {
+    const { isLoaded, loadError } = useJsApiLoader({
+      id: 'google-map-script',
+      googleMapsApiKey: Maps_API_KEY,
+      libraries: ['places']
+    });
+
+    if (loadError) {
+      return (
+        <div className="flex items-center justify-center h-full bg-red-50 rounded-lg p-8">
+          <div className="text-center text-red-600">
+            <p>❌ Erro ao carregar Google Maps</p>
+            <p className="text-sm mt-2">Verifique a API Key</p>
+          </div>
+        </div>
+      );
+    }
 
     if (!isLoaded) {
-        return (
-            <div className="flex items-center justify-center h-full bg-gray-200 rounded-lg">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-gray-600">A carregar mapa...</p>
-                </div>
-            </div>
-        );
+      return (
+        <div className="flex items-center justify-center h-full bg-gray-200 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-600">A carregar mapa...</p>
+          </div>
+        </div>
+      );
     }
-    
-    const mapCenter = getMapCenter();
-    const mapZoom = getMapZoom();
-    
-    return (
-        <GoogleMap 
-            mapContainerClassName="w-full h-full rounded-lg" 
-            center={mapCenter}
-            zoom={mapZoom}
-            options={{ 
-                streetViewControl: false, 
-                mapTypeControl: false,
-                language: 'pt-PT',
-                region: 'PT'
-            }}
-        >
-            {locations.map((loc, index) => (
-                <MarkerF 
-                    key={loc.id || index} 
-                    position={{ lat: loc.lat, lng: loc.lng }} 
-                    title={loc.name}
-                    label={{
-                        text: (index + 1).toString(),
-                        color: 'white',
-                        fontWeight: 'bold'
-                    }}
-                />
-            ))}
-        </GoogleMap>
-    );
-};
 
-const Breadcrumbs = ({ tourName, currentLang }) => {
-    const { t } = useTranslation();
-    const getUrl = (page) => `/${currentLang !== 'pt' ? currentLang : ''}/${page === 'home' ? '' : page}`;
+    // Calcular centro e zoom baseado nas localizações
+    const center = locations.length > 0 
+      ? {
+          lat: locations.reduce((sum, loc) => sum + loc.lat, 0) / locations.length,
+          lng: locations.reduce((sum, loc) => sum + loc.lng, 0) / locations.length
+        }
+      : { lat: 39.5, lng: -8.0 };
 
     return (
-        <nav className="bg-white py-3 px-4 border-b" aria-label="Breadcrumb">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex items-center text-sm text-gray-600">
-                    <Link to={getUrl('home')} className="hover:text-blue-600">{t('nav_home') || 'Home'}</Link>
-                    <span className="mx-2">/</span>
-                    <Link to={getUrl('tours')} className="hover:text-blue-600">{t('nav_tours') || 'Tours'}</Link>
-                    <span className="mx-2">/</span>
-                    <span className="text-gray-900 font-medium">{tourName}</span>
-                </div>
-            </div>
-        </nav>
+      <GoogleMap
+        mapContainerClassName="w-full h-full rounded-lg"
+        center={center}
+        zoom={locations.length > 1 ? 10 : 12}
+        options={{
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: true,
+          zoomControl: true
+        }}
+      >
+        {locations.map((location, index) => (
+          MarkerF ? (
+            <MarkerF
+              key={location.id}
+              position={{ lat: location.lat, lng: location.lng }}
+              title={location.name}
+              label={{
+                text: (index + 1).toString(),
+                color: 'white',
+                fontWeight: 'bold'
+              }}
+            />
+          ) : null
+        ))}
+      </GoogleMap>
     );
+  };
+
+  return (
+    <div className="h-96 rounded-lg overflow-hidden">
+      <GoogleMapComponent />
+    </div>
+  );
 };
 
+// ✅ COMPONENTE ITINERÁRIO MELHORADO
+const TourItineraryComponent = ({ itineraryData, currentLang = 'pt' }) => {
+  if (!itineraryData) {
+    return <p className="text-gray-600">Itinerário não disponível</p>;
+  }
+
+  let stops = [];
+  
+  // Parse inteligente do itinerário
+  if (typeof itineraryData === 'object' && itineraryData[currentLang]) {
+    stops = itineraryData[currentLang];
+  } else if (typeof itineraryData === 'string') {
+    stops = itineraryData.split('\n')
+      .filter(line => line.trim() !== '')
+      .map(line => ({
+        title: line.trim(),
+        duration: '30-60 min',
+        type: 'visit'
+      }));
+  } else if (Array.isArray(itineraryData)) {
+    stops = itineraryData;
+  }
+
+  if (stops.length === 0) {
+    return <p className="text-gray-600">Detalhes do itinerário serão fornecidos durante a reserva</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {stops.map((stop, index) => (
+        <div key={index} className="flex items-start border-l-4 border-blue-500 pl-4 py-2">
+          <div className="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-4 mt-1 flex-shrink-0">
+            {index + 1}
+          </div>
+          <div className="flex-grow">
+            <h4 className="font-medium text-gray-800 mb-1">
+              {typeof stop === 'string' ? stop : stop.title || stop.name}
+            </h4>
+            {stop.duration && (
+              <p className="text-sm text-gray-500 mb-1">⏱️ {stop.duration}</p>
+            )}
+            {stop.description && (
+              <p className="text-sm text-gray-600">{stop.description}</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ✅ COMPONENTE PRINCIPAL COMPLETO
 const TourDetails = () => {
-    const { id } = useParams();
-    const { t, getCurrentLanguage } = useTranslation();
-    
-    const [currentLang, setCurrentLang] = useState('pt');
-    const [tourData, setTourData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [processedItinerary, setProcessedItinerary] = useState(null);
-    const [activeTab, setActiveTab] = useState('overview');
+  const { id } = useParams();
+  const { t, getCurrentLanguage } = useTranslation();
+  
+  const [currentLang, setCurrentLang] = useState('pt');
+  const [tourData, setTourData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
 
-    useEffect(() => {
-        try {
-            const lang = getCurrentLanguage();
-            setCurrentLang(lang || 'pt');
-        } catch (error) {
-            console.error('Error getting language:', error);
-            setCurrentLang('pt');
-        }
-    }, [getCurrentLanguage]);
+  // ✅ CONFIGURAÇÃO DE IDIOMA
+  useEffect(() => {
+    try {
+      const lang = getCurrentLanguage();
+      setCurrentLang(lang || 'pt');
+    } catch (error) {
+      console.error('Error getting language:', error);
+      setCurrentLang('pt');
+    }
+  }, [getCurrentLanguage]);
 
-    const getLocalizedText = (key) => {
-        try {
-            const translatedText = t(key);
-            if (translatedText === key) {
-                const fallbacks = {
-                    'tour_book_now': { pt: 'Reservar Agora', en: 'Book Now', es: 'Reservar Ahora' },
-                    'tour_details.from': { pt: 'Preço total', en: 'Total price', es: 'Precio total' },
-                    'message_loading': { pt: 'A carregar...', en: 'Loading...', es: 'Cargando...' },
-                    'message.error': { pt: 'Erro ao carregar', en: 'Error loading', es: 'Error al cargar' },
-                    'try_again': { pt: 'Tentar Novamente', en: 'Try Again', es: 'Intentar de Nuevo' },
-                };
-                
-                const fallback = fallbacks[key];
-                if (fallback) {
-                    return fallback[currentLang] || fallback.pt || key;
-                }
-            }
-            return translatedText;
-        } catch (error) {
-            console.error(`Translation error for key "${key}":`, error);
-            return key;
-        }
-    };
+  // ✅ FUNÇÃO DE TRADUÇÃO SEGURA
+  const getLocalizedText = (key) => {
+    try {
+      return t(key);
+    } catch (error) {
+      console.error(`Translation error for key "${key}":`, error);
+      const fallbacks = {
+        'tour_book_now': 'Reservar Agora',
+        'message_loading': 'A carregar...',
+        'message.error': 'Erro ao carregar',
+        'try_again': 'Tentar Novamente',
+        'tour_overview': 'Visão Geral',
+        'tour_itinerary': 'Itinerário',
+        'tour_includes': 'Incluído',
+        'tour_location': 'Localização',
+        'tour_highlights': 'Destaques'
+      };
+      return fallbacks[key] || key.replace(/_/g, ' ');
+    }
+  };
 
-    const formatPrice = (price) => {
-        try {
-            return new Intl.NumberFormat('pt-PT', {
-                style: 'currency',
-                currency: 'EUR'
-            }).format(price);
-        } catch (error) {
-            console.error('Error formatting price:', error);
-            return `€${price}`;
-        }
-    };
+  // ✅ FUNÇÕES UTILITÁRIAS
+  const getLocalizedContent = (content, fallback = '') => {
+    if (!content) return fallback;
+    if (typeof content === 'string') return content;
+    if (typeof content === 'object') {
+      return content[currentLang] || content.pt || content.en || content.es || fallback;
+    }
+    return fallback;
+  };
 
-    const parseItineraryFromText = (textData) => {
-        if (!textData || !textData[currentLang]) return null;
-        const text = textData[currentLang];
-        const lines = text.split('\n').filter(line => line.trim() !== '');
-        const parsedStops = [];
-        let stopCounter = 1;
-        
-        lines.forEach(line => {
-            const timeRegex = /(\d{1,2}[:h]\d{2}|\d{1,2}h)/i;
-            const timeMatch = line.match(timeRegex);
-            if (timeMatch) {
-                parsedStops.push({
-                    stop: stopCounter++,
-                    title: line.replace(timeRegex, '').replace(':', '').trim() || `Atividade às ${timeMatch[0]}`,
-                    duration: timeMatch[0].replace('h', ':00'),
-                    type: line.toLowerCase().includes('almoço') ? 'meal' : 'visit',
-                });
-            }
+  const formatPrice = (price) => {
+    if (!price || price === 0) return 'Preço sob consulta';
+    return `€${parseFloat(price).toFixed(0)}`;
+  };
+
+  const parseListFromText = (text) => {
+    if (!text) return [];
+    if (typeof text === 'string') {
+      return text.split('\n').filter(item => item.trim() !== '');
+    }
+    if (Array.isArray(text)) return text;
+    return [];
+  };
+
+  // ✅ CARREGAMENTO DE DADOS DO TOUR
+  useEffect(() => {
+    const fetchTourData = async () => {
+      if (!id) {
+        setError('ID do tour em falta');
+        setLoading(false);
+        return;
+      }
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        console.log(`🔍 Buscando tour: ${BACKEND_URL}/api/tours/${id}`);
+        const response = await axios.get(`${BACKEND_URL}/api/tours/${id}`, {
+          timeout: 10000,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
         });
         
-        return { [currentLang]: parsedStops };
-    };
-
-    useEffect(() => {
-        const fetchTourData = async () => {
-            if (!id) { 
-                setError(getLocalizedText('message.error')); 
-                setLoading(false); 
-                return; 
-            }
-            
-            setLoading(true);
-            setError(null);
-            
-            try {
-                const response = await axios.get(`${BACKEND_URL}/api/tours/${id}`);
-                
-                if (!response.data) { 
-                    throw new Error(getLocalizedText('message.no_tours')); 
-                }
-                
-                setTourData(response.data);
-                
-                if (response.data.route_description) {
-                    setProcessedItinerary(parseItineraryFromText(response.data.route_description));
-                }
-            } catch (err) {
-                setError(err.message || getLocalizedText('message.error'));
-            } finally {
-                setLoading(false);
-            }
-        };
+        console.log('✅ Resposta do tour:', response.data);
         
-        fetchTourData();
-    }, [id, currentLang]);
-
-    useEffect(() => {
-        if (tourData && tourData.route_description) {
-            setProcessedItinerary(parseItineraryFromText(tourData.route_description));
+        if (!response.data) {
+          throw new Error('Tour não encontrado');
         }
-    }, [currentLang, tourData]);
-
-    // 🔧 CORREÇÃO: URL de booking corrigida para evitar dupla barra
-    const bookingUrl = React.useMemo(() => {
-        try {
-            if (!id) return '#';
-            
-            // Se for português, usa apenas /reservar/id
-            // Se for outras línguas, usa /en/reservar/id ou /es/reservar/id
-            const baseUrl = currentLang !== 'pt' ? `/${currentLang}/reservar/${id}` : `/reservar/${id}`;
-            
-            return baseUrl;
-        } catch (error) {
-            console.error('Error generating booking URL:', error);
-            return '#';
+        
+        setTourData(response.data);
+      } catch (err) {
+        console.error('❌ Erro ao buscar tour:', err);
+        if (err.code === 'ECONNABORTED') {
+          setError('Timeout: Servidor demorou muito a responder');
+        } else if (err.response?.status === 404) {
+          setError('Tour não encontrado');
+        } else if (err.response?.status === 500) {
+          setError('Erro no servidor');
+        } else if (!navigator.onLine) {
+          setError('Sem conexão à internet');
+        } else {
+          setError(err.response?.data?.detail || err.message || 'Erro ao carregar tour');
         }
-    }, [currentLang, id]);
-
-    const BookingButton = () => {
-        const handleClick = (e) => {
-            if (bookingUrl === '#') {
-                e.preventDefault();
-                alert('Erro ao gerar URL de reserva. Tente novamente.');
-                return;
-            }
-        };
-
-        return (
-            <Link 
-                to={bookingUrl}
-                onClick={handleClick}
-                className="w-full block text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-                {getLocalizedText('tour_book_now')}
-            </Link>
-        );
+      } finally {
+        setLoading(false);
+      }
     };
-
-    if (loading) { 
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-                    <p className="text-lg text-gray-600">{getLocalizedText('message_loading')}</p>
-                </div>
-            </div>
-        ); 
-    }
     
-    if (error) { 
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="text-red-600 text-xl mb-4">{error}</div>
-                    <button 
-                        onClick={() => window.location.reload()}
-                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-                    >
-                        {getLocalizedText('try_again')}
-                    </button>
-                </div>
-            </div>
-        ); 
-    }
-    
-    if (!tourData) { 
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="text-gray-600 text-xl">{getLocalizedText('message.no_tours')}</div>
-                </div>
-            </div>
-        ); 
-    }
+    fetchTourData();
+  }, [id]);
 
-    const tourName = tourData.name[currentLang] || tourData.name.pt;
-    const shortDescription = tourData.short_description[currentLang] || tourData.short_description.pt;
-    const fullDescription = tourData.description[currentLang] || tourData.description.pt;
-    
-    const highlights = tourData.highlights?.[currentLang]?.split('\n').filter(item => item.trim() !== '') || 
-                      tourData.highlights?.pt?.split('\n').filter(item => item.trim() !== '') || 
-                      [];
-    
-    const includesText = tourData.includes?.[currentLang]?.split('\n').filter(item => item.trim() !== '') || [];
-    const excludesText = tourData.excludes?.[currentLang]?.split('\n').filter(item => item.trim() !== '') || [];
-
-    const mainImage = tourData.images?.[0];
-    const galleryImages = tourData.images?.slice(1) || [];
-
+  // ✅ LOADING STATE
+  if (loading) {
     return (
-        <>
-            <Helmet>
-                <title>{`${tourName} - 9 Rocks Tours`}</title>
-                <meta name="description" content={shortDescription} />
-                <meta property="og:title" content={`${tourName} - 9 Rocks Tours`} />
-                <meta property="og:description" content={shortDescription} />
-                <meta property="og:image" content={mainImage} />
-            </Helmet>
-            
-            <div className="bg-white">
-                <Breadcrumbs tourName={tourName} currentLang={currentLang} />
-                
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-                    <section className="mb-8">
-                        <div className="mb-4">
-                            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                                {tourName}
-                            </h1>
-                            <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-                                {shortDescription}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3 mb-6">
-                            <div className="flex items-center bg-green-50 text-green-700 px-3 py-2 rounded-full text-sm font-medium">
-                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                {getLocalizedText('tour_details.instant_confirmation')}
-                            </div>
-                            <div className="flex items-center bg-blue-50 text-blue-700 px-3 py-2 rounded-full text-sm font-medium">
-                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                                </svg>
-                                {getLocalizedText('tour_details.mobile_ticket')}
-                            </div>
-                            <div className="flex items-center bg-purple-50 text-purple-700 px-3 py-2 rounded-full text-sm font-medium">
-                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                                </svg>
-                                {getLocalizedText('tour_details.small_groups')}
-                            </div>
-                            <div className="flex items-center bg-orange-50 text-orange-700 px-3 py-2 rounded-full text-sm font-medium">
-                                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                </svg>
-                                {getLocalizedText('tour_details.live_guide')}
-                            </div>
-                        </div>
-
-                        {tourData.images && tourData.images.length > 0 && (
-                            <div className="relative">
-                                {galleryImages.length > 0 ? (
-                                    <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[400px] md:h-[500px] rounded-xl overflow-hidden">
-                                        <div className="col-span-2 row-span-2">
-                                            <img 
-                                                src={mainImage} 
-                                                alt={`Imagem principal de ${tourName}`} 
-                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
-                                            />
-                                        </div>
-                                        {galleryImages.slice(0, 4).map((image, index) => (
-                                            <div key={index} className="col-span-1 row-span-1">
-                                                <img 
-                                                    src={image} 
-                                                    alt={`Imagem de ${tourName} ${index + 2}`} 
-                                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="h-[400px] md:h-[500px] rounded-xl overflow-hidden">
-                                        <img 
-                                            src={mainImage} 
-                                            alt={`Imagem de ${tourName}`} 
-                                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
-                                        />
-                                    </div>
-                                )}
-                                
-                                {galleryImages.length > 4 && (
-                                    <div className="absolute bottom-4 right-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                                        +{galleryImages.length - 4} {getLocalizedText('total_photos')}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </section>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                        <div className="lg:col-span-2">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                <div className="bg-gray-50 p-6 rounded-xl text-center">
-                                    <div className="text-3xl mb-2">🚫</div>
-                                    <h4 className="font-semibold text-gray-900 mb-1">
-                                        {getLocalizedText('tour_details.free_cancellation_title')}
-                                    </h4>
-                                    <p className="text-sm text-gray-600">
-                                        {getLocalizedText('tour_details.free_cancellation_description')}
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-gray-50 p-6 rounded-xl text-center">
-                                    <div className="text-3xl mb-2">⏱️</div>
-                                    <h4 className="font-semibold text-gray-900 mb-1">
-                                        {getLocalizedText('tour_duration')}
-                                    </h4>
-                                    <p className="text-sm text-gray-600">
-                                        {tourData.duration_hours} {getLocalizedText('common.hours')}
-                                    </p>
-                                </div>
-                                
-                                <div className="bg-gray-50 p-6 rounded-xl text-center">
-                                    <div className="text-3xl mb-2">🎤</div>
-                                    <h4 className="font-semibold text-gray-900 mb-1">
-                                        {getLocalizedText('tour_professional_guide')}
-                                    </h4>
-                                    <p className="text-sm text-gray-600">
-                                        {getLocalizedText('tour_details.guide_languages')}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="border-b border-gray-200 mb-8">
-                                <nav className="flex space-x-8">
-                                    <button
-                                        onClick={() => setActiveTab('overview')}
-                                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                                            activeTab === 'overview'
-                                                ? 'border-blue-600 text-blue-600'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    >
-                                        {getLocalizedText('tab_overview')}
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('itinerary')}
-                                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                                            activeTab === 'itinerary'
-                                                ? 'border-blue-600 text-blue-600'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    >
-                                        {getLocalizedText('tab_itinerary')}
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('included')}
-                                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                                            activeTab === 'included'
-                                                ? 'border-blue-600 text-blue-600'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    >
-                                        {getLocalizedText('tab_included')}
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('map')}
-                                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                                            activeTab === 'map'
-                                                ? 'border-blue-600 text-blue-600'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700'
-                                        }`}
-                                    >
-                                        {getLocalizedText('tab_map')}
-                                    </button>
-                                </nav>
-                            </div>
-
-                            <div className="tab-content">
-                                {activeTab === 'overview' && (
-                                    <div className="space-y-8">
-                                        {fullDescription && (
-                                            <section>
-                                                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                                                    {getLocalizedText('tour_details.what_youll_do')}
-                                                </h2>
-                                                <div className="prose prose-lg text-gray-700">
-                                                    {fullDescription.split('\n').map((paragraph, index) => (
-                                                        <p key={index} className="mb-4 leading-relaxed">
-                                                            {paragraph}
-                                                        </p>
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        )}
-
-                                        {highlights.length > 0 && (
-                                            <section>
-                                                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                                                    {getLocalizedText('tour_details.experience_highlights')}
-                                                </h2>
-                                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {highlights.map((item, index) => (
-                                                            <div key={index} className="flex items-start">
-                                                                <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
-                                                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                                    </svg>
-                                                                </div>
-                                                                <span className="text-gray-800 font-medium leading-relaxed">
-                                                                    {item}
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </section>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeTab === 'itinerary' && (
-                                    <section>
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                                            {getLocalizedText('tab_itinerary')}
-                                        </h2>
-                                        <TourItinerary itinerary={processedItinerary} currentLanguage={currentLang} />
-                                    </section>
-                                )}
-
-                                {activeTab === 'included' && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <section>
-                                            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                                <span className="text-green-600 mr-2">✓</span>
-                                                {getLocalizedText('tour_includes')}
-                                            </h3>
-                                            <div className="space-y-3">
-                                                {includesText.map((item, index) => (
-                                                    <div key={index} className="flex items-start">
-                                                        <span className="text-green-500 mr-3 mt-1 flex-shrink-0">✓</span>
-                                                        <span className="text-gray-700">{item}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </section>
-                                        
-                                        <section>
-                                            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                                <span className="text-red-600 mr-2">✗</span>
-                                                {getLocalizedText('tour_excludes')}
-                                            </h3>
-                                            <div className="space-y-3">
-                                                {excludesText.map((item, index) => (
-                                                    <div key={index} className="flex items-start">
-                                                        <span className="text-red-500 mr-3 mt-1 flex-shrink-0">✗</span>
-                                                        <span className="text-gray-700">{item}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </section>
-                                    </div>
-                                )}
-
-                                {activeTab === 'map' && (
-                                    <section className="h-96">
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                                            {getLocalizedText('itinerary_tour_region')}
-                                        </h2>
-                                        
-                                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden h-80">
-                                            <TourMap 
-                                                locationsStr={tourData.map_locations || ''} 
-                                            />
-                                        </div>
-                                        
-                                        {tourData.map_locations && (
-                                            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                                                <h4 className="font-medium text-gray-800 mb-2">{getLocalizedText('tour_locations_title')}</h4>
-                                                <div className="space-y-1">
-                                                    {tourData.map_locations.split('\n').filter(line => line.trim()).map((line, index) => {
-                                                        const parts = line.split(',').map(item => item.trim());
-                                                        const [name] = parts;
-                                                        return (
-                                                            <div key={index} className="text-sm text-gray-600 flex items-center">
-                                                                <span className="w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs flex items-center justify-center mr-2 font-medium">
-                                                                    {index + 1}
-                                                                </span>
-                                                                <span className="font-medium">{name}</span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </section>
-                                )}
-                            </div>
-                        </div>
-                        
-                        <div className="lg:col-span-1">
-                            <div className="sticky top-8">
-                                <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-100">
-                                    <div className="text-center mb-6">
-                                        <p className="text-gray-600 text-sm mb-1">
-                                            {getLocalizedText('tour_details.from')}
-                                        </p>
-                                        <div className="text-4xl font-bold text-gray-900 mb-2">
-                                            {formatPrice(tourData.price)}
-                                        </div>
-                                    </div>
-
-                                    <BookingButton />
-                                    
-                                    <p className="text-sm text-center mt-4 text-gray-600">
-                                        {getLocalizedText('tour_details.book_now_pay_later')}
-                                    </p>
-
-                                    <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
-                                        <div className="flex items-center text-sm text-gray-600">
-                                            <svg className="w-5 h-5 mr-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                            </svg>
-                                            {getLocalizedText('tour_instant_confirmation')}
-                                        </div>
-                                        <div className="flex items-center text-sm text-gray-600">
-                                            <svg className="w-5 h-5 mr-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                                            </svg>
-                                            {getLocalizedText('tour_mobile_ticket_accepted')}
-                                        </div>
-                                        <div className="flex items-center text-sm text-gray-600">
-                                            <svg className="w-5 h-5 mr-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                                            </svg>
-                                            {getLocalizedText('tour_max_participants')}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">{getLocalizedText('message_loading')}</p>
+          <p className="text-sm text-gray-500 mt-2">A conectar ao servidor...</p>
+        </div>
+      </div>
     );
+  }
+  
+  // ✅ ERROR STATE
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-red-600 text-xl mb-4">❌ {error}</div>
+          <div className="space-y-4">
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full transition-colors"
+            >
+              {getLocalizedText('try_again')}
+            </button>
+            <Link 
+              to="/tours"
+              className="block bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Voltar aos Tours
+            </Link>
+            <div className="text-xs text-gray-500 mt-4">
+              <p>Backend: {BACKEND_URL}</p>
+              <p>Tour ID: {id}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // ✅ NO DATA STATE
+  if (!tourData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-600 text-xl mb-4">Tour não encontrado</div>
+          <Link 
+            to="/tours"
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Ver Todos os Tours
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ EXTRAÇÃO DE DADOS COM FALLBACKS ROBUSTOS
+  const tourName = getLocalizedContent(tourData.name, 'Tour sem nome');
+  const shortDescription = getLocalizedContent(tourData.short_description, 'Descrição não disponível');
+  const fullDescription = getLocalizedContent(tourData.description, '');
+  const highlights = parseListFromText(getLocalizedContent(tourData.highlights));
+  const includesText = parseListFromText(getLocalizedContent(tourData.includes));
+  const excludesText = parseListFromText(getLocalizedContent(tourData.excludes));
+  const price = tourData.price || 0;
+  const duration = tourData.duration_hours || tourData.duration || 1;
+  const mainImage = tourData.images?.[0] || tourData.image;
+  const allImages = tourData.images || (mainImage ? [mainImage] : []);
+
+  return (
+    <div className="bg-white min-h-screen">
+      {/* ✅ SEO com Helmet */}
+      {Helmet && (
+        <Helmet>
+          <title>{tourName} - 9 Rocks Tours</title>
+          <meta name="description" content={shortDescription} />
+          <meta property="og:title" content={tourName} />
+          <meta property="og:description" content={shortDescription} />
+          {mainImage && <meta property="og:image" content={mainImage} />}
+          <meta property="og:type" content="website" />
+        </Helmet>
+      )}
+
+      {/* ✅ Breadcrumbs */}
+      <nav className="bg-white py-3 px-4 border-b">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center text-sm text-gray-600">
+            <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
+            <span className="mx-2">/</span>
+            <Link to="/tours" className="hover:text-blue-600 transition-colors">Tours</Link>
+            <span className="mx-2">/</span>
+            <span className="text-gray-900 font-medium">{tourName}</span>
+          </div>
+        </div>
+      </nav>
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* ✅ CONTEÚDO PRINCIPAL */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Header */}
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                {tourName}
+              </h1>
+              <p className="text-xl text-gray-600 mb-6">
+                {shortDescription}
+              </p>
+              
+              {/* Badges informativos */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <span className="mr-1">⏱️</span>
+                  {duration}h
+                </div>
+                <div className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                  <span className="mr-1">💰</span>
+                  {formatPrice(price)}
+                </div>
+                {tourData.difficulty && (
+                  <div className="flex items-center bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
+                    <span className="mr-1">📊</span>
+                    {tourData.difficulty}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ✅ GALERIA DE IMAGENS */}
+            {allImages.length > 0 && (
+              <div className="space-y-4">
+                {/* Imagem principal */}
+                <div className="relative h-64 md:h-96 rounded-xl overflow-hidden">
+                  <img 
+                    src={mainImage} 
+                    alt={tourName}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                
+                {/* Galeria adicional */}
+                {allImages.length > 1 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {allImages.slice(1, 5).map((image, index) => (
+                      <div key={index} className="relative h-24 rounded-lg overflow-hidden">
+                        <img 
+                          src={image} 
+                          alt={`${tourName} ${index + 2}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ✅ TABS DE NAVEGAÇÃO */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { id: 'overview', label: getLocalizedText('tour_overview'), icon: '📋' },
+                  { id: 'itinerary', label: getLocalizedText('tour_itinerary'), icon: '🗺️' },
+                  { id: 'includes', label: getLocalizedText('tour_includes'), icon: '✅' },
+                  { id: 'location', label: getLocalizedText('tour_location'), icon: '📍' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="mr-2">{tab.icon}</span>
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* ✅ CONTEÚDO DOS TABS */}
+            <div className="bg-white rounded-lg p-6 border">
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  {/* Descrição completa */}
+                  {fullDescription && (
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4">📖 Sobre este Tour</h3>
+                      <div className="prose max-w-none text-gray-700 leading-relaxed">
+                        {fullDescription.split('\n').map((paragraph, index) => (
+                          paragraph.trim() && (
+                            <p key={index} className="mb-4">{paragraph}</p>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Destaques */}
+                  {highlights.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-semibold mb-4">🌟 {getLocalizedText('tour_highlights')}</h3>
+                      <ul className="space-y-3">
+                        {highlights.map((highlight, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-green-500 mr-3 mt-1">✓</span>
+                            <span className="text-gray-700">{highlight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'itinerary' && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">📋 Itinerário Detalhado</h3>
+                  <TourItineraryComponent 
+                    itineraryData={tourData.itinerary} 
+                    currentLang={currentLang} 
+                  />
+                </div>
+              )}
+
+              {activeTab === 'includes' && (
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Incluído */}
+                  <div>
+                    <h4 className="font-semibold text-green-600 mb-4 text-lg">✅ Incluído no Tour</h4>
+                    {includesText.length > 0 ? (
+                      <ul className="space-y-3">
+                        {includesText.map((item, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-green-500 mr-3 mt-1">✓</span>
+                            <span className="text-gray-700">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500">Informações detalhadas fornecidas durante a reserva</p>
+                    )}
+                  </div>
+
+                  {/* Não incluído */}
+                  <div>
+                    <h4 className="font-semibold text-red-600 mb-4 text-lg">❌ Não Incluído</h4>
+                    {excludesText.length > 0 ? (
+                      <ul className="space-y-3">
+                        {excludesText.map((item, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-red-500 mr-3 mt-1">✗</span>
+                            <span className="text-gray-700">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500">Consulte-nos para mais detalhes</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'location' && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">📍 Localização e Mapa</h3>
+                  <TourMap locationsStr={tourData.map_locations || tourData.locations} />
+                  
+                  {/* Informações adicionais de localização */}
+                  {tourData.meeting_point && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                      <h4 className="font-semibold text-blue-800 mb-2">📍 Ponto de Encontro</h4>
+                      <p className="text-blue-700">{getLocalizedContent(tourData.meeting_point)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ✅ SIDEBAR DE RESERVA MELHORADA */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8">
+              <div className="bg-white p-6 rounded-xl shadow-xl border">
+                <div className="text-center mb-6">
+                  <div className="text-4xl font-bold text-gray-900 mb-2">
+                    {formatPrice(price)}
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    {duration}h • {getLocalizedText('per_person')}
+                  </p>
+                </div>
+
+                {/* Informações rápidas */}
+                <div className="space-y-3 mb-6 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Duração:</span>
+                    <span className="font-medium">{duration} horas</span>
+                  </div>
+                  {tourData.group_size && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Grupo:</span>
+                      <span className="font-medium">{tourData.group_size}</span>
+                    </div>
+                  )}
+                  {tourData.language && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Idiomas:</span>
+                      <span className="font-medium">{getLocalizedContent(tourData.language)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <Link 
+                  to={`/reservar/${id}`}
+                  className="w-full block text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition-all transform hover:scale-105"
+                >
+                  {getLocalizedText('tour_book_now')}
+                </Link>
+                
+                <p className="text-sm text-center mt-4 text-gray-600">
+                  🔒 Reserva segura • Cancela até 24h antes
+                </p>
+
+                {/* Contactos de suporte */}
+                <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+                  <p className="text-xs text-gray-500 mb-2">Precisa de ajuda?</p>
+                  <div className="space-y-1 text-sm">
+                    <a href="tel:+351910000000" className="block text-blue-600 hover:text-blue-700">
+                      📞 +351 910 000 000
+                    </a>
+                    <a href="mailto:info@9rocks.pt" className="block text-blue-600 hover:text-blue-700">
+                      ✉️ info@9rocks.pt
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default TourDetails;

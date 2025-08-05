@@ -10,8 +10,6 @@ Tree de C:\Users\paulo\Desktop\9-Rocks-Tours-Git (excluindo pastas e ficheiros i
     README.md
     structure of my backend and frontend project.txt
     tree backend & frontend.txt
-    tree of backend and frontend project.txt
-    tree_filtrada_final_corrigida.txt
     yarn.lock
 backend\
     .dockerignore
@@ -26,7 +24,7 @@ backend\
     requirements.txt
     server.py
     server_debug.py
-    test_secret.py
+    test_SMTP.py
     config\
         db.py
         environment.py
@@ -93,6 +91,7 @@ frontend\
             MapLocationPicker.js
             MapLocationsDiagnostic.js
             PaymentComponent.js
+            PremiumCheckoutScreen.js
             PremiumPaymentComponent.jsx
             SEO.js
             SEOHead.js
@@ -113,7 +112,9 @@ frontend\
         hooks\
             useEmbeddedPayment.js
             useEmbeddedPayment_original.js
+            usePremiumEmbeddedPayment.js
             useSEO.js
+            useTourSEO.js
         pages\
             AdminPanel.js
             HomePage.js
@@ -121,6 +122,13 @@ frontend\
             TestPayment.js
             TourDetails.js
             ToursPage.js
+            admin\
+                AdminBookings.js
+                AdminDashboard.js
+                AdminLayout.js
+                AdminLogin.js
+                AdminSettings.js
+                AdminStats.js
         services\
             heroImagesService.js
             mockServices.js

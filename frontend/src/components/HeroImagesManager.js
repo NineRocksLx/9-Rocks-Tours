@@ -10,11 +10,14 @@ const HeroImagesManager = () => {
   const [editingImage, setEditingImage] = useState(null);
   const [error, setError] = useState('');
 
+  // ✅ ALTERAÇÃO 1: Adicionados 'duration' e 'showTextOverlay' ao estado inicial
   const [formData, setFormData] = useState({
     title: { pt: '', en: '', es: '' },
     subtitle: { pt: '', en: '', es: '' },
     order: 1,
-    active: true
+    active: true,
+    duration: 4000, // Valor padrão de 4 segundos (4000 ms)
+    showTextOverlay: true // ✅ NOVO CAMPO: Mostrar texto por defeito
   });
 
   useEffect(() => {
@@ -35,17 +38,21 @@ const HeroImagesManager = () => {
   };
 
   const handleImageUpload = async (file) => {
-    if (!file) return;
-
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
-      alert('Tipo de arquivo não suportado. Use JPG, PNG ou WebP.');
+    if (!editingImage && !file) {
+      alert('Por favor, selecione uma imagem para upload.');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Arquivo muito grande. Máximo 5MB.');
-      return;
+    if (file) {
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            alert('Tipo de arquivo não suportado. Use JPG, PNG ou WebP.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Arquivo muito grande. Máximo 5MB.');
+            return;
+        }
     }
 
     setUploading(true);
@@ -75,11 +82,14 @@ const HeroImagesManager = () => {
 
   const handleEdit = (image) => {
     setEditingImage(image);
+    // ✅ ALTERAÇÃO 2: Carregar 'duration' e 'showTextOverlay' existentes ao editar
     setFormData({
       title: image.title || { pt: '', en: '', es: '' },
       subtitle: image.subtitle || { pt: '', en: '', es: '' },
       order: image.order || 1,
-      active: image.active !== undefined ? image.active : true
+      active: image.active !== undefined ? image.active : true,
+      duration: image.duration || 4000,
+      showTextOverlay: image.showTextOverlay !== undefined ? image.showTextOverlay : true
     });
     setShowModal(true);
   };
@@ -111,11 +121,14 @@ const HeroImagesManager = () => {
   };
 
   const resetForm = () => {
+    // ✅ ALTERAÇÃO 3: Resetar 'duration' e 'showTextOverlay' no formulário
     setFormData({
       title: { pt: '', en: '', es: '' },
       subtitle: { pt: '', en: '', es: '' },
       order: 1,
-      active: true
+      active: true,
+      duration: 4000,
+      showTextOverlay: true
     });
     setEditingImage(null);
     setError('');
@@ -146,7 +159,7 @@ const HeroImagesManager = () => {
         <div className="flex items-start">
           <div className="flex-shrink-0">
             <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <div className="ml-4">
@@ -173,7 +186,7 @@ const HeroImagesManager = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Firebase Hero Images</h2>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => { resetForm(); setShowModal(true); }}
           disabled={uploading || loading}
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
         >
@@ -198,7 +211,7 @@ const HeroImagesManager = () => {
 
       {/* Lista de Imagens */}
       <div className="grid gap-4">
-        {heroImages.map((image) => (
+        {heroImages.sort((a, b) => (a.order || 99) - (b.order || 99)).map((image) => (
           <div key={image.id} className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="md:flex">
               <div className="md:w-1/3">
@@ -215,9 +228,10 @@ const HeroImagesManager = () => {
               <div className="md:w-2/3 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span className="text-sm font-medium text-gray-500">🔥 Firebase ID: {image.id}</span>
                       <span className="text-sm font-medium text-gray-500">📊 Ordem: {image.order}</span>
+                      <span className="text-sm font-medium text-gray-500">⏱️ Duração: {image.duration || 4000}ms</span>
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         image.active 
                           ? 'bg-green-100 text-green-800' 
@@ -300,7 +314,6 @@ const HeroImagesManager = () => {
                       id="heroImageFile"
                       type="file"
                       accept="image/*"
-                      required
                       className="w-full border rounded px-3 py-2"
                       disabled={uploading}
                     />
@@ -351,17 +364,31 @@ const HeroImagesManager = () => {
                     ))}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                
+                {/* ✅ ALTERAÇÃO 4: Adicionados os novos campos aqui no modal */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">📊 Ordem</label>
                     <input
                       type="number"
                       value={formData.order}
-                      onChange={(e) => setFormData({...formData, order: parseInt(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, order: parseInt(e.target.value, 10) || 1})}
                       min="1"
                       className="w-full border rounded px-3 py-2"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">⏱️ Duração (ms)</label>
+                    <input
+                      type="number"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value, 10) || 4000})}
+                      min="1000"
+                      step="500"
+                      className="w-full border rounded px-3 py-2"
+                      placeholder="Ex: 4000"
+                    />
+                     <p className="text-xs text-gray-500 mt-1">1000ms = 1 segundo</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">🔘 Status</label>
@@ -373,6 +400,20 @@ const HeroImagesManager = () => {
                       <option value="true">✅ Ativa</option>
                       <option value="false">❌ Inativa</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">👁️ Visibilidade do Texto</label>
+                    <div className="flex items-center p-2 border rounded-md h-[42px]">
+                      <input
+                        type="checkbox"
+                        id="showTextOverlay"
+                        name="showTextOverlay"
+                        checked={formData.showTextOverlay}
+                        onChange={(e) => setFormData({...formData, showTextOverlay: e.target.checked})}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="showTextOverlay" className="ml-2 text-sm text-gray-700">Mostrar texto</label>
+                    </div>
                   </div>
                 </div>
 
